@@ -25,7 +25,6 @@
   "files": [
     "index.js",
     "src/",
-    "mappers.js",
     "sample-config.json"
   ],
   "devDependencies": {

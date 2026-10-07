@@ -1,4 +1,4 @@
-const mappers = require("../mappers.js");
+const mappers = require("../src/mappers/index.js");
 
 const p = { 
     "mapping": {

@@ -1,5 +1,5 @@
 var Service, Characteristic;
-var mappers = require("./mappers.js");
+var mappers = require("./src/mappers/index.js");
 var resolveBearerToken = require("./src/http/auth.js").resolveBearerToken;
 var HttpClient = require("./src/http/client.js");
 var Poller = require("./src/poller.js");
