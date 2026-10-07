@@ -3,7 +3,7 @@
 Homebridge plugin that can turn virtually any device which exposes HTTP APIs into an HomeKit-compatible Service.
 Its purpose is to connect any device that can be controlled via HTTP command to Homekit. It creates a Homebridge accessory which uses HTTP calls to _change_ and _check_ its state via [Actions](#actions).
 
-This is a modified fork of the original [homebridge-http-advanced-accessory](https//github.com/staromeste/homebridge-http-advanced-accessory).
+This is a modified fork of the original [homebridge-http-advanced-accessory](https://github.com/staromeste/homebridge-http-advanced-accessory).
 
 This version is maintained independently and includes additional features
 such as Bearer Token authentication.
