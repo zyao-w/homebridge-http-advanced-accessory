@@ -281,6 +281,7 @@ HttpAdvancedAccessory.prototype = {
 					callback(null);
 					return;
 				}
+				// eslint-disable-next-line no-unused-vars -- referenced by the eval'd URL/body templates
 				var state = this.state;
 				var body = action.body;
 				var mappedValue = this.applyMappers(action.mappers, value);
