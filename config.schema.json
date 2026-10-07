@@ -141,40 +141,43 @@
                       },
                       "httpMethod": {
                         "title": "HTTP method",
-                        "type": "string",
-                        "oneOf": [
-                          {
-                            "title": "GET",
-                            "enum": [
-                              "GET"
-                            ]
-                          },
-                          {
-                            "title": "POST",
-                            "enum": [
-                              "POST"
-                            ]
-                          },
-                          {
-                            "title": "PUT",
-                            "enum": [
-                              "PUT"
-                            ]
-                          },
-                          {
-                            "title": "PATCH",
-                            "enum": [
-                              "PATCH"
-                            ]
-                          },
-                          {
-                            "title": "DELETE",
-                            "enum": [
-                              "DELETE"
-                            ]
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ],
-                        "description": "Defaults to GET."
+                        "enum": [
+                          null,
+                          "GET",
+                          "POST",
+                          "PUT",
+                          "PATCH",
+                          "DELETE"
+                        ],
+                        "x-schema-form": {
+                          "type": "select",
+                          "titleMap": [
+                            {
+                              "name": "GET (default)",
+                              "value": null
+                            },
+                            {
+                              "name": "POST",
+                              "value": "POST"
+                            },
+                            {
+                              "name": "PUT",
+                              "value": "PUT"
+                            },
+                            {
+                              "name": "PATCH",
+                              "value": "PATCH"
+                            },
+                            {
+                              "name": "DELETE",
+                              "value": "DELETE"
+                            }
+                          ]
+                        }
                       },
                       "body": {
                         "title": "Body",
@@ -341,40 +344,43 @@
                           },
                           "httpMethod": {
                             "title": "HTTP method",
-                            "type": "string",
-                            "oneOf": [
-                              {
-                                "title": "GET",
-                                "enum": [
-                                  "GET"
-                                ]
-                              },
-                              {
-                                "title": "POST",
-                                "enum": [
-                                  "POST"
-                                ]
-                              },
-                              {
-                                "title": "PUT",
-                                "enum": [
-                                  "PUT"
-                                ]
-                              },
-                              {
-                                "title": "PATCH",
-                                "enum": [
-                                  "PATCH"
-                                ]
-                              },
-                              {
-                                "title": "DELETE",
-                                "enum": [
-                                  "DELETE"
-                                ]
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ],
-                            "description": "Defaults to GET."
+                            "enum": [
+                              null,
+                              "GET",
+                              "POST",
+                              "PUT",
+                              "PATCH",
+                              "DELETE"
+                            ],
+                            "x-schema-form": {
+                              "type": "select",
+                              "titleMap": [
+                                {
+                                  "name": "GET (default)",
+                                  "value": null
+                                },
+                                {
+                                  "name": "POST",
+                                  "value": "POST"
+                                },
+                                {
+                                  "name": "PUT",
+                                  "value": "PUT"
+                                },
+                                {
+                                  "name": "PATCH",
+                                  "value": "PATCH"
+                                },
+                                {
+                                  "name": "DELETE",
+                                  "value": "DELETE"
+                                }
+                              ]
+                            }
                           },
                           "body": {
                             "title": "Body",
@@ -558,40 +564,43 @@
                       },
                       "httpMethod": {
                         "title": "HTTP method",
-                        "type": "string",
-                        "oneOf": [
-                          {
-                            "title": "GET",
-                            "enum": [
-                              "GET"
-                            ]
-                          },
-                          {
-                            "title": "POST",
-                            "enum": [
-                              "POST"
-                            ]
-                          },
-                          {
-                            "title": "PUT",
-                            "enum": [
-                              "PUT"
-                            ]
-                          },
-                          {
-                            "title": "PATCH",
-                            "enum": [
-                              "PATCH"
-                            ]
-                          },
-                          {
-                            "title": "DELETE",
-                            "enum": [
-                              "DELETE"
-                            ]
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ],
-                        "description": "Defaults to GET."
+                        "enum": [
+                          null,
+                          "GET",
+                          "POST",
+                          "PUT",
+                          "PATCH",
+                          "DELETE"
+                        ],
+                        "x-schema-form": {
+                          "type": "select",
+                          "titleMap": [
+                            {
+                              "name": "GET (default)",
+                              "value": null
+                            },
+                            {
+                              "name": "POST",
+                              "value": "POST"
+                            },
+                            {
+                              "name": "PUT",
+                              "value": "PUT"
+                            },
+                            {
+                              "name": "PATCH",
+                              "value": "PATCH"
+                            },
+                            {
+                              "name": "DELETE",
+                              "value": "DELETE"
+                            }
+                          ]
+                        }
                       },
                       "body": {
                         "title": "Body",
@@ -758,40 +767,43 @@
                           },
                           "httpMethod": {
                             "title": "HTTP method",
-                            "type": "string",
-                            "oneOf": [
-                              {
-                                "title": "GET",
-                                "enum": [
-                                  "GET"
-                                ]
-                              },
-                              {
-                                "title": "POST",
-                                "enum": [
-                                  "POST"
-                                ]
-                              },
-                              {
-                                "title": "PUT",
-                                "enum": [
-                                  "PUT"
-                                ]
-                              },
-                              {
-                                "title": "PATCH",
-                                "enum": [
-                                  "PATCH"
-                                ]
-                              },
-                              {
-                                "title": "DELETE",
-                                "enum": [
-                                  "DELETE"
-                                ]
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ],
-                            "description": "Defaults to GET."
+                            "enum": [
+                              null,
+                              "GET",
+                              "POST",
+                              "PUT",
+                              "PATCH",
+                              "DELETE"
+                            ],
+                            "x-schema-form": {
+                              "type": "select",
+                              "titleMap": [
+                                {
+                                  "name": "GET (default)",
+                                  "value": null
+                                },
+                                {
+                                  "name": "POST",
+                                  "value": "POST"
+                                },
+                                {
+                                  "name": "PUT",
+                                  "value": "PUT"
+                                },
+                                {
+                                  "name": "PATCH",
+                                  "value": "PATCH"
+                                },
+                                {
+                                  "name": "DELETE",
+                                  "value": "DELETE"
+                                }
+                              ]
+                            }
                           },
                           "body": {
                             "title": "Body",

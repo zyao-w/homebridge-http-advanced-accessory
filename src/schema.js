@@ -99,15 +99,25 @@ function mapper(path) {
 	});
 }
 
+// The form adds a "None" entry to a select unless one of its values is null, so the default is a null entry named GET.
+function httpMethod() {
+	const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+	return {
+		title: "HTTP method",
+		type: ["string", "null"],
+		enum: [null, ...methods],
+		"x-schema-form": {
+			type: "select",
+			titleMap: [{ name: "GET (default)", value: null }, ...methods.slice(1).map((name) => ({ name, value: name }))],
+		},
+	};
+}
+
 /** @param {string} path Where the action lives inside a characteristic: get, set or get.inconclusive */
 function action(path, withInconclusive) {
 	const properties = {
 		url: text("URL"),
-		httpMethod: choice(
-			"HTTP method",
-			["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => [method, method]),
-			{ description: "Defaults to GET." }
-		),
+		httpMethod: httpMethod(),
 		body: text("Body", { widget: "textarea" }),
 		resultOnError: text("Result on error", {
 			description: "Used as the value when the request fails, instead of reporting an error.",
