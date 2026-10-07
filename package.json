@@ -25,6 +25,7 @@
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
   "files": [
     "src/",
+    "scripts/",
     "CHANGELOG.md",
     "sample-config.json"
   ],
@@ -38,7 +39,7 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint .",
-    "format": "prettier --write src test eslint.config.js",
-    "format:check": "prettier --check src test eslint.config.js"
+    "format": "prettier --write src scripts test eslint.config.js",
+    "format:check": "prettier --check src scripts test eslint.config.js"
   }
 }
