@@ -1,8 +1,7 @@
-jest.mock("request");
-
-const request = require("request");
+const fetchMock = jest.fn();
 
 let AccessoryClass;
+var registered;
 
 class FakeCharacteristic {
     constructor(displayName) {
@@ -10,15 +9,15 @@ class FakeCharacteristic {
         this.handlers = {};
         this.props = { format: "string" };
         this.value = null;
+        this.setValue = jest.fn((v) => {
+            this.value = v;
+        });
     }
     on(event, fn) {
         this.handlers[event] = fn;
         return this;
     }
     setProps() {}
-    setValue(v) {
-        this.value = v;
-    }
 }
 
 class FakeInformationService {
@@ -36,9 +35,18 @@ class FakeSwitch {
     addCharacteristic() {}
 }
 
+class FakeMulti {
+    constructor(name) {
+        this.name = name;
+        this.characteristics = [new FakeCharacteristic("On"), new FakeCharacteristic("Brightness")];
+        this.optionalCharacteristics = [];
+    }
+    addCharacteristic() {}
+}
+
 require("../index.js")({
     hap: {
-        Service: { AccessoryInformation: FakeInformationService, Switch: FakeSwitch },
+        Service: { AccessoryInformation: FakeInformationService, Switch: FakeSwitch, Multi: FakeMulti },
         Characteristic: { Manufacturer: "m", Model: "mo", SerialNumber: "s" },
     },
     registerAccessory: (plugin, name, ctor) => {
@@ -46,29 +54,32 @@ require("../index.js")({
         AccessoryClass = ctor;
     },
 });
-var registered;
 
 // url -> response body (or Error)
 let responses;
+const originalFetch = global.fetch;
 
 beforeEach(() => {
     responses = {};
-    request.mockReset();
-    request.mockImplementation((opts, cb) => {
-        const r = responses[opts.url];
-        if (r instanceof Error) {
-            cb(r);
-        } else {
-            cb(null, { statusCode: 200 }, r === undefined ? "" : r);
-        }
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async (url) => {
+        const r = responses[url];
+        if (r instanceof Error) throw r;
+        return { status: 200, text: async () => (r === undefined ? "" : r) };
     });
+    global.fetch = fetchMock;
+});
+
+afterEach(() => {
+    global.fetch = originalFetch;
+    jest.useRealTimers();
 });
 
 function build(config) {
     const log = jest.fn();
     const accessory = new AccessoryClass(log, Object.assign({ service: "Switch", name: "Test" }, config));
     const [, service] = accessory.getServices();
-    return { accessory, log, characteristic: service.characteristics[0] };
+    return { accessory, log, characteristic: service.characteristics[0], characteristics: service.characteristics };
 }
 
 function get(characteristic) {
@@ -78,6 +89,9 @@ function get(characteristic) {
 function set(characteristic, value) {
     return new Promise((resolve) => characteristic.handlers.set(value, (error) => resolve({ error })));
 }
+
+const urlOf = (call) => fetchMock.mock.calls[call][0];
+const initOf = (call) => fetchMock.mock.calls[call][1];
 
 test("registers under the published package name", () => {
     expect(registered).toEqual({ plugin: "homebridge-http-advanced-accessory-zyao", name: "HttpAdvancedAccessory" });
@@ -110,7 +124,7 @@ describe("getter actions", () => {
             },
         });
         expect(await get(characteristic)).toEqual({ error: null, value: "0" });
-        expect(request.mock.calls.map((c) => c[0].url)).toEqual(["http://h/a", "http://h/b"]);
+        expect(fetchMock.mock.calls.map((c) => c[0])).toEqual(["http://h/a", "http://h/b"]);
     });
 
     test("returns the error when the request fails", async () => {
@@ -124,6 +138,19 @@ describe("getter actions", () => {
         responses["http://h/a"] = new Error("ECONNREFUSED");
         const { characteristic } = build({ urls: { getOn: { url: "http://h/a", resultOnError: "0" } } });
         expect(await get(characteristic)).toEqual({ error: null, value: "0" });
+    });
+
+    test("simultaneous getters on the same URL issue one request", async () => {
+        responses["http://h/status"] = "5";
+        const { characteristics } = build({
+            service: "Multi",
+            urls: {
+                getOn: { url: "http://h/status" },
+                getBrightness: { url: "http://h/status" },
+            },
+        });
+        await Promise.all(characteristics.map(get));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 });
 
@@ -139,7 +166,7 @@ describe("setter actions", () => {
         });
         const result = await set(characteristic, 1);
         expect(result.error).toBeUndefined();
-        expect(request.mock.calls[0][0].url).toBe("http://h/set?v=on");
+        expect(urlOf(0)).toBe("http://h/set?v=on");
     });
 
     test("supports string templates and POST bodies", async () => {
@@ -153,27 +180,102 @@ describe("setter actions", () => {
             },
         });
         await set(characteristic, 1);
-        const opts = request.mock.calls[0][0];
-        expect(opts.url).toBe("http://h/set?x=a");
-        expect(opts.method).toBe("POST");
-        expect(opts.body).toBe("payload=1");
+        expect(urlOf(0)).toBe("http://h/set?x=a");
+        expect(initOf(0).method).toBe("POST");
+        expect(Buffer.from(initOf(0).body).toString()).toBe("payload=1");
     });
 
-    test("setterDelay sends only the last value", () => {
+    test("reports a failed request to HomeKit", async () => {
+        responses["http://h/set?v=1"] = new Error("ECONNREFUSED");
+        const { characteristic, log } = build({ urls: { setOn: { url: "http://h/set?v={value}" } } });
+        const result = await set(characteristic, 1);
+        expect(result.error.message).toBe("ECONNREFUSED");
+        expect(log).toHaveBeenCalledWith("SetState function failed: %s", "ECONNREFUSED");
+    });
+
+    test("setterDelay sends only the last value", async () => {
         jest.useFakeTimers();
-        try {
-            const { characteristic } = build({
-                setterDelay: 1000,
-                urls: { setOn: { url: "http://h/set?v={value}" } },
-            });
-            characteristic.handlers.set(0, () => {});
-            characteristic.handlers.set(1, () => {});
-            jest.runAllTimers();
-            expect(request).toHaveBeenCalledTimes(1);
-            expect(request.mock.calls[0][0].url).toBe("http://h/set?v=1");
-        } finally {
-            jest.useRealTimers();
-        }
+        const { characteristic } = build({
+            setterDelay: 1000,
+            urls: { setOn: { url: "http://h/set?v={value}" } },
+        });
+        characteristic.handlers.set(0, () => {});
+        characteristic.handlers.set(1, () => {});
+        await jest.advanceTimersByTimeAsync(1000);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(urlOf(0)).toBe("http://h/set?v=1");
+    });
+});
+
+describe("polling (forceRefreshDelay)", () => {
+    test("actions on the same URL share one request per interval", async () => {
+        jest.useFakeTimers();
+        responses["http://h/status"] = "7";
+        const { characteristics } = build({
+            service: "Multi",
+            forceRefreshDelay: 5,
+            urls: {
+                getOn: { url: "http://h/status" },
+                getBrightness: { url: "http://h/status", mappers: [{ type: "static", parameters: { mapping: { 7: "70" } } }] },
+            },
+        });
+        const [on, brightness] = characteristics;
+
+        on.handlers.get(() => {});
+        brightness.handlers.get(() => {});
+        await jest.advanceTimersByTimeAsync(0);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(on.setValue).toHaveBeenLastCalledWith("7");
+        expect(brightness.setValue).toHaveBeenLastCalledWith("70");
+
+        await jest.advanceTimersByTimeAsync(5000);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    test("returns the cached value immediately", async () => {
+        jest.useFakeTimers();
+        const { characteristic } = build({ forceRefreshDelay: 5, urls: { getOn: { url: "http://h/status" } } });
+        characteristic.value = "cached";
+        const result = await new Promise((resolve) => characteristic.handlers.get((e, v) => resolve(v)));
+        expect(result).toBe("cached");
+    });
+
+    test("a getter without an action does not poll", async () => {
+        jest.useFakeTimers();
+        const { characteristic } = build({ forceRefreshDelay: 5, urls: {} });
+        characteristic.handlers.get(() => {});
+        await jest.advanceTimersByTimeAsync(10000);
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(characteristic.setValue).not.toHaveBeenCalled();
+    });
+
+    test("keeps polling after a failed request", async () => {
+        jest.useFakeTimers();
+        responses["http://h/status"] = new Error("down");
+        const { characteristic, log } = build({ forceRefreshDelay: 5, urls: { getOn: { url: "http://h/status" } } });
+        characteristic.handlers.get(() => {});
+        await jest.advanceTimersByTimeAsync(0);
+        expect(log).toHaveBeenCalledWith("Poller errored: %s", "down");
+
+        responses["http://h/status"] = "1";
+        await jest.advanceTimersByTimeAsync(5000);
+        expect(characteristic.setValue).toHaveBeenLastCalledWith("1");
+    });
+
+    test("continues polling when a response is inconclusive and has no fallback", async () => {
+        jest.useFakeTimers();
+        responses["http://h/status"] = "MAYBE";
+        const { characteristic } = build({
+            forceRefreshDelay: 5,
+            urls: {
+                getOn: { url: "http://h/status", mappers: [{ type: "static", parameters: { mapping: { MAYBE: "inconclusive" } } }] },
+            },
+        });
+        characteristic.handlers.get(() => {});
+        await jest.advanceTimersByTimeAsync(0);
+        responses["http://h/status"] = "1";
+        await jest.advanceTimersByTimeAsync(5000);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 });
 
@@ -181,14 +283,13 @@ describe("authentication", () => {
     const getAction = { getOn: { url: "http://h/a" } };
 
     function headerOf(call) {
-        return request.mock.calls[call][0].headers.Authorization;
+        return initOf(call).headers.Authorization;
     }
 
     test("sends a Bearer header when bearerToken is set", async () => {
         const { characteristic } = build({ bearerToken: "tok", urls: getAction });
         await get(characteristic);
         expect(headerOf(0)).toBe("Bearer tok");
-        expect(request.mock.calls[0][0].auth).toBeUndefined();
     });
 
     test("bearerToken takes precedence over username/password", async () => {
@@ -201,6 +302,12 @@ describe("authentication", () => {
         const { characteristic } = build({ username: "u", password: "p", urls: getAction });
         await get(characteristic);
         expect(headerOf(0)).toBe("Basic " + Buffer.from("u:p").toString("base64"));
+    });
+
+    test("sends no Authorization header without credentials", async () => {
+        const { characteristic } = build({ urls: getAction });
+        await get(characteristic);
+        expect(headerOf(0)).toBeUndefined();
     });
 
     test("trims the token", async () => {
@@ -234,7 +341,7 @@ describe("authentication", () => {
             },
         });
         await get(characteristic);
-        expect(request).toHaveBeenCalledTimes(2);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(headerOf(0)).toBe("Bearer tok");
         expect(headerOf(1)).toBe("Bearer tok");
     });
@@ -243,7 +350,7 @@ describe("authentication", () => {
         const { characteristic, log } = build({ bearerToken: "env:HHAA_MISSING_TOKEN", username: "u", password: "p", urls: getAction });
         const result = await get(characteristic);
         expect(result.error.message).toMatch("HHAA_MISSING_TOKEN");
-        expect(request).not.toHaveBeenCalled();
+        expect(fetchMock).not.toHaveBeenCalled();
         expect(log).toHaveBeenCalledWith(expect.stringContaining("HHAA_MISSING_TOKEN"));
     });
 });
