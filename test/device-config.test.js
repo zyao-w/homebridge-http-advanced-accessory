@@ -1,7 +1,6 @@
 const { normalizeDevice } = require("../src/device-config.js");
 const { migrateConfig } = require("../src/migrate.js");
-const { createActions } = require("../src/actions.js");
-const sampleConfig = require("../sample-config.json");
+const sampleConfig = require("./fixtures/config-1x.json");
 
 const base = { name: "Light", service: "Lightbulb" };
 const chain = (mappers = [], input) => mappers.reduce((value, mapper) => mapper.map(value), input);
@@ -114,6 +113,34 @@ describe("actions", () => {
 		});
 		expect(chain(characteristics[0].get.mappers, 1)).toBe("on");
 		expect(chain(characteristics[0].get.mappers, 0)).toBe("off");
+	});
+
+	test("an expression mapper sees the device state by characteristic name", () => {
+		const normalized = normalizeDevice({
+			...base,
+			characteristics: [
+				{
+					characteristic: "On",
+					get: { url: "u", mappers: [{ type: "expression", expression: "state.Target + value" }] },
+				},
+			],
+		});
+		normalized.state.Target = 10;
+		expect(chain(normalized.characteristics[0].get.mappers, 5)).toBe(15);
+	});
+
+	test("an expression the language does not offer is refused when the device loads", () => {
+		const entry = (expression) => ({
+			characteristic: "On",
+			get: { url: "u", mappers: [{ type: "expression", expression }] },
+		});
+		expect(() => device(entry("value.toFixed(1)"))).toThrow(/Only the built-in functions/);
+		expect(() => device(entry("let a = 1"))).toThrow(/Unexpected "="/);
+		expect(() => device(entry("process.exit()"))).toThrow(/Unknown name "process"/);
+		// allowUnsafeEval does not widen the expression language; script mappers are for that
+		expect(() =>
+			normalizeDevice({ ...base, allowUnsafeEval: true, characteristics: [entry("value.toFixed(1)")] })
+		).toThrow();
 	});
 
 	test("a script mapper needs allowUnsafeEval", () => {
@@ -238,26 +265,26 @@ describe("equivalence with the 1.x configuration", () => {
 		}
 	};
 
+	// The snapshot was recorded while the 1.x code still ran next to it and gave identical results
 	test("every action of sample-config.json maps the same inputs to the same values", () => {
 		const { config } = migrateConfig(sampleConfig);
 		const devices = config.platforms[0].devices;
 		expect(devices).toHaveLength(sampleConfig.accessories.length);
 
-		let compared = 0;
+		const recorded = {};
 		sampleConfig.accessories.forEach((accessory, index) => {
 			const device = normalizeDevice(devices[index]);
-			const oldActions = createActions(accessory.urls, { state: {} });
 
 			for (const key of Object.keys(accessory.urls)) {
 				const [, kind, name] = /^(get|set)(.+)$/.exec(key);
-				const newAction = device.characteristics.find((c) => c.name === name)[kind];
-				for (const input of samples) {
-					expect(outcome(newAction.mappers, input)).toEqual(outcome(oldActions[key].mappers, input));
-					compared++;
-				}
-				expect(newAction.url.replace(/state\.(?=[A-Z])/g, "state.get")).toBe(oldActions[key].url);
+				const action = device.characteristics.find((c) => c.name === name)[kind];
+				recorded[`${accessory.name} ${key}`] = {
+					url: action.url,
+					outcomes: Object.fromEntries(samples.map((input) => [input, outcome(action.mappers, input)])),
+				};
 			}
 		});
-		expect(compared).toBeGreaterThan(50);
+		expect(Object.keys(recorded).length).toBeGreaterThan(5);
+		expect(recorded).toMatchSnapshot();
 	});
 });

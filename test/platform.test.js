@@ -117,6 +117,9 @@ beforeEach(() => {
 	fetchMock.mockImplementation(async (url) => {
 		const response = responses[url];
 		if (response instanceof Error) throw response;
+		if (response && typeof response === "object") {
+			return { status: response.status, text: async () => response.body || "" };
+		}
 		return { status: 200, text: async () => (response === undefined ? "" : response) };
 	});
 	global.fetch = fetchMock;
@@ -316,6 +319,21 @@ describe("reading", () => {
 		expect(log).toHaveBeenCalledWith("[Pump] GetState function failed: %s", "ECONNREFUSED");
 	});
 
+	test("fails a get with a communication error when the server answers outside 2xx", async () => {
+		responses["http://h/status"] = { status: 401, body: '{"detail":"Not authenticated"}' };
+		const { api, log } = launch({ devices: [switchDevice()] });
+		await expect(characteristicOf(api).getHandler()).rejects.toMatchObject({ status: -70402 });
+		expect(log).toHaveBeenCalledWith("[Pump] GetState function failed: %s", "HTTP 401 Unauthorized");
+	});
+
+	test("resultOnError also covers an answer outside 2xx", async () => {
+		responses["http://h/status"] = { status: 503, body: "" };
+		const device = switchDevice();
+		device.characteristics[0].get.resultOnError = "0";
+		const { api } = launch({ devices: [device] });
+		expect(await characteristicOf(api).getHandler()).toBe("0");
+	});
+
 	test("uses resultOnError instead of failing", async () => {
 		responses["http://h/status"] = new Error("down");
 		const device = switchDevice();
@@ -422,6 +440,13 @@ describe("writing", () => {
 		expect(urlOf(1)).toBe("http://h/p?x=1&v=0");
 	});
 
+	test("fails a set with a communication error when the server answers outside 2xx", async () => {
+		responses["http://h/set?v=on"] = { status: 500, body: "" };
+		const { api, log } = launch({ devices: [switchDevice()] });
+		await expect(characteristicOf(api).setHandler("1")).rejects.toMatchObject({ status: -70402 });
+		expect(log).toHaveBeenCalledWith("[Pump] SetState function failed: %s", "HTTP 500 Internal Server Error");
+	});
+
 	test("fails a set with a communication error", async () => {
 		responses["http://h/set?v=on"] = new Error("ECONNREFUSED");
 		const { api, log } = launch({ devices: [switchDevice()] });
@@ -429,12 +454,26 @@ describe("writing", () => {
 		expect(log).toHaveBeenCalledWith("[Pump] SetState function failed: %s", "ECONNREFUSED");
 	});
 
-	test("reports a broken template as a communication error without sending a request", async () => {
+	test("refuses a template the expression language does not offer unless allowUnsafeEval is set", () => {
+		const device = {
+			name: "Pump",
+			service: "Switch",
+			characteristics: [{ characteristic: "On", set: { url: "http://h/${[1].map(n => n)}" } }],
+		};
+		const refused = launch({ devices: [device] });
+		expect(registered(refused.api)).toEqual([]);
+		expect(refused.log.error).toHaveBeenCalledWith(expect.stringContaining('"allowUnsafeEval": true'));
+
+		expect(registered(launch({ devices: [{ ...device, allowUnsafeEval: true }] }).api)).toHaveLength(1);
+	});
+
+	test("reports a template that fails when it runs as a communication error without sending a request", async () => {
 		const { api } = launch({
 			devices: [
 				{
 					name: "Pump",
 					service: "Switch",
+					allowUnsafeEval: true,
 					characteristics: [{ characteristic: "On", set: { url: "http://h/${missing.prop}" } }],
 				},
 			],
@@ -509,11 +548,65 @@ describe("polling", () => {
 		responses["http://h/status"] = new Error("down");
 		const { api, log } = launch({ devices: [lamp()] });
 		await jest.advanceTimersByTimeAsync(0);
-		expect(log).toHaveBeenCalledWith("[Lamp] Poller errored: %s", "down");
+		expect(log).toHaveBeenCalledWith("[Lamp] Poller for %s errored: %s", "On", "down");
 
 		responses["http://h/status"] = "7";
 		await jest.advanceTimersByTimeAsync(5000);
 		expect(serviceOf(registered(api)[0], "light").characteristics[0].updateValue).toHaveBeenLastCalledWith("7");
+	});
+
+	test("a failed poll makes HomeKit reads fail until a poll succeeds", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = "7";
+		const { api } = launch({ devices: [lamp()] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		expect(await on.getHandler()).toBe("7");
+
+		responses["http://h/status"] = { status: 401, body: "{}" };
+		await jest.advanceTimersByTimeAsync(5000);
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+
+		responses["http://h/status"] = "8";
+		await jest.advanceTimersByTimeAsync(5000);
+		expect(await on.getHandler()).toBe("8");
+	});
+
+	test("a poll that fails before it ever succeeded makes HomeKit reads fail", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = { status: 401, body: "" };
+		const { api } = launch({ devices: [lamp()] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+	});
+
+	test("an inconclusive poll without a fallback makes HomeKit reads fail", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = "7";
+		const device = lamp({
+			characteristics: [
+				{
+					characteristic: "On",
+					get: { url: "http://h/status", mappers: [{ type: "static", mapping: [{ from: "7", to: "inconclusive" }] }] },
+				},
+			],
+		});
+		const { api } = launch({ devices: [device] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+	});
+
+	test("resultOnError keeps HomeKit reads working while polls fail", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = { status: 503, body: "" };
+		const device = lamp();
+		device.characteristics[0].get.resultOnError = "0";
+		const { api } = launch({ devices: [device] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		expect(await on.getHandler()).toBe("0");
 	});
 
 	test("stops when Homebridge shuts down", async () => {

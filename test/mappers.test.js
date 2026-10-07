@@ -32,9 +32,31 @@ test.each`
 	const p = {
 		expression: a,
 	};
-	const evalMapper = new mappers.EvalMapper(p);
+	const expressionMapper = new mappers.ExpressionMapper(p);
 
-	expect(evalMapper.map(b)).toBe(expected);
+	expect(expressionMapper.map(b)).toBe(expected);
+});
+
+describe("ExpressionMapper", () => {
+	test("sees the shared state by characteristic name", () => {
+		const m = new mappers.ExpressionMapper({ expression: "state.Target + value" }, { state: { Target: 10 } });
+		expect(m.map(5)).toBe(15);
+	});
+
+	test("refuses an expression the language does not offer when it is created", () => {
+		expect(() => new mappers.ExpressionMapper({ expression: "value.toFixed(1)" })).toThrow(/built-in functions/);
+	});
+});
+
+describe("ScriptMapper", () => {
+	test("runs JavaScript with value, state and self", () => {
+		const context = { state: { Target: 10 } };
+		const m = new mappers.ScriptMapper(
+			{ script: "const n = parseFloat(value); [n, state.Target, self.state.Target].join()" },
+			context
+		);
+		expect(m.map("2")).toBe("2,10,10");
+	});
 });
 
 describe("StaticMapper edge cases", () => {

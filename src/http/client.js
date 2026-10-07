@@ -1,3 +1,4 @@
+const { STATUS_CODES } = require("node:http");
 const { buildAuthorization } = require("./auth.js");
 const Limiter = require("./limiter.js");
 
@@ -11,6 +12,8 @@ function sleep(ms) {
  * - read():  idempotent requests; identical in-flight reads are shared and
  *            successful responses are cached for `cacheTTL` seconds.
  * - write(): never shared or cached, never retried; clears the cache on success.
+ *
+ * A response outside 2xx rejects with an error that has `status`; it is never retried or cached.
  */
 class HttpClient {
 	/**
@@ -21,7 +24,6 @@ class HttpClient {
 	 * @param {number} [options.retryDelay=500] Base delay in ms, multiplied by the attempt number
 	 * @param {number} [options.cacheTTL=0] Cache lifetime in seconds (0 disables)
 	 * @param {number} [options.maxConcurrent=0] Maximum simultaneous requests (0 = unlimited)
-	 * @param {number} [options.uriCallsDelay=0] Minimum gap in ms between request starts
 	 * @param {Function} [options.fetch] fetch implementation (for tests)
 	 * @param {Function} [options.now] Clock in ms (for tests)
 	 */
@@ -33,7 +35,7 @@ class HttpClient {
 		this.retryDelay = options.retryDelay === undefined ? 500 : options.retryDelay;
 		this.cacheTTL = (options.cacheTTL || 0) * 1000;
 		this.now = options.now || Date.now;
-		this.limiter = new Limiter({ maxConcurrent: options.maxConcurrent, minGap: options.uriCallsDelay });
+		this.limiter = new Limiter({ maxConcurrent: options.maxConcurrent });
 		this.cache = new Map();
 		this.inFlight = new Map();
 		this.generation = 0;
@@ -103,12 +105,16 @@ class HttpClient {
 		const auth = this._authFor(override);
 		return this.limiter.run(async () => {
 			for (let attempt = 0; ; attempt++) {
+				let response;
 				try {
-					return await this._attempt(request, auth);
+					response = await this._attempt(request, auth);
 				} catch (error) {
 					if (attempt >= retries) throw error;
 					await sleep(this.retryDelay * (attempt + 1));
+					continue;
 				}
+				if (response.status < 200 || response.status > 299) throw httpError(response.status);
+				return response;
 			}
 		});
 	}
@@ -150,6 +156,13 @@ class HttpClient {
 
 function normalize(req) {
 	return { url: req.url, method: (req.method || "GET").toUpperCase(), body: req.body || "" };
+}
+
+// The message has no URL, which may carry credentials in its query string
+function httpError(status) {
+	const error = new Error(`HTTP ${status}${STATUS_CODES[status] ? " " + STATUS_CODES[status] : ""}`);
+	error.status = status;
+	return error;
 }
 
 // Error messages must not contain the URL, which may carry credentials in its query string

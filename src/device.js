@@ -22,6 +22,8 @@ class DeviceController {
 		this.poller = new Poller({ log: (message) => this.debugLog(message) });
 		this.runner = new ActionRunner({ client: this.client, log, debug: device.debug, authError: device.authError });
 		this.setTimers = new Map();
+		// Characteristics whose last poll failed; HomeKit reads them as a communication error until a poll succeeds
+		this.pollFailures = new Set();
 		this.unsubscribers = [];
 	}
 
@@ -110,6 +112,7 @@ class DeviceController {
 		if (characteristic.props.format === "float") value = parseFloat(value);
 
 		this.device.state[name] = value;
+		this.pollFailures.delete(name);
 		characteristic.updateValue(value);
 		return value;
 	}
@@ -121,6 +124,9 @@ class DeviceController {
 
 		// Polled characteristics answer from the last polled value
 		if (this.device.forceRefreshDelay > 0) {
+			if (this.pollFailures.has(name)) {
+				throw this._communicationError();
+			}
 			return this.device.state[name] ?? characteristic.value;
 		}
 
@@ -141,7 +147,10 @@ class DeviceController {
 			this.debugLog(name + " poller returned data: " + value);
 			this._publish(name, characteristic, value);
 		};
-		const failed = (error) => this.log("Poller errored: %s", error && error.message);
+		const failed = (error) => {
+			this.pollFailures.add(name);
+			this.log("Poller for %s errored: %s", name, error && error.message);
+		};
 
 		// Actions that issue the same request share one poll
 		this.unsubscribers.push(
@@ -194,8 +203,9 @@ class DeviceController {
 		try {
 			const mappedValue = this.runner.applyMappers(action.mappers, value);
 			const scope = { value, state: this.device.state, mappedValue };
-			const url = renderTemplate(action.url, scope);
-			const body = action.body ? renderTemplate(action.body, scope) : action.body;
+			const unsafe = this.device.allowUnsafeEval;
+			const url = renderTemplate(action.url, scope, { unsafe });
+			const body = action.body ? renderTemplate(action.body, scope, { unsafe }) : action.body;
 			await this.runner.writeRequest(action, url, body);
 		} catch (error) {
 			this.log("SetState function failed: %s", error.message);

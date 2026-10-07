@@ -138,7 +138,6 @@ describe("migrateAccessory", () => {
 
 		test.each`
 			script
-			${"Math.round(value / 2)"}
 			${"let v = parseFloat(value); value = v"}
 			${"value = value * 2"}
 			${"obj?.data?.pm25"}
@@ -156,6 +155,8 @@ describe("migrateAccessory", () => {
 			${"value <= 12 ? 1 : value <= 35 ? 2 : 3"}
 			${"(value - 30) * 100 / 69 >= 50"}
 			${"state.getTarget + 1"}
+			${"Math.round(value / 2)"}
+			${"toNumber(value) > 3 ? 'on' : 'off'"}
 		`("keeps $expression as an expression mapper", ({ expression }) => {
 			const result = migrateMappers([{ type: "eval", parameters: { expression } }]);
 			expect(mappersOf(result)[0].type).toBe("expression");
@@ -190,6 +191,23 @@ describe("migrateAccessory", () => {
 		expect(inconclusive.mappers).toEqual([{ type: "regex", regexp: "(.)" }]);
 	});
 
+	test("drops an inconclusive action nested in the fallback action, which 2.0 does not allow", () => {
+		const { device, warnings } = migrateAccessory({
+			name: "A",
+			service: "S",
+			urls: {
+				getOn: {
+					url: "http://h/a",
+					inconclusive: { url: "http://h/b", inconclusive: { url: "http://h/c" } },
+				},
+			},
+		});
+		const fallback = find(device, "On").get.inconclusive;
+		expect(fallback.url).toBe("http://h/b");
+		expect(fallback).not.toHaveProperty("inconclusive");
+		expect(warnings).toEqual([expect.stringMatching(/inconclusive action inside the fallback action/)]);
+	});
+
 	describe("templates", () => {
 		const migrateUrl = (url, body) => migrateAccessory({ name: "A", service: "S", urls: { setOn: { url, body } } });
 
@@ -208,10 +226,14 @@ describe("migrateAccessory", () => {
 			expect(result.warnings).toEqual([]);
 		});
 
-		test("flags JavaScript calls in templates", () => {
-			const result = migrateUrl("http://h/p?v=${Math.round(value)}");
-			expect(result.warnings[0]).toMatch("Math.round");
+		test("flags JavaScript the expression language does not offer", () => {
+			const result = migrateUrl("http://h/p?v=${value.toFixed(1)}");
+			expect(result.warnings[0]).toMatch("Only the built-in functions");
 			expect(result.warnings[0]).toMatch('"allowUnsafeEval": true');
+		});
+
+		test("does not flag templates the expression language handles", () => {
+			expect(migrateUrl("http://h/p?v=${Math.round(value)}").warnings).toEqual([]);
 		});
 	});
 });

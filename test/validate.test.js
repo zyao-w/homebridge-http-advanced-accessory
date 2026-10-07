@@ -2,8 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const { buildSchema } = require("../src/schema.js");
 const { validateDevice, validatePlatform } = require("../src/validate.js");
+const { normalizeDevice } = require("../src/device-config.js");
 const { migrateAccessory, migrateConfig } = require("../src/migrate.js");
-const sampleConfig = require("../sample-config.json");
+const sampleConfig = require("./fixtures/config-1x.json");
+const platformSample = require("../sample-config.json");
 
 describe("config.schema.json", () => {
 	test("is the generated schema (run npm run build:schema)", () => {
@@ -276,6 +278,15 @@ describe("validatePlatform", () => {
 	test("accepts the platform block written by the migration", () => {
 		const { config } = migrateConfig(sampleConfig);
 		expect(validatePlatform(config.platforms[0])).toEqual([]);
+	});
+
+	test("the shipped sample-config.json is valid and loads", () => {
+		const [platform] = platformSample.platforms;
+		expect(validatePlatform(platform)).toEqual([]);
+		for (const device of platform.devices) {
+			expect(validateDevice(device).errors).toEqual([]);
+			expect(() => normalizeDevice(device, platform.defaults)).not.toThrow();
+		}
 	});
 
 	test("reports unknown settings and a wrong defaults block", () => {

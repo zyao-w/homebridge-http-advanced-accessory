@@ -1,7 +1,7 @@
 {
   "displayName": "HTTP Advanced Accessory",
   "name": "homebridge-http-advanced-accessory-zyao",
-  "version": "2.0.0-alpha.6",
+  "version": "2.0.0-beta.2",
   "description": "http plugin for homebridge: https://github.com/nfarina/homebridge",
   "main": "src/index.js",
   "license": "ISC",
@@ -9,7 +9,7 @@
     "homebridge-plugin"
   ],
   "engines": {
-    "node": ">=18",
+    "node": ">=22",
     "homebridge": ">=1.6.0"
   },
   "author": "tasict",
@@ -20,8 +20,8 @@
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
     "ajv": "^8.20.0",
-    "jsonpath-plus": "^10.4.0",
-    "xpath": "^0.0.34"
+    "jsonpath-plus": "^11.2.0",
+    "xpath": "^0.0.35"
   },
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
   "files": [
@@ -29,6 +29,7 @@
     "scripts/",
     "config.schema.json",
     "CHANGELOG.md",
+    "MIGRATION.md",
     "sample-config.json"
   ],
   "devDependencies": {
