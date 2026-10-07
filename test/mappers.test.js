@@ -39,8 +39,7 @@ test.each`
 
 
 describe("StaticMapper edge cases", () => {
-    // Known bug (fixed in phase 3): falsy mapped values fall through to the input
-    test.failing("returns a mapped falsy value", () => {
+    test("returns a mapped falsy value", () => {
         const m = new mappers.StaticMapper({ mapping: { OFF: 0, EMPTY: "" } });
         expect(m.map("OFF")).toBe(0);
         expect(m.map("EMPTY")).toBe("");

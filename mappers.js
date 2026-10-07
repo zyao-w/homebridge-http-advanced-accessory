@@ -21,7 +21,7 @@ function StaticMapper(parameters) {
 	self.mapping = parameters.mapping;
 
 	self.map = function(value) {
-		return self.mapping[value] || value;
+		return Object.prototype.hasOwnProperty.call(self.mapping, value) ? self.mapping[value] : value;
 	};
 }
 
@@ -60,7 +60,7 @@ function XPathMapper(parameters) {
 
 	self.map = function(value) {
 		var document = new dom().parseFromString(value, "text/xml");
-		var result  = xpath.select(this.xpath, document);
+		var result  = xpath.select(self.xpath, document);
 
 		if (typeof result == "string") {
 			return result;
