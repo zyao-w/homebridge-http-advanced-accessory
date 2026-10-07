@@ -10,7 +10,7 @@ such as Bearer Token authentication.
 
 ## Installation
 
-1. Install homebridge using: npm install -g homebridge
+1. Install homebridge using: npm install -g homebridge (Node.js 18 or newer is required)
 2. Install this plugin using: npm install -g homebridge-http-advanced-accessory-zyao
 3. Update your configuration file. See sample-config.json in this repository for a sample.
 
@@ -37,9 +37,12 @@ The plugin supports two authentication methods:
 2. **HTTP Basic Authentication**
    - Configure `username` and `password`
    - Used when `bearerToken` is not configured
+   - If neither is configured, no `Authorization` header is sent
 
 If both `bearerToken` and `username/password` are configured,
 Bearer Token authentication takes precedence.
+
+Basic credentials are sent with every request. With `"immediately": false` they are only sent after the server answers `401` (HTTP Digest authentication, which the former HTTP library negotiated in that mode, is no longer supported).
 
 ## Configuration
 
@@ -142,7 +145,13 @@ Configuration sample:
 - The **polling** is a boolean that specifies if the current state should be pulled on regular intervals or not. Defaults to false.
 - **forceRefreshDelay** is a number which defines the poll interval in seconds. Defaults to 0.
 - **setterDelay** is a number which defines the number of milliseconds to wait before executing a "set" action request. If more than one request is received during this interval, only the last one is executed. Defaults to 0 - disabled.
-- **uriCallsDelay** number of milliseconds to add a short delay between URI calls for devices that can't handle many URI calls at the same time. Defaults to 0 - disabled.
+- **uriCallsDelay** minimum number of milliseconds between the start of two HTTP requests, for devices that can't handle many requests at the same time. Defaults to 0 - disabled.
+- **maxConcurrent** maximum number of simultaneous HTTP requests for this accessory. Defaults to 0 - unlimited.
+- **timeout** number of milliseconds after which a request is aborted. Defaults to 10000. Use 0 to disable.
+- **retries** number of extra attempts for _read_ requests that fail with a network error or timeout (HTTP error statuses are not retried; set requests are never retried). Defaults to 0.
+- **cacheTTL** number of seconds a successful read response is reused. Defaults to the value of **forceRefreshDelay** (so it is off unless polling is enabled). Any set request clears the cache.
+
+Read requests with the same method, URL, body and credentials that are in flight at the same time are sent only once. When polling is enabled, all getter actions that use the same request also share a single poll.
 
 ## Actions
 

@@ -43,4 +43,18 @@ function resolveBearerToken(value) {
 	return raw;
 }
 
-module.exports = { resolveBearerToken };
+/**
+ * Builds the Authorization header value.
+ * Bearer takes precedence over Basic; returns undefined when no credentials are configured.
+ */
+function buildAuthorization({ username = "", password = "", bearerToken = "" } = {}) {
+	if (bearerToken) {
+		return "Bearer " + bearerToken;
+	}
+	if (username || password) {
+		return "Basic " + Buffer.from(username + ":" + password).toString("base64");
+	}
+	return undefined;
+}
+
+module.exports = { resolveBearerToken, buildAuthorization };

@@ -1,8 +1,8 @@
 var Service, Characteristic;
-var request = require("request");
-var pollingtoevent = require("polling-to-event");
 var mappers = require("./mappers.js");
-var resolveBearerToken = require("./auth.js").resolveBearerToken;
+var resolveBearerToken = require("./src/http/auth.js").resolveBearerToken;
+var HttpClient = require("./src/http/client.js");
+var Poller = require("./src/poller.js");
 
 module.exports = function (homebridge) {
 	Service = homebridge.hap.Service;
@@ -19,10 +19,8 @@ function HttpAdvancedAccessory(log, config) {
 	this.forceRefreshDelay = config.forceRefreshDelay || 0;
 	this.setterDelay  = config.setterDelay || 0;
 	this.enableSet = true;
-	this.statusEmitters = [];
+	this.statusEmitters = {};
 	this.state = {};
-	this.uriCalls=0;
-	this.uriCallsDelay = config.uriCallsDelay || 0;
 	// process the mappers
 	var self = this;
 	self.debug = config.debug;
@@ -113,7 +111,15 @@ function HttpAdvancedAccessory(log, config) {
 		self.auth.immediately = config.immediately;
 	}
 
-
+	self.client = new HttpClient({
+		auth: self.auth,
+		timeout: config.timeout,
+		retries: config.retries,
+		cacheTTL: config.cacheTTL !== undefined ? config.cacheTTL : self.forceRefreshDelay,
+		maxConcurrent: config.maxConcurrent,
+		uriCallsDelay: config.uriCallsDelay
+	});
+	self.poller = new Poller({ log: function (message) { self.debugLog(message); } });
 }
 
 
@@ -130,67 +136,32 @@ HttpAdvancedAccessory.prototype = {
 		}
 	},
 /**
- * Method that performs a HTTP request
+ * Performs a read request. Identical in-flight reads are shared and responses are cached for `cacheTTL`.
  *
- * @param url The URL to hit
- * @param body The body of the request
- * @param callback Callback method to call with the result or error (error, response, body)
+ * @param action The action holding url, httpMethod and body
+ * @param options { fresh: true } skips the cache lookup
+ * @returns {Promise<{status: number, body: string}>}
  */
-	httpRequest : function(url, body, httpMethod, callback) {
-		var self = this;
-
-		if (self.auth.bearerTokenError) {
+	readRequest : function(action, options) {
+		if (this.auth.bearerTokenError) {
 			// Fail instead of silently falling back to Basic auth with empty credentials
-			callback(self.auth.bearerTokenError);
-			return;
+			return Promise.reject(this.auth.bearerTokenError);
 		}
 
-		setTimeout(
-			function() {
-				var headers = {};
+		return this.client.read({ url: action.url, method: action.httpMethod, body: action.body }, options);
+	},
 
-				if (self.auth.bearerToken) {
-					headers.Authorization = "Bearer " + self.auth.bearerToken;
-				} else {
-					headers.Authorization = "Basic " +
-						new Buffer(
-							self.auth.username + ":" + self.auth.password
-						).toString("base64");
-				}
+/**
+ * Performs a write request. Never shared, cached or retried.
+ *
+ * @returns {Promise<{status: number, body: string}>}
+ */
+	writeRequest : function(url, body, httpMethod) {
+		if (this.auth.bearerTokenError) {
+			return Promise.reject(this.auth.bearerTokenError);
+		}
 
-				request({
-					url: url,
-					body: body,
-					method: httpMethod,
-
-					auth: self.auth.bearerToken ? undefined : {
-						user: self.auth.username,
-						pass: self.auth.password,
-						sendImmediately: self.auth.immediately
-					},
-
-					headers: headers
-				},
-				function(error, response, body) {
-					self.uriCalls--;
-
-					self.debugLog(
-						"httpRequest ended, current uriCalls is " +
-						self.uriCalls
-					);
-
-					callback(error, response, body);
-				});
-			},
-			this.uriCalls * this.uriCallsDelay
-		);
-
-		this.uriCalls++;
-
-		this.debugLog(
-			"httpRequest called, current uriCalls is " +
-			this.uriCalls
-		);
+		return this.client.write({ url: url, method: httpMethod, body: body });
 	},
 
 /**
@@ -252,38 +223,47 @@ HttpAdvancedAccessory.prototype = {
 	},
 	
 	getServices: function () {
+		// Turns the outcome of a request ({ body } or { error }) into the characteristic value
+		var interpret = function (action, outcome, callback) {
+			var error = outcome.error;
+			if (error && action.resultOnError != null) {
+				this.debugLog("GetState function failed BUT using resultOnError=%s: %s", action.resultOnError, error.message);
+				callback(null, action.resultOnError);
+			} else if (error) {
+				this.log("GetState function failed: %s", error.message);
+				callback(error);
+			} else {
+				this.debugLog("received response from action: %s", action.url);
+				var responseBody = outcome.body;
+				var state = this.applyMappers(action.mappers, responseBody);
+				if (state == "inconclusive") {
+					this.log(`Inconclusive mapping of response "${responseBody}"`);
+					if (action.inconclusive) {
+						this.debugLog("Response inconclusive and trying the action specified for this condition.");
+						getDispatch(callback, action.inconclusive);
+					} else {
+						this.debugLog("Response inconclusive with no further action specified for this condition.");
+					}
+				} else {
+					this.debugLog("We have a value: %s, int: %d", state, parseInt(state));
+					callback(null, state);
+				}
+			}
+		}.bind(this);
+
 		var getDispatch = function (callback, action) {
 			if (typeof action == "undefined") {
 				callback(null);
 				return;
 			}
 			this.debugLog("getDispatch function called for url: %s", action.url);
-			this.httpRequest(action.url, action.body, action.httpMethod, function(error, response, responseBody) {
-				if (error && action.resultOnError != null) {
-					this.debugLog("GetState function failed BUT using resultOnError=%s: %s", action.resultOnError, error.message);
-					callback(null, action.resultOnError);
-				} else if (error) {
-					this.log("GetState function failed: %s", error.message);
-					callback(error);
-				} else {
-					this.debugLog("received response from action: %s", action.url);
-					var state = responseBody;
-					state = this.applyMappers(action.mappers,state);
-					if (state == "inconclusive") {
-					   this.log(`Inconclusive mapping of response "${responseBody}"`);
-					   if (action.inconclusive){
-					     this.debugLog("Response inconclusive and trying the action specified for this condition.");
-					     getDispatch(callback,action.inconclusive);
-					   } else {
-					     this.debugLog("Response inconclusive with no further action specified for this condition.");
-					     }
-					} else {
-						this.debugLog("We have a value: %s, int: %d", state, parseInt(state));
-						callback(null, state);
-					}
-				}
+			this.readRequest(action).then(function (response) {
+				interpret(action, { body: response.body }, callback);
+			}, function (error) {
+				interpret(action, { error: error }, callback);
+			}).catch(function (error) {
+				this.log("Unexpected error in getter: %s", error && error.message);
 			}.bind(this));
-
 		}.bind(this);
 
 		var setDispatch = function (value, callback, characteristic) {
@@ -305,18 +285,14 @@ HttpAdvancedAccessory.prototype = {
 					body = eval('`'+body+'`').replace(/{value}/gi, mappedValue);
 				}
 
-				this.httpRequest(url, body, action.httpMethod, function(error, response, responseBody) {
-					if (error) {
-						this.log("SetState function failed: %s", error.message);
-					}
-					if (callback) {
-						if (error) {
-							callback(error);
-						} else {
-							// https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/Characteristic.js#L34 setter callback takes only error as arg
-							callback(); 
-						}	
-					}
+				this.writeRequest(url, body, action.httpMethod).then(function () {
+					// https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/Characteristic.js#L34 setter callback takes only error as arg
+					if (callback) callback();
+				}, function (error) {
+					this.log("SetState function failed: %s", error.message);
+					if (callback) callback(error);
+				}.bind(this)).catch(function (error) {
+					this.log("Unexpected error in setter: %s", error && error.message);
 				}.bind(this));
 
 			}
@@ -400,21 +376,18 @@ HttpAdvancedAccessory.prototype = {
 							this.debugLog(actionName + " returning cached data: " + this.state[actionName]);
 							return;
 						} 
-						this.debugLog("creating new emitter for " + actionName);
+						if (typeof action == "undefined") {
+							// Nothing to poll without a getter action
+							return;
+						}
+						this.debugLog("creating new poller for " + actionName);
 
-						this.statusEmitters[actionName] = pollingtoevent(function (done) {
-							this.debugLog("requested update for action " + actionName);
-							getDispatch(done,action);
-
-						}.bind(this), { 
-							longpolling: true, 
-							interval: this.forceRefreshDelay * 1000, 
-							longpollEventName: actionName 
-						});
-
-						this.statusEmitters[actionName].on(actionName, function (data) 
-						{
-							this.debugLog(actionName + " emitter returned data: " + data);
+						var onData = function (error, data) {
+							if (error) {
+								this.log("Poller errored: %s", error.message);
+								return;
+							}
+							this.debugLog(actionName + " poller returned data: " + data);
 							this.enableSet = false;
 							
 							if (['int', 'uint16', 'uint8', 'uint32', 'uint64'].includes(characteristic.props.format))
@@ -425,12 +398,24 @@ HttpAdvancedAccessory.prototype = {
 							this.state[actionName] = data;
 							characteristic.setValue(data);
 							this.enableSet = true;
+						}.bind(this);
 
-						}.bind(this));
-
-						this.statusEmitters[actionName].on("error", function(err, data) {
-							this.log("Emitter errored: %s. with data %j", err, data);
-						}.bind(this));
+						// Actions that issue the same request share one poll
+						var pollKey = this.client.keyFor({ url: action.url, method: action.httpMethod, body: action.body });
+						this.statusEmitters[actionName] = this.poller.subscribe(pollKey, {
+							poll: function () {
+								this.debugLog("requested update for action " + actionName);
+								return this.readRequest(action, { fresh: true });
+							}.bind(this),
+							intervalMs: this.forceRefreshDelay * 1000
+						}, {
+							onResult: function (response) {
+								interpret(action, { body: response.body }, onData);
+							},
+							onError: function (error) {
+								interpret(action, { error: error }, onData);
+							}
+						});
 						
 					}
 				},
