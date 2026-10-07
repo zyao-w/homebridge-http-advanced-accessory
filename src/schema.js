@@ -54,26 +54,50 @@ const MAPPER_TYPES = [
 	["script", "Script (needs allowUnsafeEval)"],
 ];
 
-function mapper() {
+// Fields are shown only where they apply. The form evaluates `condition` with the whole config (`model`) and
+// the indexes of the enclosing arrays, so each condition spells out where its field lives in the model.
+const CHARACTERISTIC = "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]";
+const inModel = (path) =>
+	path
+		.split(".")
+		.map((key) => `?.${key}`)
+		.join("");
+const when = (functionBody) => ({ condition: { functionBody } });
+const mapperTypeIs = (path, types) =>
+	when(
+		`const m = ${CHARACTERISTIC}${inModel(path)}?.mappers?.[arrayIndices[2]]; return ${JSON.stringify(types)}.includes(m?.type);`
+	);
+
+function mapper(path) {
 	return object({
 		type: choice("Type", MAPPER_TYPES),
-		regexp: text("Regular expression", { description: "Type regex." }),
-		capture: text("Capture group", { placeholder: "1", description: "Type regex." }),
-		xpath: text("XPath", { description: "Type xpath." }),
-		jpath: text("JSONPath", { description: "Type jpath." }),
-		index: integer("Index", { placeholder: "0", description: "Types xpath and jpath: which match to return." }),
+		regexp: text("Regular expression", { description: "Type regex.", ...mapperTypeIs(path, ["regex"]) }),
+		capture: text("Capture group", { placeholder: "1", description: "Type regex.", ...mapperTypeIs(path, ["regex"]) }),
+		xpath: text("XPath", { description: "Type xpath.", ...mapperTypeIs(path, ["xpath"]) }),
+		jpath: text("JSONPath", { description: "Type jpath.", ...mapperTypeIs(path, ["jpath"]) }),
+		index: integer("Index", {
+			placeholder: "0",
+			description: "Which match to return.",
+			...mapperTypeIs(path, ["xpath", "jpath"]),
+		}),
 		mapping: {
 			title: "Mapping",
 			type: "array",
 			description: "Type static.",
-			items: object({ from: text("From"), to: text("To") }),
+			items: { ...object({ from: text("From"), to: text("To") }), title: "Pair" },
+			...mapperTypeIs(path, ["static"]),
 		},
-		expression: text("Expression", { widget: "textarea", description: "Type expression." }),
-		script: text("Script", { widget: "textarea", description: "Type script." }),
+		expression: text("Expression", {
+			widget: "textarea",
+			description: "Type expression.",
+			...mapperTypeIs(path, ["expression"]),
+		}),
+		script: text("Script", { widget: "textarea", description: "Type script.", ...mapperTypeIs(path, ["script"]) }),
 	});
 }
 
-function action(withInconclusive) {
+/** @param {string} path Where the action lives inside a characteristic: get, set or get.inconclusive */
+function action(path, withInconclusive) {
 	const properties = {
 		url: text("URL"),
 		httpMethod: choice(
@@ -86,14 +110,16 @@ function action(withInconclusive) {
 			description: "Used as the value when the request fails, instead of reporting an error.",
 		}),
 		bearerToken: secret("Bearer token", { description: "Overrides the device token for this action. " + TOKEN_HELP }),
-		mappers: { title: "Mappers", type: "array", items: mapper() },
+		mappers: { title: "Mappers", type: "array", items: { ...mapper(path), title: "Mapper" } },
 	};
 	if (withInconclusive) {
-		// The form cannot recurse, so one fallback level is described
+		// The form cannot recurse, so one fallback level is described. It is shown only when the config has one:
+		// a form cannot add it without showing a second copy of every action field.
 		properties.inconclusive = {
-			...action(false),
+			...action(`${path}.inconclusive`, false),
 			title: "Fallback action",
-			description: "Used when a mapper returns inconclusive.",
+			description: "Used when a mapper returns inconclusive. Add it in the JSON config.",
+			...when(`return Boolean(${CHARACTERISTIC}${inModel(path)}?.inconclusive);`),
 		};
 	}
 	return object(properties);
@@ -128,8 +154,8 @@ function characteristic() {
 			placeholder: "On",
 			description: "Characteristic name, for example On or Brightness.",
 		}),
-		get: { ...action(true), title: "Get action" },
-		set: { ...action(true), title: "Set action" },
+		get: { ...action("get", true), title: "Get action" },
+		set: { ...action("set", true), title: "Set action" },
 		props: { ...props(), title: "Characteristic properties" },
 	});
 }
@@ -144,7 +170,11 @@ function device() {
 			placeholder: "Switch",
 			description: "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor.",
 		}),
-		characteristics: { title: "Characteristics", type: "array", items: characteristic() },
+		characteristics: {
+			title: "Characteristics",
+			type: "array",
+			items: { ...characteristic(), title: "Characteristic" },
+		},
 		optionCharacteristic: {
 			title: "Optional characteristics",
 			type: "array",
@@ -168,7 +198,7 @@ function buildSchema() {
 			properties: {
 				name: text("Name", { placeholder: "HTTP Advanced" }),
 				defaults: { ...object(settings()), title: "Defaults" },
-				devices: { title: "Devices", type: "array", items: device() },
+				devices: { title: "Devices", type: "array", items: { ...device(), title: "Device" } },
 			},
 		},
 	};

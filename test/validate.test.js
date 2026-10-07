@@ -44,6 +44,75 @@ describe("config.schema.json", () => {
 	});
 });
 
+describe("form conditions", () => {
+	// The Homebridge UI calls the condition with the config block (model) and the indexes of the enclosing arrays
+	const run = (node, model, arrayIndices) =>
+		new Function("model", "arrayIndices", node.condition.functionBody)(model, arrayIndices);
+	const characteristic = buildSchema().schema.properties.devices.items.properties.characteristics.items;
+	const mapperFields = (location) => {
+		const action = location.split(".").reduce((node, key) => node.properties[key], characteristic);
+		return action.properties.mappers.items.properties;
+	};
+
+	const model = {
+		devices: [
+			{
+				characteristics: [
+					{
+						get: {
+							mappers: [{ type: "regex" }, { type: "static" }],
+							inconclusive: { mappers: [{ type: "xpath" }] },
+						},
+						set: { mappers: [{ type: "script" }] },
+					},
+					{ get: { mappers: [{ type: "jpath" }] } },
+				],
+			},
+		],
+	};
+
+	test.each`
+		location              | field           | indexes      | shown
+		${"get"}              | ${"regexp"}     | ${[0, 0, 0]} | ${true}
+		${"get"}              | ${"capture"}    | ${[0, 0, 0]} | ${true}
+		${"get"}              | ${"xpath"}      | ${[0, 0, 0]} | ${false}
+		${"get"}              | ${"mapping"}    | ${[0, 0, 1]} | ${true}
+		${"get"}              | ${"regexp"}     | ${[0, 0, 1]} | ${false}
+		${"get"}              | ${"index"}      | ${[0, 1, 0]} | ${true}
+		${"get"}              | ${"jpath"}      | ${[0, 1, 0]} | ${true}
+		${"get.inconclusive"} | ${"xpath"}      | ${[0, 0, 0]} | ${true}
+		${"get.inconclusive"} | ${"index"}      | ${[0, 0, 0]} | ${true}
+		${"get.inconclusive"} | ${"regexp"}     | ${[0, 0, 0]} | ${false}
+		${"set"}              | ${"script"}     | ${[0, 0, 0]} | ${true}
+		${"set"}              | ${"expression"} | ${[0, 0, 0]} | ${false}
+	`("$field of a $location mapper at $indexes is shown: $shown", ({ location, field, indexes, shown }) => {
+		expect(run(mapperFields(location)[field], model, indexes)).toBe(shown);
+	});
+
+	test("the fields of a mapper without a type, or of a missing mapper, stay hidden", () => {
+		const empty = { devices: [{ characteristics: [{ get: { mappers: [{}] } }] }] };
+		expect(run(mapperFields("get").regexp, empty, [0, 0, 0])).toBe(false);
+		expect(run(mapperFields("get").regexp, { devices: [] }, [0, 0, 0])).toBe(false);
+	});
+
+	test("a fallback action is shown only when the config has one", () => {
+		const get = characteristic.properties.get.properties.inconclusive;
+		const set = characteristic.properties.set.properties.inconclusive;
+		expect(run(get, model, [0, 0])).toBe(true);
+		expect(run(get, model, [0, 1])).toBe(false);
+		expect(run(set, model, [0, 0])).toBe(false);
+	});
+
+	test("every mapper field except the type depends on the type", () => {
+		for (const location of ["get", "set", "get.inconclusive", "set.inconclusive"]) {
+			const fields = mapperFields(location);
+			for (const [name, node] of Object.entries(fields)) {
+				if (name !== "type") expect(node.condition).toBeDefined();
+			}
+		}
+	});
+});
+
 describe("validateDevice", () => {
 	const valid = (device) => validateDevice(device).errors;
 

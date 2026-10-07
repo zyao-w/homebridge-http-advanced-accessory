@@ -241,30 +241,45 @@
                             "regexp": {
                               "title": "Regular expression",
                               "type": "string",
-                              "description": "Type regex."
+                              "description": "Type regex.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                              }
                             },
                             "capture": {
                               "title": "Capture group",
                               "type": "string",
                               "placeholder": "1",
-                              "description": "Type regex."
+                              "description": "Type regex.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                              }
                             },
                             "xpath": {
                               "title": "XPath",
                               "type": "string",
-                              "description": "Type xpath."
+                              "description": "Type xpath.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"xpath\"].includes(m?.type);"
+                              }
                             },
                             "jpath": {
                               "title": "JSONPath",
                               "type": "string",
-                              "description": "Type jpath."
+                              "description": "Type jpath.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"jpath\"].includes(m?.type);"
+                              }
                             },
                             "index": {
                               "title": "Index",
                               "type": "integer",
                               "minimum": 0,
                               "placeholder": "0",
-                              "description": "Types xpath and jpath: which match to return."
+                              "description": "Which match to return.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                              }
                             },
                             "mapping": {
                               "title": "Mapping",
@@ -282,23 +297,34 @@
                                     "type": "string"
                                   }
                                 },
-                                "additionalProperties": false
+                                "additionalProperties": false,
+                                "title": "Pair"
+                              },
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
                               }
                             },
                             "expression": {
                               "title": "Expression",
                               "type": "string",
                               "widget": "textarea",
-                              "description": "Type expression."
+                              "description": "Type expression.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"expression\"].includes(m?.type);"
+                              }
                             },
                             "script": {
                               "title": "Script",
                               "type": "string",
                               "widget": "textarea",
-                              "description": "Type script."
+                              "description": "Type script.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"script\"].includes(m?.type);"
+                              }
                             }
                           },
-                          "additionalProperties": false
+                          "additionalProperties": false,
+                          "title": "Mapper"
                         }
                       },
                       "inconclusive": {
@@ -415,30 +441,45 @@
                                 "regexp": {
                                   "title": "Regular expression",
                                   "type": "string",
-                                  "description": "Type regex."
+                                  "description": "Type regex.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                                  }
                                 },
                                 "capture": {
                                   "title": "Capture group",
                                   "type": "string",
                                   "placeholder": "1",
-                                  "description": "Type regex."
+                                  "description": "Type regex.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                                  }
                                 },
                                 "xpath": {
                                   "title": "XPath",
                                   "type": "string",
-                                  "description": "Type xpath."
+                                  "description": "Type xpath.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"xpath\"].includes(m?.type);"
+                                  }
                                 },
                                 "jpath": {
                                   "title": "JSONPath",
                                   "type": "string",
-                                  "description": "Type jpath."
+                                  "description": "Type jpath.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"jpath\"].includes(m?.type);"
+                                  }
                                 },
                                 "index": {
                                   "title": "Index",
                                   "type": "integer",
                                   "minimum": 0,
                                   "placeholder": "0",
-                                  "description": "Types xpath and jpath: which match to return."
+                                  "description": "Which match to return.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                                  }
                                 },
                                 "mapping": {
                                   "title": "Mapping",
@@ -456,29 +497,43 @@
                                         "type": "string"
                                       }
                                     },
-                                    "additionalProperties": false
+                                    "additionalProperties": false,
+                                    "title": "Pair"
+                                  },
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
                                   }
                                 },
                                 "expression": {
                                   "title": "Expression",
                                   "type": "string",
                                   "widget": "textarea",
-                                  "description": "Type expression."
+                                  "description": "Type expression.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"expression\"].includes(m?.type);"
+                                  }
                                 },
                                 "script": {
                                   "title": "Script",
                                   "type": "string",
                                   "widget": "textarea",
-                                  "description": "Type script."
+                                  "description": "Type script.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"script\"].includes(m?.type);"
+                                  }
                                 }
                               },
-                              "additionalProperties": false
+                              "additionalProperties": false,
+                              "title": "Mapper"
                             }
                           }
                         },
                         "additionalProperties": false,
                         "title": "Fallback action",
-                        "description": "Used when a mapper returns inconclusive."
+                        "description": "Used when a mapper returns inconclusive. Add it in the JSON config.",
+                        "condition": {
+                          "functionBody": "return Boolean(model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive);"
+                        }
                       }
                     },
                     "additionalProperties": false,
@@ -598,30 +653,45 @@
                             "regexp": {
                               "title": "Regular expression",
                               "type": "string",
-                              "description": "Type regex."
+                              "description": "Type regex.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                              }
                             },
                             "capture": {
                               "title": "Capture group",
                               "type": "string",
                               "placeholder": "1",
-                              "description": "Type regex."
+                              "description": "Type regex.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                              }
                             },
                             "xpath": {
                               "title": "XPath",
                               "type": "string",
-                              "description": "Type xpath."
+                              "description": "Type xpath.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"xpath\"].includes(m?.type);"
+                              }
                             },
                             "jpath": {
                               "title": "JSONPath",
                               "type": "string",
-                              "description": "Type jpath."
+                              "description": "Type jpath.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"jpath\"].includes(m?.type);"
+                              }
                             },
                             "index": {
                               "title": "Index",
                               "type": "integer",
                               "minimum": 0,
                               "placeholder": "0",
-                              "description": "Types xpath and jpath: which match to return."
+                              "description": "Which match to return.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                              }
                             },
                             "mapping": {
                               "title": "Mapping",
@@ -639,23 +709,34 @@
                                     "type": "string"
                                   }
                                 },
-                                "additionalProperties": false
+                                "additionalProperties": false,
+                                "title": "Pair"
+                              },
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
                               }
                             },
                             "expression": {
                               "title": "Expression",
                               "type": "string",
                               "widget": "textarea",
-                              "description": "Type expression."
+                              "description": "Type expression.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"expression\"].includes(m?.type);"
+                              }
                             },
                             "script": {
                               "title": "Script",
                               "type": "string",
                               "widget": "textarea",
-                              "description": "Type script."
+                              "description": "Type script.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"script\"].includes(m?.type);"
+                              }
                             }
                           },
-                          "additionalProperties": false
+                          "additionalProperties": false,
+                          "title": "Mapper"
                         }
                       },
                       "inconclusive": {
@@ -772,30 +853,45 @@
                                 "regexp": {
                                   "title": "Regular expression",
                                   "type": "string",
-                                  "description": "Type regex."
+                                  "description": "Type regex.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                                  }
                                 },
                                 "capture": {
                                   "title": "Capture group",
                                   "type": "string",
                                   "placeholder": "1",
-                                  "description": "Type regex."
+                                  "description": "Type regex.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"regex\"].includes(m?.type);"
+                                  }
                                 },
                                 "xpath": {
                                   "title": "XPath",
                                   "type": "string",
-                                  "description": "Type xpath."
+                                  "description": "Type xpath.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"xpath\"].includes(m?.type);"
+                                  }
                                 },
                                 "jpath": {
                                   "title": "JSONPath",
                                   "type": "string",
-                                  "description": "Type jpath."
+                                  "description": "Type jpath.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"jpath\"].includes(m?.type);"
+                                  }
                                 },
                                 "index": {
                                   "title": "Index",
                                   "type": "integer",
                                   "minimum": 0,
                                   "placeholder": "0",
-                                  "description": "Types xpath and jpath: which match to return."
+                                  "description": "Which match to return.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                                  }
                                 },
                                 "mapping": {
                                   "title": "Mapping",
@@ -813,29 +909,43 @@
                                         "type": "string"
                                       }
                                     },
-                                    "additionalProperties": false
+                                    "additionalProperties": false,
+                                    "title": "Pair"
+                                  },
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
                                   }
                                 },
                                 "expression": {
                                   "title": "Expression",
                                   "type": "string",
                                   "widget": "textarea",
-                                  "description": "Type expression."
+                                  "description": "Type expression.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"expression\"].includes(m?.type);"
+                                  }
                                 },
                                 "script": {
                                   "title": "Script",
                                   "type": "string",
                                   "widget": "textarea",
-                                  "description": "Type script."
+                                  "description": "Type script.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"script\"].includes(m?.type);"
+                                  }
                                 }
                               },
-                              "additionalProperties": false
+                              "additionalProperties": false,
+                              "title": "Mapper"
                             }
                           }
                         },
                         "additionalProperties": false,
                         "title": "Fallback action",
-                        "description": "Used when a mapper returns inconclusive."
+                        "description": "Used when a mapper returns inconclusive. Add it in the JSON config.",
+                        "condition": {
+                          "functionBody": "return Boolean(model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive);"
+                        }
                       }
                     },
                     "additionalProperties": false,
@@ -980,7 +1090,8 @@
                     "title": "Characteristic properties"
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "title": "Characteristic"
               }
             },
             "optionCharacteristic": {
@@ -1068,7 +1179,8 @@
               "type": "boolean"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "title": "Device"
         }
       }
     }
