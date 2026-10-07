@@ -19,6 +19,7 @@ Pre-releases are published under the `next` tag. **This is a breaking release**:
 ### Changed
 
 - An HTTP answer outside 2xx is an error (`HTTP 401 Unauthorized`): HomeKit shows the accessory as not responding and `resultOnError` applies. Before, the body of any answer was mapped, so an expired token or a failing API could show as a plausible value. Such answers are not retried and not cached.
+- With polling, a failed poll (including an `inconclusive` result without a fallback) now makes HomeKit reads of that characteristic fail until a poll succeeds. Before, the last value (or 0 after a restart) was answered and the failure was only logged. The poll error log names the characteristic.
 - `urls` with `getXxx` / `setXxx` keys became a `characteristics` list: `[{ "characteristic": "On", "get": {}, "set": {}, "props": {} }]`.
 - Mappers are written flat (`{ "type": "regex", "regexp": "..." }`), and a static mapping is a list of `{ "from", "to" }` pairs.
 - `state` in templates and expressions is keyed by characteristic name (`state.Brightness`).

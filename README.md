@@ -130,6 +130,8 @@ An action describes one HTTP request. The same settings are used for `get` and `
 
 When a request fails and there is no `resultOnError`, HomeKit shows the accessory as not responding and the reason is written to the Homebridge log. A request fails when the device cannot be reached, when it times out, or when it answers with a status outside 2xx (`HTTP 401 Unauthorized`, `HTTP 503 Service Unavailable`, ...); the body of such an answer is not mapped.
 
+With polling (`forceRefreshDelay`), the plugin remembers that the last poll of a characteristic failed (or ended in `inconclusive` without a fallback). The next time HomeKit reads the characteristic it gets the error, so the Home app shows "No Response"; the first successful poll clears it. HomeKit cannot be told about an error at the moment it happens, so the Home app may keep showing the last value until it reads again, for example when you open it or pull to refresh. Every failed poll is written to the Homebridge log (`Poller for <characteristic> errored: ...`).
+
 ### Templates
 
 The URL and the body of a _set_ action are templates. `{value}` is replaced with the value after the mappers have run. Inside `${...}` you can write an [expression](#expressions-and-scripts) that sees two variables:
