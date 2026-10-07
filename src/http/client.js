@@ -21,7 +21,6 @@ class HttpClient {
 	 * @param {number} [options.retryDelay=500] Base delay in ms, multiplied by the attempt number
 	 * @param {number} [options.cacheTTL=0] Cache lifetime in seconds (0 disables)
 	 * @param {number} [options.maxConcurrent=0] Maximum simultaneous requests (0 = unlimited)
-	 * @param {number} [options.uriCallsDelay=0] Minimum gap in ms between request starts
 	 * @param {Function} [options.fetch] fetch implementation (for tests)
 	 * @param {Function} [options.now] Clock in ms (for tests)
 	 */
@@ -33,7 +32,7 @@ class HttpClient {
 		this.retryDelay = options.retryDelay === undefined ? 500 : options.retryDelay;
 		this.cacheTTL = (options.cacheTTL || 0) * 1000;
 		this.now = options.now || Date.now;
-		this.limiter = new Limiter({ maxConcurrent: options.maxConcurrent, minGap: options.uriCallsDelay });
+		this.limiter = new Limiter({ maxConcurrent: options.maxConcurrent });
 		this.cache = new Map();
 		this.inFlight = new Map();
 		this.generation = 0;

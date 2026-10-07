@@ -289,18 +289,6 @@ describe("request limiting", () => {
 		await Promise.all([1, 2, 3, 4, 5].map((i) => client.read({ url: "http://h/" + i })));
 		expect(peak).toBe(2);
 	});
-
-	test("uriCallsDelay spaces request starts", async () => {
-		const starts = [];
-		const fetch = fakeFetch(() => {
-			starts.push(Date.now());
-			return { status: 200, body: "ok" };
-		});
-		const client = new HttpClient({ fetch, uriCallsDelay: 40 });
-		await Promise.all([1, 2, 3].map((i) => client.read({ url: "http://h/" + i })));
-		expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(35);
-		expect(starts[2] - starts[1]).toBeGreaterThanOrEqual(35);
-	});
 });
 
 describe("per-request bearer token override", () => {
