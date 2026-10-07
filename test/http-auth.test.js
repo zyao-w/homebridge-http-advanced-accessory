@@ -1,7 +1,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { resolveBearerToken } = require("../auth.js");
+const { resolveBearerToken } = require("../src/http/auth.js");
 
 describe("resolveBearerToken", () => {
     const ENV_NAME = "HHAA_TEST_TOKEN";

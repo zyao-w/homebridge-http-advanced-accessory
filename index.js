@@ -2,7 +2,7 @@ var Service, Characteristic;
 var request = require("request");
 var pollingtoevent = require("polling-to-event");
 var mappers = require("./mappers.js");
-var resolveBearerToken = require("./auth.js").resolveBearerToken;
+var resolveBearerToken = require("./src/http/auth.js").resolveBearerToken;
 
 module.exports = function (homebridge) {
 	Service = homebridge.hap.Service;

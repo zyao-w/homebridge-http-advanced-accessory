@@ -26,7 +26,7 @@
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
   "files": [
     "index.js",
-    "auth.js",
+    "src/",
     "mappers.js",
     "sample-config.json"
   ],
