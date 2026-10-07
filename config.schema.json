@@ -1,0 +1,1071 @@
+{
+  "pluginAlias": "HttpAdvancedPlatform",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Turns devices that expose an HTTP API into HomeKit accessories. Settings under *Defaults* apply to every device unless the device sets its own.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "placeholder": "HTTP Advanced"
+      },
+      "defaults": {
+        "type": "object",
+        "properties": {
+          "forceRefreshDelay": {
+            "title": "Polling interval (seconds)",
+            "type": "number",
+            "minimum": 0,
+            "placeholder": "0",
+            "description": "0 disables polling."
+          },
+          "setterDelay": {
+            "title": "Setter delay (ms)",
+            "type": "number",
+            "minimum": 0,
+            "placeholder": "0",
+            "description": "Wait before sending a set request; only the last value is sent."
+          },
+          "bearerToken": {
+            "title": "Bearer token",
+            "type": "string",
+            "widget": "password",
+            "x-schema-form": {
+              "type": "password"
+            },
+            "description": "A literal token, env:NAME for an environment variable, or file:/path/to/token."
+          },
+          "username": {
+            "title": "Username (Basic auth)",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password (Basic auth)",
+            "type": "string",
+            "widget": "password",
+            "x-schema-form": {
+              "type": "password"
+            }
+          },
+          "immediately": {
+            "title": "Send Basic credentials immediately",
+            "type": "boolean",
+            "description": "When off, credentials are sent only after the server answers 401."
+          },
+          "timeout": {
+            "title": "Request timeout (ms)",
+            "type": "number",
+            "minimum": 0,
+            "placeholder": "10000",
+            "description": "0 disables the timeout."
+          },
+          "retries": {
+            "title": "Read retries",
+            "type": "integer",
+            "minimum": 0,
+            "placeholder": "0"
+          },
+          "cacheTTL": {
+            "title": "Cache lifetime (seconds)",
+            "type": "number",
+            "minimum": 0,
+            "description": "Defaults to the polling interval."
+          },
+          "maxConcurrent": {
+            "title": "Maximum concurrent requests",
+            "type": "integer",
+            "minimum": 0,
+            "placeholder": "0",
+            "description": "0 means unlimited."
+          },
+          "allowUnsafeEval": {
+            "title": "Allow unsafe eval",
+            "type": "boolean",
+            "description": "Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge."
+          },
+          "debug": {
+            "title": "Debug logging",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Defaults"
+      },
+      "devices": {
+        "title": "Devices",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "description": "Name shown in HomeKit."
+            },
+            "service": {
+              "title": "Service",
+              "type": "string",
+              "placeholder": "Switch",
+              "description": "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor."
+            },
+            "characteristics": {
+              "title": "Characteristics",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "characteristic": {
+                    "title": "Characteristic",
+                    "type": "string",
+                    "placeholder": "On",
+                    "description": "Characteristic name, for example On or Brightness."
+                  },
+                  "get": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "title": "URL",
+                        "type": "string"
+                      },
+                      "httpMethod": {
+                        "title": "HTTP method",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "GET",
+                            "enum": [
+                              "GET"
+                            ]
+                          },
+                          {
+                            "title": "POST",
+                            "enum": [
+                              "POST"
+                            ]
+                          },
+                          {
+                            "title": "PUT",
+                            "enum": [
+                              "PUT"
+                            ]
+                          },
+                          {
+                            "title": "PATCH",
+                            "enum": [
+                              "PATCH"
+                            ]
+                          },
+                          {
+                            "title": "DELETE",
+                            "enum": [
+                              "DELETE"
+                            ]
+                          }
+                        ],
+                        "description": "Defaults to GET."
+                      },
+                      "body": {
+                        "title": "Body",
+                        "type": "string",
+                        "widget": "textarea"
+                      },
+                      "resultOnError": {
+                        "title": "Result on error",
+                        "type": "string",
+                        "description": "Used as the value when the request fails, instead of reporting an error."
+                      },
+                      "bearerToken": {
+                        "title": "Bearer token",
+                        "type": "string",
+                        "widget": "password",
+                        "x-schema-form": {
+                          "type": "password"
+                        },
+                        "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                      },
+                      "mappers": {
+                        "title": "Mappers",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "title": "Type",
+                              "type": "string",
+                              "oneOf": [
+                                {
+                                  "title": "Regular expression",
+                                  "enum": [
+                                    "regex"
+                                  ]
+                                },
+                                {
+                                  "title": "Static mapping",
+                                  "enum": [
+                                    "static"
+                                  ]
+                                },
+                                {
+                                  "title": "XPath",
+                                  "enum": [
+                                    "xpath"
+                                  ]
+                                },
+                                {
+                                  "title": "JSONPath",
+                                  "enum": [
+                                    "jpath"
+                                  ]
+                                },
+                                {
+                                  "title": "Expression",
+                                  "enum": [
+                                    "expression"
+                                  ]
+                                },
+                                {
+                                  "title": "Script (needs allowUnsafeEval)",
+                                  "enum": [
+                                    "script"
+                                  ]
+                                }
+                              ]
+                            },
+                            "regexp": {
+                              "title": "Regular expression",
+                              "type": "string",
+                              "description": "Type regex."
+                            },
+                            "capture": {
+                              "title": "Capture group",
+                              "type": "string",
+                              "placeholder": "1",
+                              "description": "Type regex."
+                            },
+                            "xpath": {
+                              "title": "XPath",
+                              "type": "string",
+                              "description": "Type xpath."
+                            },
+                            "jpath": {
+                              "title": "JSONPath",
+                              "type": "string",
+                              "description": "Type jpath."
+                            },
+                            "index": {
+                              "title": "Index",
+                              "type": "integer",
+                              "minimum": 0,
+                              "placeholder": "0",
+                              "description": "Types xpath and jpath: which match to return."
+                            },
+                            "mapping": {
+                              "title": "Mapping",
+                              "type": "array",
+                              "description": "Type static.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "from": {
+                                    "title": "From",
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "title": "To",
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "expression": {
+                              "title": "Expression",
+                              "type": "string",
+                              "widget": "textarea",
+                              "description": "Type expression."
+                            },
+                            "script": {
+                              "title": "Script",
+                              "type": "string",
+                              "widget": "textarea",
+                              "description": "Type script."
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "inconclusive": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "title": "URL",
+                            "type": "string"
+                          },
+                          "httpMethod": {
+                            "title": "HTTP method",
+                            "type": "string",
+                            "oneOf": [
+                              {
+                                "title": "GET",
+                                "enum": [
+                                  "GET"
+                                ]
+                              },
+                              {
+                                "title": "POST",
+                                "enum": [
+                                  "POST"
+                                ]
+                              },
+                              {
+                                "title": "PUT",
+                                "enum": [
+                                  "PUT"
+                                ]
+                              },
+                              {
+                                "title": "PATCH",
+                                "enum": [
+                                  "PATCH"
+                                ]
+                              },
+                              {
+                                "title": "DELETE",
+                                "enum": [
+                                  "DELETE"
+                                ]
+                              }
+                            ],
+                            "description": "Defaults to GET."
+                          },
+                          "body": {
+                            "title": "Body",
+                            "type": "string",
+                            "widget": "textarea"
+                          },
+                          "resultOnError": {
+                            "title": "Result on error",
+                            "type": "string",
+                            "description": "Used as the value when the request fails, instead of reporting an error."
+                          },
+                          "bearerToken": {
+                            "title": "Bearer token",
+                            "type": "string",
+                            "widget": "password",
+                            "x-schema-form": {
+                              "type": "password"
+                            },
+                            "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                          },
+                          "mappers": {
+                            "title": "Mappers",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "title": "Type",
+                                  "type": "string",
+                                  "oneOf": [
+                                    {
+                                      "title": "Regular expression",
+                                      "enum": [
+                                        "regex"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Static mapping",
+                                      "enum": [
+                                        "static"
+                                      ]
+                                    },
+                                    {
+                                      "title": "XPath",
+                                      "enum": [
+                                        "xpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "JSONPath",
+                                      "enum": [
+                                        "jpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Expression",
+                                      "enum": [
+                                        "expression"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Script (needs allowUnsafeEval)",
+                                      "enum": [
+                                        "script"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "regexp": {
+                                  "title": "Regular expression",
+                                  "type": "string",
+                                  "description": "Type regex."
+                                },
+                                "capture": {
+                                  "title": "Capture group",
+                                  "type": "string",
+                                  "placeholder": "1",
+                                  "description": "Type regex."
+                                },
+                                "xpath": {
+                                  "title": "XPath",
+                                  "type": "string",
+                                  "description": "Type xpath."
+                                },
+                                "jpath": {
+                                  "title": "JSONPath",
+                                  "type": "string",
+                                  "description": "Type jpath."
+                                },
+                                "index": {
+                                  "title": "Index",
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "placeholder": "0",
+                                  "description": "Types xpath and jpath: which match to return."
+                                },
+                                "mapping": {
+                                  "title": "Mapping",
+                                  "type": "array",
+                                  "description": "Type static.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "from": {
+                                        "title": "From",
+                                        "type": "string"
+                                      },
+                                      "to": {
+                                        "title": "To",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "expression": {
+                                  "title": "Expression",
+                                  "type": "string",
+                                  "widget": "textarea",
+                                  "description": "Type expression."
+                                },
+                                "script": {
+                                  "title": "Script",
+                                  "type": "string",
+                                  "widget": "textarea",
+                                  "description": "Type script."
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Fallback action",
+                        "description": "Used when a mapper returns inconclusive."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Get action"
+                  },
+                  "set": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "title": "URL",
+                        "type": "string"
+                      },
+                      "httpMethod": {
+                        "title": "HTTP method",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "GET",
+                            "enum": [
+                              "GET"
+                            ]
+                          },
+                          {
+                            "title": "POST",
+                            "enum": [
+                              "POST"
+                            ]
+                          },
+                          {
+                            "title": "PUT",
+                            "enum": [
+                              "PUT"
+                            ]
+                          },
+                          {
+                            "title": "PATCH",
+                            "enum": [
+                              "PATCH"
+                            ]
+                          },
+                          {
+                            "title": "DELETE",
+                            "enum": [
+                              "DELETE"
+                            ]
+                          }
+                        ],
+                        "description": "Defaults to GET."
+                      },
+                      "body": {
+                        "title": "Body",
+                        "type": "string",
+                        "widget": "textarea"
+                      },
+                      "resultOnError": {
+                        "title": "Result on error",
+                        "type": "string",
+                        "description": "Used as the value when the request fails, instead of reporting an error."
+                      },
+                      "bearerToken": {
+                        "title": "Bearer token",
+                        "type": "string",
+                        "widget": "password",
+                        "x-schema-form": {
+                          "type": "password"
+                        },
+                        "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                      },
+                      "mappers": {
+                        "title": "Mappers",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "title": "Type",
+                              "type": "string",
+                              "oneOf": [
+                                {
+                                  "title": "Regular expression",
+                                  "enum": [
+                                    "regex"
+                                  ]
+                                },
+                                {
+                                  "title": "Static mapping",
+                                  "enum": [
+                                    "static"
+                                  ]
+                                },
+                                {
+                                  "title": "XPath",
+                                  "enum": [
+                                    "xpath"
+                                  ]
+                                },
+                                {
+                                  "title": "JSONPath",
+                                  "enum": [
+                                    "jpath"
+                                  ]
+                                },
+                                {
+                                  "title": "Expression",
+                                  "enum": [
+                                    "expression"
+                                  ]
+                                },
+                                {
+                                  "title": "Script (needs allowUnsafeEval)",
+                                  "enum": [
+                                    "script"
+                                  ]
+                                }
+                              ]
+                            },
+                            "regexp": {
+                              "title": "Regular expression",
+                              "type": "string",
+                              "description": "Type regex."
+                            },
+                            "capture": {
+                              "title": "Capture group",
+                              "type": "string",
+                              "placeholder": "1",
+                              "description": "Type regex."
+                            },
+                            "xpath": {
+                              "title": "XPath",
+                              "type": "string",
+                              "description": "Type xpath."
+                            },
+                            "jpath": {
+                              "title": "JSONPath",
+                              "type": "string",
+                              "description": "Type jpath."
+                            },
+                            "index": {
+                              "title": "Index",
+                              "type": "integer",
+                              "minimum": 0,
+                              "placeholder": "0",
+                              "description": "Types xpath and jpath: which match to return."
+                            },
+                            "mapping": {
+                              "title": "Mapping",
+                              "type": "array",
+                              "description": "Type static.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "from": {
+                                    "title": "From",
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "title": "To",
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "expression": {
+                              "title": "Expression",
+                              "type": "string",
+                              "widget": "textarea",
+                              "description": "Type expression."
+                            },
+                            "script": {
+                              "title": "Script",
+                              "type": "string",
+                              "widget": "textarea",
+                              "description": "Type script."
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "inconclusive": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "title": "URL",
+                            "type": "string"
+                          },
+                          "httpMethod": {
+                            "title": "HTTP method",
+                            "type": "string",
+                            "oneOf": [
+                              {
+                                "title": "GET",
+                                "enum": [
+                                  "GET"
+                                ]
+                              },
+                              {
+                                "title": "POST",
+                                "enum": [
+                                  "POST"
+                                ]
+                              },
+                              {
+                                "title": "PUT",
+                                "enum": [
+                                  "PUT"
+                                ]
+                              },
+                              {
+                                "title": "PATCH",
+                                "enum": [
+                                  "PATCH"
+                                ]
+                              },
+                              {
+                                "title": "DELETE",
+                                "enum": [
+                                  "DELETE"
+                                ]
+                              }
+                            ],
+                            "description": "Defaults to GET."
+                          },
+                          "body": {
+                            "title": "Body",
+                            "type": "string",
+                            "widget": "textarea"
+                          },
+                          "resultOnError": {
+                            "title": "Result on error",
+                            "type": "string",
+                            "description": "Used as the value when the request fails, instead of reporting an error."
+                          },
+                          "bearerToken": {
+                            "title": "Bearer token",
+                            "type": "string",
+                            "widget": "password",
+                            "x-schema-form": {
+                              "type": "password"
+                            },
+                            "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                          },
+                          "mappers": {
+                            "title": "Mappers",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "title": "Type",
+                                  "type": "string",
+                                  "oneOf": [
+                                    {
+                                      "title": "Regular expression",
+                                      "enum": [
+                                        "regex"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Static mapping",
+                                      "enum": [
+                                        "static"
+                                      ]
+                                    },
+                                    {
+                                      "title": "XPath",
+                                      "enum": [
+                                        "xpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "JSONPath",
+                                      "enum": [
+                                        "jpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Expression",
+                                      "enum": [
+                                        "expression"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Script (needs allowUnsafeEval)",
+                                      "enum": [
+                                        "script"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "regexp": {
+                                  "title": "Regular expression",
+                                  "type": "string",
+                                  "description": "Type regex."
+                                },
+                                "capture": {
+                                  "title": "Capture group",
+                                  "type": "string",
+                                  "placeholder": "1",
+                                  "description": "Type regex."
+                                },
+                                "xpath": {
+                                  "title": "XPath",
+                                  "type": "string",
+                                  "description": "Type xpath."
+                                },
+                                "jpath": {
+                                  "title": "JSONPath",
+                                  "type": "string",
+                                  "description": "Type jpath."
+                                },
+                                "index": {
+                                  "title": "Index",
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "placeholder": "0",
+                                  "description": "Types xpath and jpath: which match to return."
+                                },
+                                "mapping": {
+                                  "title": "Mapping",
+                                  "type": "array",
+                                  "description": "Type static.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "from": {
+                                        "title": "From",
+                                        "type": "string"
+                                      },
+                                      "to": {
+                                        "title": "To",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "expression": {
+                                  "title": "Expression",
+                                  "type": "string",
+                                  "widget": "textarea",
+                                  "description": "Type expression."
+                                },
+                                "script": {
+                                  "title": "Script",
+                                  "type": "string",
+                                  "widget": "textarea",
+                                  "description": "Type script."
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Fallback action",
+                        "description": "Used when a mapper returns inconclusive."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Set action"
+                  },
+                  "props": {
+                    "type": "object",
+                    "properties": {
+                      "format": {
+                        "title": "Format",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "bool",
+                            "enum": [
+                              "bool"
+                            ]
+                          },
+                          {
+                            "title": "int",
+                            "enum": [
+                              "int"
+                            ]
+                          },
+                          {
+                            "title": "float",
+                            "enum": [
+                              "float"
+                            ]
+                          },
+                          {
+                            "title": "string",
+                            "enum": [
+                              "string"
+                            ]
+                          },
+                          {
+                            "title": "uint8",
+                            "enum": [
+                              "uint8"
+                            ]
+                          },
+                          {
+                            "title": "uint16",
+                            "enum": [
+                              "uint16"
+                            ]
+                          },
+                          {
+                            "title": "uint32",
+                            "enum": [
+                              "uint32"
+                            ]
+                          },
+                          {
+                            "title": "uint64",
+                            "enum": [
+                              "uint64"
+                            ]
+                          }
+                        ]
+                      },
+                      "unit": {
+                        "title": "Unit",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "celsius",
+                            "enum": [
+                              "celsius"
+                            ]
+                          },
+                          {
+                            "title": "percentage",
+                            "enum": [
+                              "percentage"
+                            ]
+                          },
+                          {
+                            "title": "arcdegrees",
+                            "enum": [
+                              "arcdegrees"
+                            ]
+                          },
+                          {
+                            "title": "lux",
+                            "enum": [
+                              "lux"
+                            ]
+                          },
+                          {
+                            "title": "seconds",
+                            "enum": [
+                              "seconds"
+                            ]
+                          }
+                        ]
+                      },
+                      "minValue": {
+                        "title": "Minimum value",
+                        "type": "number"
+                      },
+                      "maxValue": {
+                        "title": "Maximum value",
+                        "type": "number"
+                      },
+                      "minStep": {
+                        "title": "Minimum step",
+                        "type": "number"
+                      },
+                      "validValues": {
+                        "title": "Valid values",
+                        "type": "array",
+                        "items": {
+                          "title": "Value",
+                          "type": "number"
+                        }
+                      },
+                      "validValueRanges": {
+                        "title": "Valid value ranges",
+                        "type": "array",
+                        "items": {
+                          "title": "Bound",
+                          "type": "number"
+                        }
+                      },
+                      "perms": {
+                        "title": "Permissions",
+                        "type": "array",
+                        "items": {
+                          "title": "Permission",
+                          "type": "string"
+                        }
+                      },
+                      "maxLen": {
+                        "title": "Maximum length",
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Characteristic properties"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "optionCharacteristic": {
+              "title": "Optional characteristics",
+              "type": "array",
+              "description": "Optional characteristics of the service to expose, for example Brightness.",
+              "items": {
+                "title": "Characteristic",
+                "type": "string"
+              }
+            },
+            "forceRefreshDelay": {
+              "title": "Polling interval (seconds)",
+              "type": "number",
+              "minimum": 0,
+              "placeholder": "0",
+              "description": "0 disables polling."
+            },
+            "setterDelay": {
+              "title": "Setter delay (ms)",
+              "type": "number",
+              "minimum": 0,
+              "placeholder": "0",
+              "description": "Wait before sending a set request; only the last value is sent."
+            },
+            "bearerToken": {
+              "title": "Bearer token",
+              "type": "string",
+              "widget": "password",
+              "x-schema-form": {
+                "type": "password"
+              },
+              "description": "A literal token, env:NAME for an environment variable, or file:/path/to/token."
+            },
+            "username": {
+              "title": "Username (Basic auth)",
+              "type": "string"
+            },
+            "password": {
+              "title": "Password (Basic auth)",
+              "type": "string",
+              "widget": "password",
+              "x-schema-form": {
+                "type": "password"
+              }
+            },
+            "immediately": {
+              "title": "Send Basic credentials immediately",
+              "type": "boolean",
+              "description": "When off, credentials are sent only after the server answers 401."
+            },
+            "timeout": {
+              "title": "Request timeout (ms)",
+              "type": "number",
+              "minimum": 0,
+              "placeholder": "10000",
+              "description": "0 disables the timeout."
+            },
+            "retries": {
+              "title": "Read retries",
+              "type": "integer",
+              "minimum": 0,
+              "placeholder": "0"
+            },
+            "cacheTTL": {
+              "title": "Cache lifetime (seconds)",
+              "type": "number",
+              "minimum": 0,
+              "description": "Defaults to the polling interval."
+            },
+            "maxConcurrent": {
+              "title": "Maximum concurrent requests",
+              "type": "integer",
+              "minimum": 0,
+              "placeholder": "0",
+              "description": "0 means unlimited."
+            },
+            "allowUnsafeEval": {
+              "title": "Allow unsafe eval",
+              "type": "boolean",
+              "description": "Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge."
+            },
+            "debug": {
+              "title": "Debug logging",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  }
+}
