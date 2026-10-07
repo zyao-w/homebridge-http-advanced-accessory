@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
-    "jsonpath-plus": "^11.2.0",
+    "jsonpath-plus": "^10.4.0",
     "xpath": "^0.0.34"
   },
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
