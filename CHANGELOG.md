@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 - 2026-10-07
+
+### Fixed
+
+- An accessory without a `service`, or with an unknown one, no longer stops Homebridge from starting. It is left out with an error in the log (`Accessory "X" has no "service" setting, it was not loaded.`) and the other accessories load normally.
+
 ## 1.1.1 - 2026-10-07
 
 ### Fixed
