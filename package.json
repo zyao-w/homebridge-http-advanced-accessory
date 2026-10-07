@@ -9,7 +9,7 @@
     "homebridge-plugin"
   ],
   "engines": {
-    "node": ">=18",
+    "node": ">=22",
     "homebridge": ">=1.6.0"
   },
   "author": "tasict",
