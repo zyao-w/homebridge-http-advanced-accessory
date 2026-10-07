@@ -137,6 +137,9 @@ function characteristic() {
 function device() {
 	return object({
 		name: text("Name", { description: "Name shown in HomeKit." }),
+		id: text("Identifier", {
+			description: "Keeps the accessory in HomeKit when the device is renamed. Defaults to the name.",
+		}),
 		service: text("Service", {
 			placeholder: "Switch",
 			description: "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor.",

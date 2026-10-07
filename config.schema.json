@@ -104,6 +104,11 @@
               "type": "string",
               "description": "Name shown in HomeKit."
             },
+            "id": {
+              "title": "Identifier",
+              "type": "string",
+              "description": "Keeps the accessory in HomeKit when the device is renamed. Defaults to the name."
+            },
             "service": {
               "title": "Service",
               "type": "string",
