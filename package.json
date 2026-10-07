@@ -6,11 +6,12 @@
   "main": "src/index.js",
   "license": "Apache-2.0",
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "supports-hap"
   ],
   "engines": {
     "node": ">=22",
-    "homebridge": ">=1.6.0"
+    "homebridge": "^2.4.0"
   },
   "author": "zyao-w",
   "contributors": [
