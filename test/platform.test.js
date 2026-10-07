@@ -117,6 +117,9 @@ beforeEach(() => {
 	fetchMock.mockImplementation(async (url) => {
 		const response = responses[url];
 		if (response instanceof Error) throw response;
+		if (response && typeof response === "object") {
+			return { status: response.status, text: async () => response.body || "" };
+		}
 		return { status: 200, text: async () => (response === undefined ? "" : response) };
 	});
 	global.fetch = fetchMock;
@@ -316,6 +319,21 @@ describe("reading", () => {
 		expect(log).toHaveBeenCalledWith("[Pump] GetState function failed: %s", "ECONNREFUSED");
 	});
 
+	test("fails a get with a communication error when the server answers outside 2xx", async () => {
+		responses["http://h/status"] = { status: 401, body: '{"detail":"Not authenticated"}' };
+		const { api, log } = launch({ devices: [switchDevice()] });
+		await expect(characteristicOf(api).getHandler()).rejects.toMatchObject({ status: -70402 });
+		expect(log).toHaveBeenCalledWith("[Pump] GetState function failed: %s", "HTTP 401 Unauthorized");
+	});
+
+	test("resultOnError also covers an answer outside 2xx", async () => {
+		responses["http://h/status"] = { status: 503, body: "" };
+		const device = switchDevice();
+		device.characteristics[0].get.resultOnError = "0";
+		const { api } = launch({ devices: [device] });
+		expect(await characteristicOf(api).getHandler()).toBe("0");
+	});
+
 	test("uses resultOnError instead of failing", async () => {
 		responses["http://h/status"] = new Error("down");
 		const device = switchDevice();
@@ -420,6 +438,13 @@ describe("writing", () => {
 		// A successful set becomes part of the state seen by later templates
 		await service.characteristics[0].setHandler(0);
 		expect(urlOf(1)).toBe("http://h/p?x=1&v=0");
+	});
+
+	test("fails a set with a communication error when the server answers outside 2xx", async () => {
+		responses["http://h/set?v=on"] = { status: 500, body: "" };
+		const { api, log } = launch({ devices: [switchDevice()] });
+		await expect(characteristicOf(api).setHandler("1")).rejects.toMatchObject({ status: -70402 });
+		expect(log).toHaveBeenCalledWith("[Pump] SetState function failed: %s", "HTTP 500 Internal Server Error");
 	});
 
 	test("fails a set with a communication error", async () => {
