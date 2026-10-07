@@ -13,6 +13,7 @@ const SETTING_KEYS = [
 	"retries",
 	"cacheTTL",
 	"maxConcurrent",
+	"allowUnsafeEval",
 ];
 
 function resolveToken(value) {
@@ -25,16 +26,28 @@ function resolveToken(value) {
 
 // Mappers are written flat ({ type, regexp }); the mapper classes take their parameters separately
 function createMapperFromEntry(entry, context, where) {
-	const { type, ...parameters } = entry;
+	let { type, ...parameters } = entry;
 
 	if (type === "static") {
 		const pairs = Array.isArray(parameters.mapping) ? parameters.mapping : [];
 		parameters.mapping = Object.fromEntries(pairs.map(({ from, to }) => [from, to]));
+	} else if (type === "script") {
+		if (!context.allowUnsafeEval) {
+			throw new Error(`${where}: a "script" mapper runs arbitrary JavaScript and needs "allowUnsafeEval": true`);
+		}
+		type = "eval";
+		parameters = { expression: parameters.script };
+	} else if (type === "expression") {
+		// Transitional: evaluated like a script until the restricted expression engine replaces the eval mapper
+		type = "eval";
+	} else if (type === "eval") {
+		// The 1.x name; 2.0 configs use "expression" or "script"
+		type = undefined;
 	}
 
-	const mapper = createMapper(type, parameters, context);
+	const mapper = type === undefined ? undefined : createMapper(type, parameters, context);
 	if (!mapper && context.warn) {
-		context.warn(`${where}: unknown mapper type "${type}" ignored`);
+		context.warn(`${where}: unknown mapper type "${entry.type}" ignored`);
 	}
 	return mapper;
 }
@@ -109,7 +122,7 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 	const forceRefreshDelay = settings.forceRefreshDelay || 0;
 	const token = resolveToken(settings.bearerToken);
 	const state = {};
-	const context = { state, warn: options.warn };
+	const context = { state, warn: options.warn, allowUnsafeEval: settings.allowUnsafeEval === true };
 
 	const characteristics = (device.characteristics || []).map((entry) =>
 		createCharacteristic(entry, context, device.name)
@@ -135,6 +148,7 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 			bearerToken: token.bearerToken,
 			immediately: settings.immediately !== undefined ? settings.immediately : true,
 		},
+		allowUnsafeEval: context.allowUnsafeEval,
 		authError: token.error || null,
 		http: {
 			timeout: settings.timeout,

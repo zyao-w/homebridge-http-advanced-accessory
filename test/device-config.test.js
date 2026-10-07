@@ -107,13 +107,56 @@ describe("actions", () => {
 		expect(chain(characteristics[0].get.mappers, "OFF")).toBe(0);
 	});
 
-	test("an eval mapper sees the device state", () => {
-		const normalized = device({
+	test("an expression mapper evaluates against the value", () => {
+		const { characteristics } = device({
 			characteristic: "On",
-			get: { url: "u", mappers: [{ type: "eval", expression: "self.state.Target + value" }] },
+			get: { url: "u", mappers: [{ type: "expression", expression: 'value == 1 ? "on" : "off"' }] },
 		});
+		expect(chain(characteristics[0].get.mappers, 1)).toBe("on");
+		expect(chain(characteristics[0].get.mappers, 0)).toBe("off");
+	});
+
+	test("a script mapper needs allowUnsafeEval", () => {
+		const entry = { characteristic: "On", get: { url: "u", mappers: [{ type: "script", script: "value * 2" }] } };
+		expect(() => device(entry)).toThrow('needs "allowUnsafeEval": true');
+		expect(() => normalizeDevice({ ...base, allowUnsafeEval: false, characteristics: [entry] })).toThrow(
+			"allowUnsafeEval"
+		);
+	});
+
+	test("a script mapper runs JavaScript and sees the device state once allowed", () => {
+		const entry = {
+			characteristic: "On",
+			get: {
+				url: "u",
+				mappers: [
+					{
+						type: "script",
+						script: "let n = parseFloat(value); if (!Number.isFinite(n)) n = 0; self.state.Target + n",
+					},
+				],
+			},
+		};
+		const normalized = normalizeDevice({ ...base, allowUnsafeEval: true, characteristics: [entry] });
 		normalized.state.Target = 10;
-		expect(chain(normalized.characteristics[0].get.mappers, 5)).toBe(15);
+		expect(normalized.allowUnsafeEval).toBe(true);
+		expect(chain(normalized.characteristics[0].get.mappers, "5")).toBe(15);
+		expect(chain(normalized.characteristics[0].get.mappers, "x")).toBe(10);
+	});
+
+	test("allowUnsafeEval can come from the platform defaults", () => {
+		const entry = { characteristic: "On", get: { url: "u", mappers: [{ type: "script", script: "value" }] } };
+		expect(() => normalizeDevice({ ...base, characteristics: [entry] }, { allowUnsafeEval: true })).not.toThrow();
+	});
+
+	test("the 1.x eval mapper type is no longer accepted", () => {
+		const warn = jest.fn();
+		const { characteristics } = device(
+			{ characteristic: "On", get: { url: "u", mappers: [{ type: "eval", expression: "value" }] } },
+			{ warn }
+		);
+		expect(characteristics[0].get.mappers).toEqual([]);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining('"eval"'));
 	});
 
 	test("skips unknown mapper types and reports them", () => {
