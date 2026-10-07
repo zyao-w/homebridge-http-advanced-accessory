@@ -152,10 +152,7 @@
                           "PATCH",
                           "DELETE"
                         ],
-                        "description": "Defaults to GET when none is selected.",
-                        "x-schema-form": {
-                          "type": "radios-inline"
-                        }
+                        "description": "None uses GET."
                       },
                       "body": {
                         "title": "Body",
@@ -333,10 +330,7 @@
                               "PATCH",
                               "DELETE"
                             ],
-                            "description": "Defaults to GET when none is selected.",
-                            "x-schema-form": {
-                              "type": "radios-inline"
-                            }
+                            "description": "None uses GET."
                           },
                           "body": {
                             "title": "Body",
@@ -531,10 +525,7 @@
                           "PATCH",
                           "DELETE"
                         ],
-                        "description": "Defaults to GET when none is selected.",
-                        "x-schema-form": {
-                          "type": "radios-inline"
-                        }
+                        "description": "None uses GET."
                       },
                       "body": {
                         "title": "Body",
@@ -712,10 +703,7 @@
                               "PATCH",
                               "DELETE"
                             ],
-                            "description": "Defaults to GET when none is selected.",
-                            "x-schema-form": {
-                              "type": "radios-inline"
-                            }
+                            "description": "None uses GET."
                           },
                           "body": {
                             "title": "Body",

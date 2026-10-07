@@ -99,8 +99,8 @@ function mapper(path) {
 	});
 }
 
-// A select always gets a "None" entry or shows blank when unset, and the schema cannot hold null (the form crashes on it).
-// Radio buttons need neither: nothing selected means the default.
+// The form always adds a "None" entry to a select. Dropping it needs a null value in the schema, which crashes the
+// form, and radio buttons render badly, so None stays and means the default.
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 function httpMethod() {
@@ -108,8 +108,7 @@ function httpMethod() {
 		title: "HTTP method",
 		type: ["string", "null"],
 		enum: HTTP_METHODS,
-		description: "Defaults to GET when none is selected.",
-		"x-schema-form": { type: "radios-inline" },
+		description: "None uses GET.",
 	};
 }
 
