@@ -548,11 +548,65 @@ describe("polling", () => {
 		responses["http://h/status"] = new Error("down");
 		const { api, log } = launch({ devices: [lamp()] });
 		await jest.advanceTimersByTimeAsync(0);
-		expect(log).toHaveBeenCalledWith("[Lamp] Poller errored: %s", "down");
+		expect(log).toHaveBeenCalledWith("[Lamp] Poller for %s errored: %s", "On", "down");
 
 		responses["http://h/status"] = "7";
 		await jest.advanceTimersByTimeAsync(5000);
 		expect(serviceOf(registered(api)[0], "light").characteristics[0].updateValue).toHaveBeenLastCalledWith("7");
+	});
+
+	test("a failed poll makes HomeKit reads fail until a poll succeeds", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = "7";
+		const { api } = launch({ devices: [lamp()] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		expect(await on.getHandler()).toBe("7");
+
+		responses["http://h/status"] = { status: 401, body: "{}" };
+		await jest.advanceTimersByTimeAsync(5000);
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+
+		responses["http://h/status"] = "8";
+		await jest.advanceTimersByTimeAsync(5000);
+		expect(await on.getHandler()).toBe("8");
+	});
+
+	test("a poll that fails before it ever succeeded makes HomeKit reads fail", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = { status: 401, body: "" };
+		const { api } = launch({ devices: [lamp()] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+	});
+
+	test("an inconclusive poll without a fallback makes HomeKit reads fail", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = "7";
+		const device = lamp({
+			characteristics: [
+				{
+					characteristic: "On",
+					get: { url: "http://h/status", mappers: [{ type: "static", mapping: [{ from: "7", to: "inconclusive" }] }] },
+				},
+			],
+		});
+		const { api } = launch({ devices: [device] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+	});
+
+	test("resultOnError keeps HomeKit reads working while polls fail", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = { status: 503, body: "" };
+		const device = lamp();
+		device.characteristics[0].get.resultOnError = "0";
+		const { api } = launch({ devices: [device] });
+		const [on] = serviceOf(registered(api)[0], "light").characteristics;
+		await jest.advanceTimersByTimeAsync(0);
+		expect(await on.getHandler()).toBe("0");
 	});
 
 	test("stops when Homebridge shuts down", async () => {
