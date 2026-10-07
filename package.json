@@ -4,7 +4,7 @@
   "version": "2.0.0-beta.2",
   "description": "http plugin for homebridge: https://github.com/nfarina/homebridge",
   "main": "src/index.js",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "keywords": [
     "homebridge-plugin"
   ],
@@ -12,7 +12,12 @@
     "node": ">=22",
     "homebridge": ">=1.6.0"
   },
-  "author": "tasict",
+  "author": "zyao-w",
+  "contributors": [
+    "tasict",
+    "staromeste",
+    "zyao-w"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zyao-w/homebridge-http-advanced-accessory.git"
