@@ -9,7 +9,7 @@ class FakeCharacteristic {
         this.handlers = {};
         this.props = { format: "string" };
         this.value = null;
-        this.setValue = jest.fn((v) => {
+        this.updateValue = jest.fn((v) => {
             this.value = v;
         });
     }
@@ -44,11 +44,12 @@ class FakeMulti {
     addCharacteristic() {}
 }
 
-require("../index.js")({
-    hap: {
-        Service: { AccessoryInformation: FakeInformationService, Switch: FakeSwitch, Multi: FakeMulti },
-        Characteristic: { Manufacturer: "m", Model: "mo", SerialNumber: "s" },
-    },
+const hap = {
+    Service: { AccessoryInformation: FakeInformationService, Switch: FakeSwitch, Multi: FakeMulti },
+    Characteristic: { Manufacturer: "m", Model: "mo", SerialNumber: "s" },
+};
+
+require("../src/index.js")({
     registerAccessory: (plugin, name, ctor) => {
         registered = { plugin, name };
         AccessoryClass = ctor;
@@ -77,7 +78,7 @@ afterEach(() => {
 
 function build(config) {
     const log = jest.fn();
-    const accessory = new AccessoryClass(log, Object.assign({ service: "Switch", name: "Test" }, config));
+    const accessory = new AccessoryClass(log, Object.assign({ service: "Switch", name: "Test" }, config), { hap });
     const [, service] = accessory.getServices();
     return { accessory, log, characteristic: service.characteristics[0], characteristics: service.characteristics };
 }
@@ -225,8 +226,8 @@ describe("polling (forceRefreshDelay)", () => {
         brightness.handlers.get(() => {});
         await jest.advanceTimersByTimeAsync(0);
         expect(fetchMock).toHaveBeenCalledTimes(1);
-        expect(on.setValue).toHaveBeenLastCalledWith("7");
-        expect(brightness.setValue).toHaveBeenLastCalledWith("70");
+        expect(on.updateValue).toHaveBeenLastCalledWith("7");
+        expect(brightness.updateValue).toHaveBeenLastCalledWith("70");
 
         await jest.advanceTimersByTimeAsync(5000);
         expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -246,7 +247,7 @@ describe("polling (forceRefreshDelay)", () => {
         characteristic.handlers.get(() => {});
         await jest.advanceTimersByTimeAsync(10000);
         expect(fetchMock).not.toHaveBeenCalled();
-        expect(characteristic.setValue).not.toHaveBeenCalled();
+        expect(characteristic.updateValue).not.toHaveBeenCalled();
     });
 
     test("keeps polling after a failed request", async () => {
@@ -259,7 +260,7 @@ describe("polling (forceRefreshDelay)", () => {
 
         responses["http://h/status"] = "1";
         await jest.advanceTimersByTimeAsync(5000);
-        expect(characteristic.setValue).toHaveBeenLastCalledWith("1");
+        expect(characteristic.updateValue).toHaveBeenLastCalledWith("1");
     });
 
     test("continues polling when a response is inconclusive and has no fallback", async () => {
@@ -276,6 +277,70 @@ describe("polling (forceRefreshDelay)", () => {
         responses["http://h/status"] = "1";
         await jest.advanceTimersByTimeAsync(5000);
         expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("robustness", () => {
+    test("reports an unknown service", () => {
+        expect(() => build({ service: "Nope" })).toThrow('Unknown service "Nope"');
+    });
+
+    test("reports an unknown mapper type but keeps working", async () => {
+        responses["http://h/a"] = "5";
+        const { characteristic, log } = build({
+            urls: { getOn: { url: "http://h/a", mappers: [{ type: "nope", parameters: {} }] } },
+        });
+        expect(log).toHaveBeenCalledWith('WARNING: Unknown mapper type "nope" ignored');
+        expect(await get(characteristic)).toEqual({ error: null, value: "5" });
+    });
+
+    test("fails the getter when the response is inconclusive and there is no fallback", async () => {
+        responses["http://h/a"] = "MAYBE";
+        const { characteristic } = build({
+            urls: { getOn: { url: "http://h/a", mappers: [{ type: "static", parameters: { mapping: { MAYBE: "inconclusive" } } }] } },
+        });
+        const result = await get(characteristic);
+        expect(result.error.message).toMatch("Inconclusive");
+    });
+
+    test("reports a broken template to HomeKit without sending a request", async () => {
+        const { characteristic } = build({ urls: { setOn: { url: "http://h/${missing.prop}" } } });
+        const result = await set(characteristic, 1);
+        expect(result.error).toBeInstanceOf(ReferenceError);
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    test("a delayed setter without a set action does nothing", async () => {
+        jest.useFakeTimers();
+        const { characteristic } = build({ setterDelay: 100, urls: {} });
+        characteristic.handlers.set(1, () => {});
+        await jest.advanceTimersByTimeAsync(100);
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    test("debug logging never contains the bearer token or password", async () => {
+        responses["http://h/a"] = "1";
+        const { characteristic, log } = build({
+            debug: true,
+            bearerToken: "super-secret-token",
+            password: "super-secret-password",
+            urls: { getOn: { url: "http://h/a" }, setOn: { url: "http://h/set?v={value}" } },
+        });
+        await get(characteristic);
+        await set(characteristic, 1);
+        const output = JSON.stringify(log.mock.calls);
+        expect(output).not.toMatch(/super-secret/);
+    });
+
+    test("announces the 2.0.0 Platform change once per process", () => {
+        jest.isolateModules(() => {
+            const Fresh = require("../src/accessory.js");
+            const log = jest.fn();
+            new Fresh(log, { name: "A", service: "Switch" }, { hap });
+            new Fresh(log, { name: "B", service: "Switch" }, { hap });
+            const notices = log.mock.calls.filter(([m]) => /NOTICE.*Dynamic Platform/.test(m));
+            expect(notices).toHaveLength(1);
+        });
     });
 });
 
