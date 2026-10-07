@@ -1,6 +1,6 @@
 // Not a class method: class bodies are strict, which would change how existing expressions run.
-// The expression sees `value` and `self` (e.g. `self.state`).
-function evaluate(self, value) {
+// The script sees `value`, `state` and `self` (e.g. `self.state`).
+function evaluate(self, value, state) {
 	return eval(self.exp);
 }
 
@@ -12,7 +12,7 @@ class EvalMapper {
 	}
 
 	map(value) {
-		return evaluate(this, value);
+		return evaluate(this, value, this.state);
 	}
 }
 
