@@ -255,8 +255,8 @@ class HttpAdvancedAccessory {
 		try {
 			const mappedValue = this.applyMappers(action.mappers, value);
 			const scope = { value, state: this.state, mappedValue };
-			url = renderTemplate(action.url, scope);
-			body = action.body ? renderTemplate(action.body, scope) : action.body;
+			url = renderTemplate(action.url, scope, { unsafe: true });
+			body = action.body ? renderTemplate(action.body, scope, { unsafe: true }) : action.body;
 		} catch (error) {
 			this.log("SetState function failed: %s", error.message);
 			if (callback) callback(error);

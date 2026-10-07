@@ -194,8 +194,9 @@ class DeviceController {
 		try {
 			const mappedValue = this.runner.applyMappers(action.mappers, value);
 			const scope = { value, state: this.device.state, mappedValue };
-			const url = renderTemplate(action.url, scope);
-			const body = action.body ? renderTemplate(action.body, scope) : action.body;
+			const unsafe = this.device.allowUnsafeEval;
+			const url = renderTemplate(action.url, scope, { unsafe });
+			const body = action.body ? renderTemplate(action.body, scope, { unsafe }) : action.body;
 			await this.runner.writeRequest(action, url, body);
 		} catch (error) {
 			this.log("SetState function failed: %s", error.message);
