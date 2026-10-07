@@ -216,6 +216,20 @@ Runs JavaScript. It needs `allowUnsafeEval`, see [Expressions and scripts](#expr
 
 The value of the last expression is the result. A script sees `value`, `state` and `self` (with `self.state`).
 
+### Unexpected responses
+
+A response with status 2xx that does not contain what the mappers expect is not an error by itself. Take care that it does not turn into a plausible value:
+
+- A mapper chain that ends with the word `inconclusive` means "no usable answer". The `inconclusive` action of a _get_ runs; without one the request fails, HomeKit shows the accessory as not responding and the log says `Inconclusive response and no fallback action`.
+- The `jpath` mapper returns `inconclusive` when the response is not a JSON object. When the path does not exist it returns `[]` (an empty list, as text).
+- Mappers after it receive that text. `toNumber(value)` turns both into 0, so a broken API can show as "0 ppm" or "air quality excellent". To turn them into an error, end a numeric chain with an expression that returns `inconclusive` for anything that is not a number:
+
+```json
+{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
+```
+
+An answer with a status outside 2xx never gets that far: it is an error before the mappers run, see [Actions](#actions). If your device answers with such a status and the body is meaningful (for example `404` meaning "off"), map it with `resultOnError` instead.
+
 ## Expressions and scripts
 
 `expression` mappers and `${...}` templates use a small expression language. It is parsed by the plugin, never handed to JavaScript's `eval`, so a configuration cannot run arbitrary code with it. It offers:
@@ -321,7 +335,7 @@ Each example is one entry of the `devices` list.
 
 ### JSON API as AirQualitySensor: expression mappers
 
-A `jpath` mapper picks a field out of the JSON response and `expression` mappers turn it into a number and then into the HomeKit air quality level. No script and no `allowUnsafeEval` are needed. `toNumber(value)` is 0 when the field is missing or not a number, and so is the result for a response that is not JSON.
+A `jpath` mapper picks a field out of the JSON response and `expression` mappers turn it into a number and then into the HomeKit air quality level. No script and no `allowUnsafeEval` are needed. The first expression returns `inconclusive` when the field is missing, is not a number, or the response is not JSON, so a broken API shows as not responding and not as "air quality excellent" (see [Unexpected responses](#unexpected-responses)).
 
 ```json
 {
@@ -337,10 +351,9 @@ A `jpath` mapper picks a field out of the JSON response and `expression` mappers
 				"url": "https://example.com/api/air/",
 				"mappers": [
 					{ "type": "jpath", "jpath": "$.data.pm25" },
-					{ "type": "expression", "expression": "toNumber(value)" },
 					{
 						"type": "expression",
-						"expression": "value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : value <= 150 ? 4 : 5"
+						"expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : value <= 150 ? 4 : 5"
 					}
 				]
 			}
@@ -351,7 +364,7 @@ A `jpath` mapper picks a field out of the JSON response and `expression` mappers
 				"url": "https://example.com/api/air/",
 				"mappers": [
 					{ "type": "jpath", "jpath": "$.data.pm25" },
-					{ "type": "expression", "expression": "toNumber(value)" }
+					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
 				]
 			}
 		},
@@ -361,7 +374,7 @@ A `jpath` mapper picks a field out of the JSON response and `expression` mappers
 				"url": "https://example.com/api/air/",
 				"mappers": [
 					{ "type": "jpath", "jpath": "$.data.tvoc" },
-					{ "type": "expression", "expression": "toNumber(value)" }
+					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
 				]
 			}
 		}
