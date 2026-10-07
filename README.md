@@ -319,6 +319,58 @@ Each example is one entry of the `devices` list.
 }
 ```
 
+### JSON API as AirQualitySensor: expression mappers
+
+A `jpath` mapper picks a field out of the JSON response and `expression` mappers turn it into a number and then into the HomeKit air quality level. No script and no `allowUnsafeEval` are needed. `toNumber(value)` is 0 when the field is missing or not a number, and so is the result for a response that is not JSON.
+
+```json
+{
+	"name": "Air Quality Sensor",
+	"service": "AirQualitySensor",
+	"optionCharacteristic": ["PM2.5Density", "VOCDensity"],
+	"forceRefreshDelay": 30,
+	"bearerToken": "env:AIR_API_TOKEN",
+	"characteristics": [
+		{
+			"characteristic": "AirQuality",
+			"get": {
+				"url": "https://example.com/api/air/",
+				"mappers": [
+					{ "type": "jpath", "jpath": "$.data.pm25" },
+					{ "type": "expression", "expression": "toNumber(value)" },
+					{
+						"type": "expression",
+						"expression": "value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : value <= 150 ? 4 : 5"
+					}
+				]
+			}
+		},
+		{
+			"characteristic": "PM2.5Density",
+			"get": {
+				"url": "https://example.com/api/air/",
+				"mappers": [
+					{ "type": "jpath", "jpath": "$.data.pm25" },
+					{ "type": "expression", "expression": "toNumber(value)" }
+				]
+			}
+		},
+		{
+			"characteristic": "VOCDensity",
+			"get": {
+				"url": "https://example.com/api/air/",
+				"mappers": [
+					{ "type": "jpath", "jpath": "$.data.tvoc" },
+					{ "type": "expression", "expression": "toNumber(value)" }
+				]
+			}
+		}
+	]
+}
+```
+
+The three characteristics read the same URL, so the plugin sends one request for all of them.
+
 ### Bticino "Nuovo antifurto filare"
 
 A Bticino (BT-4200, 4201, 4202) as a HomeKit SecuritySystem. It uses an inconclusive fallback and a setter delay.
