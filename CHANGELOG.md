@@ -2,7 +2,7 @@
 
 ## 2.0.0 (unreleased)
 
-Pre-releases are published under the `next` tag. The accessory registration of 1.x still exists in the alphas next to the new platform; it will be removed before 2.0.0.
+Pre-releases are published under the `next` tag. **This is a breaking release**: see [MIGRATION.md](MIGRATION.md) to convert a 1.x configuration.
 
 ### Added
 
@@ -10,7 +10,9 @@ Pre-releases are published under the `next` tag. The accessory registration of 1
 - Platform `defaults` that every device inherits and can override.
 - `config.schema.json` for the Homebridge UI. Every setting is described, so saving the form does not drop anything.
 - Settings are validated at startup; a device with an error is reported and skipped, and keeps its cached accessory.
-- `allowUnsafeEval` and the `script` mapper for configurations that need full JavaScript. `expression` mappers are the default.
+- `allowUnsafeEval` and the `script` mapper for configurations that need full JavaScript.
+- A restricted expression language for `expression` mappers and `${...}` templates: arithmetic, comparisons, `?:`, `value`, `state`, `Math` functions and `toNumber`. It is parsed by the plugin and never reaches `eval`, so it is safe by default. Expressions are checked when a device loads.
+- `MIGRATION.md`, and a platform `sample-config.json`.
 - A `get` or `set` action can override the bearer token of its device.
 - `scripts/migrate-config.js` converts a 1.x `config.json` (or a single accessory) to the platform format and reports what needs review.
 
@@ -21,6 +23,16 @@ Pre-releases are published under the `next` tag. The accessory registration of 1
 - `state` in templates and expressions is keyed by characteristic name (`state.Brightness`).
 - Characteristic handlers use `onGet` / `onSet`; failed requests are reported to HomeKit as communication errors.
 - In the Homebridge UI form, *Defaults*, *Set action*, *Characteristic properties* and *Fallback action* start collapsed.
+- Node.js 22 or newer is required. `jsonpath-plus` is updated to 11 and `xpath` to 0.0.35.
+- `${...}` in URL and body templates uses the expression language; full JavaScript there needs `allowUnsafeEval`.
+- The `eval` mapper became the `script` mapper.
+
+### Removed
+
+- The `HttpAdvancedAccessory` accessory and the `urls` configuration of 1.x.
+- `uriCallsDelay`; `maxConcurrent: 1` runs the requests one at a time.
+- `manufacturer` and `model`, which were never applied.
+- Digest authentication (already unavailable since 1.1.0).
 
 ## 1.1.2 - 2026-10-07
 
