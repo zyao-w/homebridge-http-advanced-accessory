@@ -4,10 +4,10 @@ function evaluate(self, value, state) {
 	return eval(self.exp);
 }
 
-/** Evaluates a JavaScript expression (trusted configuration only). */
-class EvalMapper {
+/** Runs JavaScript on the value (needs allowUnsafeEval; the configuration is trusted). */
+class ScriptMapper {
 	constructor(parameters, context = {}) {
-		this.exp = parameters.expression;
+		this.exp = parameters.script;
 		this.state = context.state;
 	}
 
@@ -16,4 +16,4 @@ class EvalMapper {
 	}
 }
 
-module.exports = EvalMapper;
+module.exports = ScriptMapper;

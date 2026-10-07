@@ -2,7 +2,7 @@ const StaticMapper = require("./static.js");
 const RegexMapper = require("./regex.js");
 const XPathMapper = require("./xpath.js");
 const JPathMapper = require("./jpath.js");
-const EvalMapper = require("./eval.js");
+const ScriptMapper = require("./script.js");
 const ExpressionMapper = require("./expression.js");
 const { INCONCLUSIVE } = require("./constants.js");
 
@@ -11,14 +11,14 @@ const registry = {
 	static: StaticMapper,
 	xpath: XPathMapper,
 	jpath: JPathMapper,
-	eval: EvalMapper,
+	script: ScriptMapper,
 	expression: ExpressionMapper,
 };
 
 /**
  * @param {string} type Mapper type as written in the configuration
  * @param {Object} parameters Mapper parameters
- * @param {{state?: Object}} [context] Shared accessory state (used by the eval mapper)
+ * @param {{state?: Object}} [context] Shared accessory state (used by the expression and script mappers)
  * @returns {Object|undefined} The mapper, or undefined for an unknown type
  */
 function createMapper(type, parameters, context) {
@@ -33,7 +33,7 @@ module.exports = {
 	RegexMapper,
 	XPathMapper,
 	JPathMapper,
-	EvalMapper,
+	ScriptMapper,
 	ExpressionMapper,
 	createMapper,
 	INCONCLUSIVE,
