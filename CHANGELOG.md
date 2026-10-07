@@ -10,7 +10,6 @@ Settings of existing `config.json` files keep working. The plugin is still confi
 - Request settings: `timeout` (default 10000 ms), `retries` (reads only), `cacheTTL`, `maxConcurrent`.
 - Identical in-flight read requests are sent once, and successful reads are cached for `cacheTTL` seconds (default `forceRefreshDelay`). A successful set clears the cache.
 - Getter actions that issue the same request share one poll per `forceRefreshDelay`.
-- `config.schema.json` for the Homebridge UI.
 
 ### Changed
 

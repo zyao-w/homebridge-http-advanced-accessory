@@ -25,7 +25,6 @@
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
   "files": [
     "src/",
-    "config.schema.json",
     "CHANGELOG.md",
     "sample-config.json"
   ],
