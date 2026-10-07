@@ -67,6 +67,18 @@ The migration script tries each `eval` expression with the new language: if it f
 
 In a script, `self.state.getOn` is now `state.On` (the migration renames it for you).
 
+**A script that parses JSON usually does not need to be one.** The typical `eval` of 1.x parses the response, picks a field, converts it to a number and maps it to a value. That is a `jpath` mapper followed by `expression` mappers, and it needs no `allowUnsafeEval`:
+
+```json
+"mappers": [
+  { "type": "jpath", "jpath": "$.data.pm25" },
+  { "type": "expression", "expression": "toNumber(value)" },
+  { "type": "expression", "expression": "value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : 4" }
+]
+```
+
+A response that is not JSON, or a missing field, gives `toNumber(value)` = 0, as the usual `try { JSON.parse } catch` and `Number.isFinite` guards did. See the [air quality example](README.md#json-api-as-airqualitysensor-expression-mappers).
+
 ### Settings
 
 | 1.x                                                           | 2.0                                                                                                                       |
