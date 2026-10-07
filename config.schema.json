@@ -1,0 +1,112 @@
+{
+  "pluginAlias": "HttpAdvancedAccessory",
+  "pluginType": "accessory",
+  "singular": false,
+  "headerDisplay": "Turns any device that exposes an HTTP API into a HomeKit accessory. Actions (`urls`) and mappers are edited in the JSON config.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "required": true,
+        "description": "Name shown in HomeKit."
+      },
+      "service": {
+        "title": "Service",
+        "type": "string",
+        "required": true,
+        "placeholder": "Switch",
+        "description": "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor."
+      },
+      "optionCharacteristic": {
+        "title": "Optional characteristics",
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Optional characteristics of the service to expose, for example Brightness."
+      },
+      "forceRefreshDelay": {
+        "title": "Polling interval (seconds)",
+        "type": "number",
+        "minimum": 0,
+        "default": 0,
+        "description": "0 disables polling."
+      },
+      "setterDelay": {
+        "title": "Setter delay (ms)",
+        "type": "number",
+        "minimum": 0,
+        "default": 0,
+        "description": "Wait before sending a set request; only the last value is sent."
+      },
+      "bearerToken": {
+        "title": "Bearer token",
+        "type": "string",
+        "x-schema-form": { "type": "password" },
+        "description": "Literal token, env:NAME for an environment variable, or file:/path/to/token."
+      },
+      "username": {
+        "title": "Username (Basic auth)",
+        "type": "string"
+      },
+      "password": {
+        "title": "Password (Basic auth)",
+        "type": "string",
+        "x-schema-form": { "type": "password" }
+      },
+      "immediately": {
+        "title": "Send Basic credentials immediately",
+        "type": "boolean",
+        "default": true,
+        "description": "When off, credentials are sent only after the server answers 401."
+      },
+      "timeout": {
+        "title": "Request timeout (ms)",
+        "type": "number",
+        "minimum": 0,
+        "default": 10000,
+        "description": "0 disables the timeout."
+      },
+      "retries": {
+        "title": "Read retries",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "cacheTTL": {
+        "title": "Cache lifetime (seconds)",
+        "type": "number",
+        "minimum": 0,
+        "description": "Defaults to the polling interval."
+      },
+      "maxConcurrent": {
+        "title": "Maximum concurrent requests",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0,
+        "description": "0 means unlimited."
+      },
+      "uriCallsDelay": {
+        "title": "Minimum gap between requests (ms)",
+        "type": "number",
+        "minimum": 0,
+        "default": 0
+      },
+      "props": {
+        "title": "Characteristic properties",
+        "type": "object",
+        "description": "Overrides of characteristic properties, keyed by characteristic name."
+      },
+      "urls": {
+        "title": "Actions",
+        "type": "object",
+        "description": "getXxx / setXxx actions. Edit them in the JSON config, see the README."
+      },
+      "debug": {
+        "title": "Debug logging",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
+}
