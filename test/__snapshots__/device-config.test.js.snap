@@ -1,0 +1,293 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`equivalence with the 1.x configuration every action of sample-config.json maps the same inputs to the same values 1`] = `
+{
+  "CO2 Sensor getCarbonDioxideLevel": {
+    "outcomes": {
+      "0": {
+        "value": "inconclusive",
+      },
+      "1": {
+        "value": "inconclusive",
+      },
+      "2": {
+        "value": "inconclusive",
+      },
+      "3": {
+        "value": "inconclusive",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "inconclusive",
+      },
+      "ALARM": {
+        "value": "inconclusive",
+      },
+      "ARMED": {
+        "value": "inconclusive",
+      },
+      "DISARMED": {
+        "value": "inconclusive",
+      },
+      "NORMAL": {
+        "value": "inconclusive",
+      },
+      "pow=0,mode=3": {
+        "value": "inconclusive",
+      },
+      "pow=1,mode=4": {
+        "value": "inconclusive",
+      },
+      "{"power":"on","u":1}": {
+        "value": "[]",
+      },
+    },
+    "url": "https://example.com/api/",
+  },
+  "Condizionatore Soggiorno getActive": {
+    "outcomes": {
+      "0": {
+        "value": "0",
+      },
+      "1": {
+        "value": "1",
+      },
+      "2": {
+        "value": "2",
+      },
+      "3": {
+        "value": "3",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "<root><status>ALARM</status><generic>2</generic></root>",
+      },
+      "ALARM": {
+        "value": "ALARM",
+      },
+      "ARMED": {
+        "value": "ARMED",
+      },
+      "DISARMED": {
+        "value": "DISARMED",
+      },
+      "NORMAL": {
+        "value": "NORMAL",
+      },
+      "pow=0,mode=3": {
+        "value": "0",
+      },
+      "pow=1,mode=4": {
+        "value": "1",
+      },
+      "{"power":"on","u":1}": {
+        "value": "{"power":"on","u":1}",
+      },
+    },
+    "url": "http://192.168.201.16/aircon/get_control_info",
+  },
+  "Condizionatore Soggiorno getCurrentHeaterCoolerState": {
+    "outcomes": {
+      "0": {
+        "value": "0",
+      },
+      "1": {
+        "value": "1",
+      },
+      "2": {
+        "value": "2",
+      },
+      "3": {
+        "value": "3",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "<root><status>ALARM</status><generic>2</generic></root>",
+      },
+      "ALARM": {
+        "value": "ALARM",
+      },
+      "ARMED": {
+        "value": "ARMED",
+      },
+      "DISARMED": {
+        "value": "DISARMED",
+      },
+      "NORMAL": {
+        "value": "NORMAL",
+      },
+      "pow=0,mode=3": {
+        "value": "0",
+      },
+      "pow=1,mode=4": {
+        "value": "2",
+      },
+      "{"power":"on","u":1}": {
+        "value": "{"power":"on","u":1}",
+      },
+    },
+    "url": "http://192.168.201.16/aircon/get_control_info",
+  },
+  "Condizionatore Soggiorno getTargetHeaterCoolerState": {
+    "outcomes": {
+      "0": {
+        "value": "0",
+      },
+      "1": {
+        "value": "1",
+      },
+      "2": {
+        "value": "2",
+      },
+      "3": {
+        "value": "3",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "<root><status>ALARM</status><generic>2</generic></root>",
+      },
+      "ALARM": {
+        "value": "ALARM",
+      },
+      "ARMED": {
+        "value": "ARMED",
+      },
+      "DISARMED": {
+        "value": "DISARMED",
+      },
+      "NORMAL": {
+        "value": "NORMAL",
+      },
+      "pow=0,mode=3": {
+        "value": "0",
+      },
+      "pow=1,mode=4": {
+        "value": "2",
+      },
+      "{"power":"on","u":1}": {
+        "value": "{"power":"on","u":1}",
+      },
+    },
+    "url": "http://192.168.201.16/aircon/get_control_info",
+  },
+  "Condizionatore Soggiorno setActive": {
+    "outcomes": {
+      "0": {
+        "value": "?pow=0",
+      },
+      "1": {
+        "value": "?pow=1",
+      },
+      "2": {
+        "value": "2",
+      },
+      "3": {
+        "value": "3",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "<root><status>ALARM</status><generic>2</generic></root>",
+      },
+      "ALARM": {
+        "value": "ALARM",
+      },
+      "ARMED": {
+        "value": "ARMED",
+      },
+      "DISARMED": {
+        "value": "DISARMED",
+      },
+      "NORMAL": {
+        "value": "NORMAL",
+      },
+      "pow=0,mode=3": {
+        "value": "pow=0,mode=3",
+      },
+      "pow=1,mode=4": {
+        "value": "pow=1,mode=4",
+      },
+      "{"power":"on","u":1}": {
+        "value": "{"power":"on","u":1}",
+      },
+    },
+    "url": "http://192.168.201.16/aircon/set_control_info/{value}",
+  },
+  "Condizionatore Soggiorno setTargetHeaterCoolerState": {
+    "outcomes": {
+      "0": {
+        "value": "?mode=0",
+      },
+      "1": {
+        "value": "?mode=4",
+      },
+      "2": {
+        "value": "?mode=3",
+      },
+      "3": {
+        "value": "3",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "<root><status>ALARM</status><generic>2</generic></root>",
+      },
+      "ALARM": {
+        "value": "ALARM",
+      },
+      "ARMED": {
+        "value": "ARMED",
+      },
+      "DISARMED": {
+        "value": "DISARMED",
+      },
+      "NORMAL": {
+        "value": "NORMAL",
+      },
+      "pow=0,mode=3": {
+        "value": "pow=0,mode=3",
+      },
+      "pow=1,mode=4": {
+        "value": "pow=1,mode=4",
+      },
+      "{"power":"on","u":1}": {
+        "value": "{"power":"on","u":1}",
+      },
+    },
+    "url": "http://192.168.201.16/aircon/set_control_info/{value}&pow=\${state.Active}&",
+  },
+  "Terrace Sensor getContactSensorState": {
+    "outcomes": {
+      "0": {
+        "error": "missing root element",
+      },
+      "1": {
+        "error": "missing root element",
+      },
+      "2": {
+        "error": "missing root element",
+      },
+      "3": {
+        "error": "missing root element",
+      },
+      "<root><status>ALARM</status><generic>2</generic></root>": {
+        "value": "1",
+      },
+      "ALARM": {
+        "error": "missing root element",
+      },
+      "ARMED": {
+        "error": "missing root element",
+      },
+      "DISARMED": {
+        "error": "missing root element",
+      },
+      "NORMAL": {
+        "error": "missing root element",
+      },
+      "pow=0,mode=3": {
+        "error": "missing root element",
+      },
+      "pow=1,mode=4": {
+        "error": "missing root element",
+      },
+      "{"power":"on","u":1}": {
+        "error": "missing root element",
+      },
+    },
+    "url": "http://localhost/xml/zones/zonesStatus48IP.xml",
+  },
+}
+`;

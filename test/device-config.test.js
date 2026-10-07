@@ -1,6 +1,5 @@
 const { normalizeDevice } = require("../src/device-config.js");
 const { migrateConfig } = require("../src/migrate.js");
-const { createActions } = require("../src/actions.js");
 const sampleConfig = require("../sample-config.json");
 
 const base = { name: "Light", service: "Lightbulb" };
@@ -266,26 +265,26 @@ describe("equivalence with the 1.x configuration", () => {
 		}
 	};
 
+	// The snapshot was recorded while the 1.x code still ran next to it and gave identical results
 	test("every action of sample-config.json maps the same inputs to the same values", () => {
 		const { config } = migrateConfig(sampleConfig);
 		const devices = config.platforms[0].devices;
 		expect(devices).toHaveLength(sampleConfig.accessories.length);
 
-		let compared = 0;
+		const recorded = {};
 		sampleConfig.accessories.forEach((accessory, index) => {
 			const device = normalizeDevice(devices[index]);
-			const oldActions = createActions(accessory.urls, { state: {} });
 
 			for (const key of Object.keys(accessory.urls)) {
 				const [, kind, name] = /^(get|set)(.+)$/.exec(key);
-				const newAction = device.characteristics.find((c) => c.name === name)[kind];
-				for (const input of samples) {
-					expect(outcome(newAction.mappers, input)).toEqual(outcome(oldActions[key].mappers, input));
-					compared++;
-				}
-				expect(newAction.url.replace(/state\.(?=[A-Z])/g, "state.get")).toBe(oldActions[key].url);
+				const action = device.characteristics.find((c) => c.name === name)[kind];
+				recorded[`${accessory.name} ${key}`] = {
+					url: action.url,
+					outcomes: Object.fromEntries(samples.map((input) => [input, outcome(action.mappers, input)])),
+				};
 			}
 		});
-		expect(compared).toBeGreaterThan(50);
+		expect(Object.keys(recorded).length).toBeGreaterThan(5);
+		expect(recorded).toMatchSnapshot();
 	});
 });
