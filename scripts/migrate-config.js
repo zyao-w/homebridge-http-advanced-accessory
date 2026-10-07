@@ -30,6 +30,13 @@ function main(args) {
 		return 1;
 	}
 
+	// Accept a single accessory or a list of them as well as a whole config.json
+	if (Array.isArray(config)) {
+		config = { accessories: config };
+	} else if (config && config.accessory !== undefined && config.accessories === undefined) {
+		config = { accessories: [config] };
+	}
+
 	const { config: migrated, warnings, migrated: count } = migrateConfig(config);
 	const text = JSON.stringify(migrated, null, 4) + "\n";
 

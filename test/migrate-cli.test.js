@@ -57,6 +57,16 @@ test("fails on a missing or invalid file", () => {
 	expect(run(write("bad.json", "{")).status).toBe(1);
 });
 
+test("accepts a single accessory or a list of accessories", () => {
+	const accessory = { accessory: "HttpAdvancedAccessory", name: "A", service: "Switch" };
+
+	const single = run(write("single.json", JSON.stringify(accessory)));
+	expect(JSON.parse(single.stdout).platforms[0].devices).toHaveLength(1);
+
+	const list = run(write("list.json", JSON.stringify([accessory, { ...accessory, name: "B" }])));
+	expect(JSON.parse(list.stdout).platforms[0].devices).toHaveLength(2);
+});
+
 test("prints usage without arguments", () => {
 	const result = run();
 	expect(result.status).toBe(1);
