@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.0.0 (unreleased)
+
+Pre-releases are published under the `next` tag. The accessory registration of 1.x still exists in the alphas next to the new platform; it will be removed before 2.0.0.
+
+### Added
+
+- `HttpAdvancedPlatform`, a Dynamic Platform with one accessory per entry of `devices`. Accessories are restored from the Homebridge cache and keep their identity through the device name, or through an optional `id`, so renaming a device with an `id` does not create a new accessory.
+- Platform `defaults` that every device inherits and can override.
+- `config.schema.json` for the Homebridge UI. Every setting is described, so saving the form does not drop anything.
+- Settings are validated at startup; a device with an error is reported and skipped, and keeps its cached accessory.
+- `allowUnsafeEval` and the `script` mapper for configurations that need full JavaScript. `expression` mappers are the default.
+- A `get` or `set` action can override the bearer token of its device.
+- `scripts/migrate-config.js` converts a 1.x `config.json` (or a single accessory) to the platform format and reports what needs review.
+
+### Changed
+
+- `urls` with `getXxx` / `setXxx` keys became a `characteristics` list: `[{ "characteristic": "On", "get": {}, "set": {}, "props": {} }]`.
+- Mappers are written flat (`{ "type": "regex", "regexp": "..." }`), and a static mapping is a list of `{ "from", "to" }` pairs.
+- `state` in templates and expressions is keyed by characteristic name (`state.Brightness`).
+- Characteristic handlers use `onGet` / `onSet`; failed requests are reported to HomeKit as communication errors.
+- In the Homebridge UI form, *Defaults*, *Set action*, *Characteristic properties* and *Fallback action* start collapsed.
+
 ## 1.1.2 - 2026-10-07
 
 ### Fixed

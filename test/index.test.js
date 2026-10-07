@@ -54,6 +54,7 @@ require("../src/index.js")({
 		registered = { plugin, name };
 		AccessoryClass = ctor;
 	},
+	registerPlatform: () => {},
 });
 
 // url -> response body (or Error)

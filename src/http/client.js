@@ -39,21 +39,28 @@ class HttpClient {
 		this.generation = 0;
 	}
 
+	/** The client auth, with the bearer token replaced when a request overrides it. */
+	_authFor(override) {
+		return override ? { ...this.auth, bearerToken: override.bearerToken } : this.auth;
+	}
+
 	/** Identity of a request for sharing and caching; contains credentials, never log it. */
-	keyFor(req) {
-		const { username = "", password = "", bearerToken = "" } = this.auth;
+	keyFor(req, override) {
+		const { username = "", password = "", bearerToken = "" } = this._authFor(override);
 		const authKey = bearerToken ? "b:" + bearerToken : "u:" + username + ":" + password;
 		return [normalize(req).method, req.url, req.body || "", authKey].join("\n");
 	}
 
 	/**
 	 * @param {{url: string, method?: string, body?: string}} req
-	 * @param {{fresh?: boolean}} [options] fresh: skip the cache lookup but still store the result
+	 * @param {{fresh?: boolean, auth?: {bearerToken: string}}} [options]
+	 *   fresh: skip the cache lookup but still store the result
+	 *   auth: replaces the client's bearer token for this request ("" turns it off)
 	 * @returns {Promise<{status: number, body: string}>}
 	 */
-	read(req, { fresh = false } = {}) {
+	read(req, { fresh = false, auth } = {}) {
 		const request = normalize(req);
-		const key = this.keyFor(request);
+		const key = this.keyFor(request, auth);
 
 		if (!fresh) {
 			const hit = this.cache.get(key);
@@ -66,7 +73,7 @@ class HttpClient {
 		let pending = this.inFlight.get(key);
 		if (!pending) {
 			const generation = this.generation;
-			pending = this._send(request, this.retries)
+			pending = this._send(request, this.retries, auth)
 				.then((response) => {
 					// A write that finished meanwhile may have made this response stale
 					if (this.cacheTTL > 0 && generation === this.generation) {
@@ -80,8 +87,8 @@ class HttpClient {
 		return pending;
 	}
 
-	write(req) {
-		return this._send(normalize(req), 0).then((response) => {
+	write(req, { auth } = {}) {
+		return this._send(normalize(req), 0, auth).then((response) => {
 			this.invalidate();
 			return response;
 		});
@@ -92,11 +99,12 @@ class HttpClient {
 		this.cache.clear();
 	}
 
-	_send(request, retries) {
+	_send(request, retries, override) {
+		const auth = this._authFor(override);
 		return this.limiter.run(async () => {
 			for (let attempt = 0; ; attempt++) {
 				try {
-					return await this._attempt(request);
+					return await this._attempt(request, auth);
 				} catch (error) {
 					if (attempt >= retries) throw error;
 					await sleep(this.retryDelay * (attempt + 1));
@@ -105,10 +113,10 @@ class HttpClient {
 		});
 	}
 
-	async _attempt(request) {
-		const authorization = buildAuthorization(this.auth);
+	async _attempt(request, auth) {
+		const authorization = buildAuthorization(auth);
 		// Bearer is always sent up front; Basic can wait for a 401 challenge
-		const immediately = Boolean(this.auth.bearerToken) || this.auth.immediately !== false;
+		const immediately = Boolean(auth.bearerToken) || auth.immediately !== false;
 
 		const response = await this._fetchOnce(request, immediately ? authorization : undefined);
 		if (!immediately && authorization && response.status === 401) {
