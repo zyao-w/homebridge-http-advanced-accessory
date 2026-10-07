@@ -145,20 +145,11 @@
                           "string",
                           "null"
                         ],
-                        "enum": [
-                          null,
-                          "GET",
-                          "POST",
-                          "PUT",
-                          "PATCH",
-                          "DELETE"
-                        ],
                         "x-schema-form": {
                           "type": "select",
                           "titleMap": [
                             {
-                              "name": "GET (default)",
-                              "value": null
+                              "name": "GET (default)"
                             },
                             {
                               "name": "POST",
@@ -348,20 +339,11 @@
                               "string",
                               "null"
                             ],
-                            "enum": [
-                              null,
-                              "GET",
-                              "POST",
-                              "PUT",
-                              "PATCH",
-                              "DELETE"
-                            ],
                             "x-schema-form": {
                               "type": "select",
                               "titleMap": [
                                 {
-                                  "name": "GET (default)",
-                                  "value": null
+                                  "name": "GET (default)"
                                 },
                                 {
                                   "name": "POST",
@@ -568,20 +550,11 @@
                           "string",
                           "null"
                         ],
-                        "enum": [
-                          null,
-                          "GET",
-                          "POST",
-                          "PUT",
-                          "PATCH",
-                          "DELETE"
-                        ],
                         "x-schema-form": {
                           "type": "select",
                           "titleMap": [
                             {
-                              "name": "GET (default)",
-                              "value": null
+                              "name": "GET (default)"
                             },
                             {
                               "name": "POST",
@@ -771,20 +744,11 @@
                               "string",
                               "null"
                             ],
-                            "enum": [
-                              null,
-                              "GET",
-                              "POST",
-                              "PUT",
-                              "PATCH",
-                              "DELETE"
-                            ],
                             "x-schema-form": {
                               "type": "select",
                               "titleMap": [
                                 {
-                                  "name": "GET (default)",
-                                  "value": null
+                                  "name": "GET (default)"
                                 },
                                 {
                                   "name": "POST",

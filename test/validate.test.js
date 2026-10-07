@@ -30,6 +30,17 @@ describe("config.schema.json", () => {
 		expect(problems).toEqual([]);
 	});
 
+	test("has no null values, which crash the Homebridge UI form", () => {
+		const problems = [];
+		const walk = (node, where) => {
+			if (node === null) problems.push(where);
+			else if (typeof node === "object")
+				for (const [key, value] of Object.entries(node)) walk(value, `${where}/${key}`);
+		};
+		walk(buildSchema().schema, "schema");
+		expect(problems).toEqual([]);
+	});
+
 	test("has no required or default inside array items, which would create a phantom first item", () => {
 		const problems = [];
 		const walk = (node, where, insideItems) => {

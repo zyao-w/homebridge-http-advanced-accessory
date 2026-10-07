@@ -1,7 +1,15 @@
 const Ajv = require("ajv");
-const { buildSchema } = require("./schema.js");
+const { buildSchema, HTTP_METHODS } = require("./schema.js");
 
-const platformSchema = buildSchema().schema;
+// The form schema cannot list the methods (see schema.js), so they are added to the copy used for validation.
+function withMethodEnum(node) {
+	if (!node || typeof node !== "object") return node;
+	if (node.properties && node.properties.httpMethod) node.properties.httpMethod.enum = [null, ...HTTP_METHODS];
+	for (const value of Object.values(node)) withMethodEnum(value);
+	return node;
+}
+
+const platformSchema = withMethodEnum(structuredClone(buildSchema().schema));
 
 // strict is off because the schema carries form keywords (title, widget, placeholder) that Ajv does not know;
 // coerceTypes accepts what the UI and hand-edited JSON produce, such as "0" for a number.

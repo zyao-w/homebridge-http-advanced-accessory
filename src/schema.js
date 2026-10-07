@@ -99,16 +99,17 @@ function mapper(path) {
 	});
 }
 
-// The form adds a "None" entry to a select unless one of its values is null, so the default is a null entry named GET.
+// The form adds a "None" entry to a select unless one entry has no value. The schema must not contain null:
+// the form crashes on it, so the allowed values are checked in validate.js instead of an enum here.
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+
 function httpMethod() {
-	const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 	return {
 		title: "HTTP method",
 		type: ["string", "null"],
-		enum: [null, ...methods],
 		"x-schema-form": {
 			type: "select",
-			titleMap: [{ name: "GET (default)", value: null }, ...methods.slice(1).map((name) => ({ name, value: name }))],
+			titleMap: [{ name: "GET (default)" }, ...HTTP_METHODS.slice(1).map((name) => ({ name, value: name }))],
 		},
 	};
 }
@@ -218,4 +219,4 @@ function buildSchema() {
 	};
 }
 
-module.exports = { buildSchema };
+module.exports = { buildSchema, HTTP_METHODS };
