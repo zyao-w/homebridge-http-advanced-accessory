@@ -29,6 +29,7 @@
     "scripts/",
     "config.schema.json",
     "CHANGELOG.md",
+    "MIGRATION.md",
     "sample-config.json"
   ],
   "devDependencies": {
