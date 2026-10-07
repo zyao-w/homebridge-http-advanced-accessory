@@ -1,4 +1,5 @@
 const { PLUGIN_NAME, ACCESSORY_NAME, PLATFORM_NAME } = require("./constants.js");
+const { compileExpression, compileTemplate } = require("./expression.js");
 
 // Settings copied as they are from an accessory to a device
 const DEVICE_KEYS = [
@@ -32,11 +33,15 @@ const PROP_KEYS = [
 	"maxLen",
 ];
 
-// JavaScript that the restricted expression language of 2.0.0 does not offer
-const JS_ONLY =
-	/\b(Math|parseInt|parseFloat|Number|String|JSON|Date|Object|Array|new|function)\b|\.\s*[A-Za-z_]\w*\s*\(/;
-// Statements, optional chaining and assignments make an eval mapper a script
-const SCRIPT_ONLY = /\b(let|const|var|if|else|for|while|return|try|catch|throw|switch)\b|[;{}]|\?\.|(^|[^=!<>])=(?!=)/;
+// What the restricted expression language does not offer is decided by the language itself
+function expressionProblem(compile, source) {
+	try {
+		compile(source);
+		return undefined;
+	} catch (error) {
+		return error.message;
+	}
+}
 const STATE_KEY = /\b(?:self\.)?state(?:\.get(\w+)|\[\s*(["'])get(\w+)\2\s*\])/g;
 
 /** state used to be keyed by action name (getOn), it is now keyed by characteristic name (On). */
@@ -46,10 +51,11 @@ function migrateStateReferences(text) {
 	);
 }
 
-function warnAboutJavaScript(expression, where, warnings) {
-	if (JS_ONLY.test(expression)) {
+function warnAboutJavaScript(template, where, warnings) {
+	const problem = expressionProblem(compileTemplate, template);
+	if (problem) {
 		warnings.push(
-			`${where}: "${expression}" uses JavaScript that the restricted expression language does not offer; it needs "allowUnsafeEval": true`
+			`${where}: ${problem}; the restricted expression language does not offer it, so it needs "allowUnsafeEval": true`
 		);
 	}
 }
@@ -59,9 +65,7 @@ function migrateTemplate(template, where, warnings) {
 		return template;
 	}
 	const migrated = migrateStateReferences(template);
-	for (const [, expression] of migrated.matchAll(/\$\{([^}]*)\}/g)) {
-		warnAboutJavaScript(expression, where, warnings);
-	}
+	warnAboutJavaScript(migrated, where, warnings);
 	return migrated;
 }
 
@@ -74,9 +78,10 @@ function migrateMapper(mapper, where, warnings) {
 	}
 	if (type === "eval") {
 		const expression = migrateStateReferences(String(parameters.expression === undefined ? "" : parameters.expression));
-		if (SCRIPT_ONLY.test(expression) || JS_ONLY.test(expression)) {
+		const problem = expressionProblem(compileExpression, expression);
+		if (problem) {
 			warnings.push(
-				`${where}: uses JavaScript statements or functions, so it became a "script" mapper; set "allowUnsafeEval": true to keep it working`
+				`${where}: ${problem}; it became a "script" mapper, set "allowUnsafeEval": true to keep it working`
 			);
 			return { type: "script", script: expression };
 		}
