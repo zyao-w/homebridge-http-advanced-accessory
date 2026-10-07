@@ -1,0 +1,96 @@
+{
+	"bridge": {
+		"name": "Homebridge",
+		"username": "C1:38:5A:AC:39:40",
+		"port": 51826,
+		"pin": "000-00-000"
+	},
+	"description": "This is an example configuration for the Everything Homebridge plugin",
+	"accessories": [
+		{
+			"accessory": "HttpAdvancedAccessory",
+			"service": "ContactSensor",
+			"name": "Terrace Sensor",
+			"forceRefreshDelay": 5,
+			"username": "admin",
+			"password": "admin",
+			"debug": false,
+			"urls": {
+				"getContactSensorState": {
+					"url": "http://localhost/xml/zones/zonesStatus48IP.xml",
+					"mappers": [
+						{
+							"type": "xpath",
+							"parameters": {
+								"xpath": "//status[1]/text()"
+							}
+						},
+						{
+							"type": "static",
+							"parameters": {
+								"mapping": {
+									"ALARM": "1",
+									"NORMAL": "0"
+								}
+							}
+						}
+					]
+				}
+			}
+		},
+		{
+			"accessory": "HttpAdvancedAccessory",
+			"service": "HeaterCooler",
+			"name": "Condizionatore Soggiorno",
+			"forceRefreshDelay": 5,
+			"debug": false,
+			"urls": {
+				"getCurrentHeaterCoolerState": {
+					"url": "http://192.168.201.16/aircon/get_control_info",
+					"mappers": [
+						{ "type": "regex", "parameters": { "regexp": "(pow=0)", "capture": "1" } },
+						{ "type": "regex", "parameters": { "regexp": "mode=(\\d)", "capture": "1" } },
+						{ "type": "static", "parameters": { "mapping": { "pow=0": "0", "3": "3", "4": "2" } } }
+					]
+				},
+				"getTargetHeaterCoolerState": {
+					"url": "http://192.168.201.16/aircon/get_control_info",
+					"mappers": [
+						{ "type": "regex", "parameters": { "regexp": "(pow=0)", "capture": "1" } },
+						{ "type": "regex", "parameters": { "regexp": "mode=(\\d)", "capture": "1" } },
+						{ "type": "static", "parameters": { "mapping": { "pow=0": "0", "3": "3", "4": "2" } } }
+					]
+				},
+				"setTargetHeaterCoolerState": {
+					"url": "http://192.168.201.16/aircon/set_control_info/{value}&pow=${state.getActive}&",
+					"mappers": [
+						{ "type": "static", "parameters": { "mapping": { "0": "?mode=0", "1": "?mode=4", "2": "?mode=3" } } }
+					]
+				},
+				"getActive": {
+					"url": "http://192.168.201.16/aircon/get_control_info",
+					"mappers": [{ "type": "regex", "parameters": { "regexp": "pow=(\\d)", "capture": "1" } }]
+				},
+				"setActive": {
+					"url": "http://192.168.201.16/aircon/set_control_info/{value}",
+					"mappers": [{ "type": "static", "parameters": { "mapping": { "0": "?pow=0", "1": "?pow=1" } } }]
+				}
+			}
+		},
+		{
+			"accessory": "HttpAdvancedAccessory",
+			"service": "CarbonDioxideSensor",
+			"name": "CO2 Sensor",
+			"forceRefreshDelay": 30,
+			"bearerToken": "env:CO2_API_TOKEN",
+			"debug": false,
+			"urls": {
+				"getCarbonDioxideLevel": {
+					"url": "https://example.com/api/",
+					"mappers": [{ "type": "jpath", "parameters": { "jpath": "$.data.co2" } }]
+				}
+			}
+		}
+	],
+	"platforms": []
+}

@@ -1,6 +1,6 @@
 const { normalizeDevice } = require("../src/device-config.js");
 const { migrateConfig } = require("../src/migrate.js");
-const sampleConfig = require("../sample-config.json");
+const sampleConfig = require("./fixtures/config-1x.json");
 
 const base = { name: "Light", service: "Lightbulb" };
 const chain = (mappers = [], input) => mappers.reduce((value, mapper) => mapper.map(value), input);
