@@ -81,6 +81,22 @@
 			   }
    
 			} 
+		 },
+		 {
+			"accessory": "HttpAdvancedAccessory",
+			"service": "CarbonDioxideSensor",
+			"name": "CO2 Sensor",
+			"forceRefreshDelay": 30,
+			"bearerToken": "env:CO2_API_TOKEN",
+			"debug" : false,
+			"urls":{
+			   "getCarbonDioxideLevel": {
+				  "url" : "https://example.com/api/",
+				  "mappers" : [
+					 {"type": "jpath", "parameters": {"jpath": "$.data.co2"} }
+				  ]
+			   }
+			}
 		 }
 	],
 	"platforms": []
