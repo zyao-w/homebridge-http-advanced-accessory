@@ -108,4 +108,30 @@ describe("JPathMapper", () => {
         const m = new mappers.JPathMapper({ jpath: "$.a" });
         expect(m.map("42")).toBe("inconclusive");
     });
+
+    const doc = '{"items":[{"n":1},{"n":2},{"n":3}],"status":{"power":"on"}}';
+
+    test.each`
+        jpath                   | index | expected
+        ${"$.items[*].n"}       | ${1}  | ${2}
+        ${"$..n"}               | ${2}  | ${3}
+        ${"$.items[1].n"}       | ${0}  | ${2}
+        ${"$..[?(@.n>1)].n"}    | ${0}  | ${2}
+        ${"$.status.power"}     | ${0}  | ${"on"}
+    `("$jpath (index $index) selects $expected", ({ jpath, index, expected }) => {
+        expect(new mappers.JPathMapper({ jpath, index }).map(doc)).toBe(expected);
+    });
+
+    test("an expression without a match yields an empty array", () => {
+        const m = new mappers.JPathMapper({ jpath: "$.missing" });
+        expect(m.map(doc)).toBe("[]");
+    });
+});
+
+describe("XPathMapper with an XML declaration", () => {
+    test("parses ISO-8859-1 documents", () => {
+        const xml = '<?xml version="1.0" encoding="ISO-8859-1"?><partitionsStatus><partition>ARMED</partition><partition>ARMED_IMMEDIATE</partition></partitionsStatus>';
+        const m = new mappers.XPathMapper({ xpath: "//partition[2]/text()" });
+        expect(m.map(xml)).toBe("ARMED_IMMEDIATE");
+    });
 });
