@@ -81,12 +81,13 @@ A response that is not JSON, or a missing field, gives `toNumber(value)` = 0, as
 
 ### Settings
 
-| 1.x                                                           | 2.0                                                                                                                       |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `uriCallsDelay`                                               | removed. `maxConcurrent: 1` runs the requests one at a time, which is what the script sets when `uriCallsDelay` was used. |
-| `manufacturer`, `model`                                       | not supported, dropped with a warning                                                                                     |
-| an `inconclusive` action inside another `inconclusive` action | not supported: only one fallback level is allowed. The migration drops the deeper one with a warning.                     |
-| Digest authentication                                         | not supported (since 1.1.0)                                                                                               |
+| 1.x                                                           | 2.0                                                                                                                                                                               |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `uriCallsDelay`                                               | removed. `maxConcurrent: 1` runs the requests one at a time, which is what the script sets when `uriCallsDelay` was used.                                                         |
+| `manufacturer`, `model`                                       | not supported, dropped with a warning                                                                                                                                             |
+| an `inconclusive` action inside another `inconclusive` action | not supported: only one fallback level is allowed. The migration drops the deeper one with a warning.                                                                             |
+| Digest authentication                                         | not supported (since 1.1.0)                                                                                                                                                       |
+| an HTTP answer outside 2xx (401, 404, 500, ...)               | an error: HomeKit shows "No Response" and the log says `HTTP 401 Unauthorized`. In 1.x the body was mapped like any answer. Use `resultOnError` to map such a failure to a value. |
 
 New in 2.0: `id`, `defaults`, per-action `bearerToken`, `allowUnsafeEval`, validation of the whole configuration when Homebridge starts, the Homebridge UI form, and the `expression` and `script` mappers.
 

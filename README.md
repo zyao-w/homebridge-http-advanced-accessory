@@ -124,11 +124,11 @@ An action describes one HTTP request. The same settings are used for `get` and `
 | `httpMethod`    | `GET`, `POST`, `PUT`, `PATCH` or `DELETE`. Defaults to `GET`.                                                                                                                       |
 | `body`          | The body of the request. In a _set_ action it is a template as well.                                                                                                                |
 | `mappers`       | A chain of [mappers](#mappers). For a _get_ it turns the response into the value for HomeKit; for a _set_ it turns the value from HomeKit into what the device expects (`{value}`). |
-| `resultOnError` | The value to use when the request fails, instead of reporting an error to HomeKit. Useful for health checks, where "cannot connect" is a valid state.                               |
+| `resultOnError` | The value to use when the request fails (see below), instead of reporting an error to HomeKit. Useful for health checks, where "cannot connect" is a valid state.                   |
 | `bearerToken`   | A token for this action only; it replaces the device token.                                                                                                                         |
-| `inconclusive`  | Another _get_ action to run when the mapper chain ends with the word `inconclusive`. It can have its own `inconclusive` action.                                                     |
+| `inconclusive`  | Another _get_ action to run when the mapper chain ends with the word `inconclusive`. It cannot have an `inconclusive` action of its own.                                            |
 
-When a request fails and there is no `resultOnError`, HomeKit shows the accessory as not responding and the reason is written to the Homebridge log.
+When a request fails and there is no `resultOnError`, HomeKit shows the accessory as not responding and the reason is written to the Homebridge log. A request fails when the device cannot be reached, when it times out, or when it answers with a status outside 2xx (`HTTP 401 Unauthorized`, `HTTP 503 Service Unavailable`, ...); the body of such an answer is not mapped.
 
 ### Templates
 
