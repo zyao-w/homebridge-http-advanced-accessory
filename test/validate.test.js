@@ -221,6 +221,19 @@ describe("validateDevice", () => {
 		]);
 	});
 
+	test("accepts a null HTTP method as the default and rejects unknown ones", () => {
+		const device = (httpMethod) => ({
+			name: "A",
+			service: "Switch",
+			characteristics: [{ characteristic: "On", get: { url: "u", httpMethod } }],
+		});
+		expect(valid(device(null))).toEqual([]);
+		expect(valid(device("POST"))).toEqual([]);
+		expect(valid(device("FETCH"))).toEqual([
+			expect.stringMatching(/get\.httpMethod must be one of: GET, POST, PUT, PATCH, DELETE/),
+		]);
+	});
+
 	test("reports wrong types", () => {
 		expect(valid({ name: "A", service: "Switch", debug: "maybe" })).toEqual([
 			expect.stringMatching(/^debug must be boolean/),

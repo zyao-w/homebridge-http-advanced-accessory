@@ -33,6 +33,9 @@ function describe(error) {
 		const values = error.schema.map((option) => option.enum && option.enum[0]).filter(Boolean);
 		return `${prefix}must be one of: ${values.join(", ")}`;
 	}
+	if (error.keyword === "enum") {
+		return `${prefix}must be one of: ${error.params.allowedValues.filter((value) => value !== null).join(", ")}`;
+	}
 	return `${prefix}${error.message}`;
 }
 
