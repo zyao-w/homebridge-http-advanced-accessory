@@ -17,9 +17,9 @@
     "url": "git+https://github.com/zyao-w/homebridge-http-advanced-accessory.git"
   },
   "dependencies": {
-    "JSONPath": "^0.11.2",
-    "xmldom": "^0.1.27",
-    "xpath": "0.0.24"
+    "@xmldom/xmldom": "^0.9.12",
+    "jsonpath-plus": "^11.2.0",
+    "xpath": "^0.0.34"
   },
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
   "files": [

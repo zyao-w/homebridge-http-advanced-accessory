@@ -1,6 +1,6 @@
 var xpath = require("xpath");
-var dom = require("xmldom").DOMParser;
-var JSONPath = require("JSONPath");
+var dom = require("@xmldom/xmldom").DOMParser;
+var JSONPath = require("jsonpath-plus").JSONPath;
 
 module.exports = {
     StaticMapper,
@@ -59,7 +59,7 @@ function XPathMapper(parameters) {
 	self.index = parameters.index || 0;
 
 	self.map = function(value) {
-		var document = new dom().parseFromString(value);
+		var document = new dom().parseFromString(value, "text/xml");
 		var result  = xpath.select(this.xpath, document);
 
 		if (typeof result == "string") {
