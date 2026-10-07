@@ -6,7 +6,7 @@ var mappers = require("./mappers.js");
 module.exports = function (homebridge) {
 	Service = homebridge.hap.Service;
 	Characteristic = homebridge.hap.Characteristic;
-	homebridge.registerAccessory("homebridge-http-advanced-accessory", "HttpAdvancedAccessory", HttpAdvancedAccessory);
+	homebridge.registerAccessory("homebridge-http-advanced-accessory-zyao", "HttpAdvancedAccessory", HttpAdvancedAccessory);
 };
 
 function HttpAdvancedAccessory(log, config) {
