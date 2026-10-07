@@ -96,6 +96,7 @@ function HttpAdvancedAccessory(log, config) {
 	self.auth = {
 		username: config.username || "",
 		password: config.password || "",
+		bearerToken: config.bearerToken || "",
 		immediately: true
 	};
 
@@ -127,28 +128,54 @@ HttpAdvancedAccessory.prototype = {
  * @param callback Callback method to call with the result or error (error, response, body)
  */
 	httpRequest : function(url, body, httpMethod, callback) {
+		var self = this;
+
 		setTimeout(
-			function(){request({
-				url: url,
-				body: body,
-				method: httpMethod,
-				auth: {
-					user: this.auth.username,
-					pass: this.auth.password,
-					sendImmediately: this.auth.immediately
-				},
-				headers: {
-					Authorization: "Basic " + new Buffer(this.auth.username + ":" + this.auth.password).toString("base64")
+			function() {
+				var headers = {};
+
+				if (self.auth.bearerToken) {
+					headers.Authorization = "Bearer " + self.auth.bearerToken;
+				} else {
+					headers.Authorization = "Basic " +
+						new Buffer(
+							self.auth.username + ":" + self.auth.password
+						).toString("base64");
 				}
+
+				request({
+					url: url,
+					body: body,
+					method: httpMethod,
+
+					auth: self.auth.bearerToken ? undefined : {
+						user: self.auth.username,
+						pass: self.auth.password,
+						sendImmediately: self.auth.immediately
+					},
+
+					headers: headers
+				},
+				function(error, response, body) {
+					self.uriCalls--;
+
+					self.debugLog(
+						"httpRequest ended, current uriCalls is " +
+						self.uriCalls
+					);
+
+					callback(error, response, body);
+				});
 			},
-			function(error, response, body) {
-				this.uriCalls--;
-				this.debugLog("httpRequest ended, current uriCalls is " + this.uriCalls);
-				callback(error, response, body)
-			}.bind(this))}.bind(this), this.uriCalls * this.uriCallsDelay);
-		
+			this.uriCalls * this.uriCallsDelay
+		);
+
 		this.uriCalls++;
-		this.debugLog("httpRequest called, current uriCalls is " + this.uriCalls); 
+
+		this.debugLog(
+			"httpRequest called, current uriCalls is " +
+			this.uriCalls
+		);
 	},
 
 /**
