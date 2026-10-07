@@ -21,7 +21,6 @@ Pre-releases are published under the `next` tag. The accessory registration of 1
 - `state` in templates and expressions is keyed by characteristic name (`state.Brightness`).
 - Characteristic handlers use `onGet` / `onSet`; failed requests are reported to HomeKit as communication errors.
 - In the Homebridge UI form, *Defaults*, *Set action*, *Characteristic properties* and *Fallback action* start collapsed.
-- In the Homebridge UI form, the HTTP method is a set of radio buttons; none selected means GET.
 
 ## 1.1.2 - 2026-10-07
 
