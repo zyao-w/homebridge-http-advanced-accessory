@@ -42,6 +42,17 @@ describe("config.schema.json", () => {
 		walk(buildSchema().schema, "schema", false);
 		expect(problems).toEqual([]);
 	});
+
+	test("keeps the rarely edited sections closed in the form", () => {
+		const { properties } = buildSchema().schema;
+		const characteristic = properties.devices.items.properties.characteristics.items.properties;
+		const closed = { type: "fieldset", expandable: true, expanded: false };
+		expect(properties.defaults["x-schema-form"]).toEqual(closed);
+		expect(characteristic.set["x-schema-form"]).toEqual(closed);
+		expect(characteristic.props["x-schema-form"]).toEqual(closed);
+		expect(characteristic.get.properties.inconclusive["x-schema-form"]).toEqual(closed);
+		expect(characteristic.get["x-schema-form"]).toBeUndefined();
+	});
 });
 
 describe("form conditions", () => {

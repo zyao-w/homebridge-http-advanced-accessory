@@ -91,7 +91,12 @@
           }
         },
         "additionalProperties": false,
-        "title": "Defaults"
+        "title": "Defaults",
+        "x-schema-form": {
+          "type": "fieldset",
+          "expandable": true,
+          "expanded": false
+        }
       },
       "devices": {
         "title": "Devices",
@@ -530,6 +535,11 @@
                         },
                         "additionalProperties": false,
                         "title": "Fallback action",
+                        "x-schema-form": {
+                          "type": "fieldset",
+                          "expandable": true,
+                          "expanded": false
+                        },
                         "description": "Used when a mapper returns inconclusive. Add it in the JSON config.",
                         "condition": {
                           "functionBody": "return Boolean(model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive);"
@@ -942,6 +952,11 @@
                         },
                         "additionalProperties": false,
                         "title": "Fallback action",
+                        "x-schema-form": {
+                          "type": "fieldset",
+                          "expandable": true,
+                          "expanded": false
+                        },
                         "description": "Used when a mapper returns inconclusive. Add it in the JSON config.",
                         "condition": {
                           "functionBody": "return Boolean(model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive);"
@@ -949,7 +964,12 @@
                       }
                     },
                     "additionalProperties": false,
-                    "title": "Set action"
+                    "title": "Set action",
+                    "x-schema-form": {
+                      "type": "fieldset",
+                      "expandable": true,
+                      "expanded": false
+                    }
                   },
                   "props": {
                     "type": "object",
@@ -1087,7 +1107,12 @@
                       }
                     },
                     "additionalProperties": false,
-                    "title": "Characteristic properties"
+                    "title": "Characteristic properties",
+                    "x-schema-form": {
+                      "type": "fieldset",
+                      "expandable": true,
+                      "expanded": false
+                    }
                   }
                 },
                 "additionalProperties": false,

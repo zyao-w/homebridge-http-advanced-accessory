@@ -16,6 +16,9 @@ const choice = (title, values, extra = {}) => ({
 	oneOf: values.map(([value, label]) => ({ title: label, enum: [value] })),
 	...extra,
 });
+/** Rendered as a section that starts closed, for parts of the form that are rarely edited. */
+const collapsed = { "x-schema-form": { type: "fieldset", expandable: true, expanded: false } };
+
 const object = (properties, extra = {}) => ({ type: "object", properties, additionalProperties: false, ...extra });
 
 const TOKEN_HELP = "A literal token, env:NAME for an environment variable, or file:/path/to/token.";
@@ -118,6 +121,7 @@ function action(path, withInconclusive) {
 		properties.inconclusive = {
 			...action(`${path}.inconclusive`, false),
 			title: "Fallback action",
+			...collapsed,
 			description: "Used when a mapper returns inconclusive. Add it in the JSON config.",
 			...when(`return Boolean(${CHARACTERISTIC}${inModel(path)}?.inconclusive);`),
 		};
@@ -155,8 +159,8 @@ function characteristic() {
 			description: "Characteristic name, for example On or Brightness.",
 		}),
 		get: { ...action("get", true), title: "Get action" },
-		set: { ...action("set", true), title: "Set action" },
-		props: { ...props(), title: "Characteristic properties" },
+		set: { ...action("set", true), title: "Set action", ...collapsed },
+		props: { ...props(), title: "Characteristic properties", ...collapsed },
 	});
 }
 
@@ -197,7 +201,7 @@ function buildSchema() {
 			type: "object",
 			properties: {
 				name: text("Name", { placeholder: "HTTP Advanced" }),
-				defaults: { ...object(settings()), title: "Defaults" },
+				defaults: { ...object(settings()), title: "Defaults", ...collapsed },
 				devices: { title: "Devices", type: "array", items: { ...device(), title: "Device" } },
 			},
 		},
