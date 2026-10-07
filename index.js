@@ -2,6 +2,7 @@ var Service, Characteristic;
 var request = require("request");
 var pollingtoevent = require("polling-to-event");
 var mappers = require("./mappers.js");
+var resolveBearerToken = require("./auth.js").resolveBearerToken;
 
 module.exports = function (homebridge) {
 	Service = homebridge.hap.Service;
@@ -96,9 +97,17 @@ function HttpAdvancedAccessory(log, config) {
 	self.auth = {
 		username: config.username || "",
 		password: config.password || "",
-		bearerToken: config.bearerToken || "",
+		bearerToken: "",
+		bearerTokenError: null,
 		immediately: true
 	};
+
+	try {
+		self.auth.bearerToken = resolveBearerToken(config.bearerToken);
+	} catch (e) {
+		self.auth.bearerTokenError = e;
+		self.log("ERROR: " + e.message);
+	}
 
 	if ("immediately" in config) {
 		self.auth.immediately = config.immediately;
@@ -129,6 +138,12 @@ HttpAdvancedAccessory.prototype = {
  */
 	httpRequest : function(url, body, httpMethod, callback) {
 		var self = this;
+
+		if (self.auth.bearerTokenError) {
+			// Fail instead of silently falling back to Basic auth with empty credentials
+			callback(self.auth.bearerTokenError);
+			return;
+		}
 
 		setTimeout(
 			function() {
