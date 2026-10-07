@@ -883,3 +883,17 @@ homebridge --debug --user-storage-path .homebridge-dev --plugin-path ./
 ```
 
 The tests run with `npm test`; `npm run lint` and `npm run format:check` are checked in CI. `config.schema.json` is generated from `src/schema.js` by `npm run build:schema`.
+
+## License and credits
+
+This plugin is licensed under the [Apache License 2.0](LICENSE).
+
+It is a modified fork of [staromeste/homebridge-http-advanced-accessory](https://github.com/staromeste/homebridge-http-advanced-accessory), whose package metadata names tasict as its author. The original copyright and license are retained, and the full history of the original authors is kept in this repository's git log.
+
+- Original work: tasict and staromeste, with the contributors listed in the git history.
+- This fork: maintained by [zyao-w](https://github.com/zyao-w), who is responsible for the changes below.
+
+Main changes in this fork, as required by section 4 of the license. [CHANGELOG.md](CHANGELOG.md) has the details:
+
+- 1.1.x: refactoring into modules, an HTTP layer on the built-in `fetch` with request sharing, caching, timeouts and retries, Bearer Token authentication, and dependency updates.
+- 2.0.0: the `HttpAdvancedPlatform` Dynamic Platform and Homebridge UI form, validated configuration, the restricted expression language and `script` mapper, HTTP errors, and the removal of the 1.x accessory (see [MIGRATION.md](MIGRATION.md)).
