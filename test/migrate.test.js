@@ -191,6 +191,23 @@ describe("migrateAccessory", () => {
 		expect(inconclusive.mappers).toEqual([{ type: "regex", regexp: "(.)" }]);
 	});
 
+	test("drops an inconclusive action nested in the fallback action, which 2.0 does not allow", () => {
+		const { device, warnings } = migrateAccessory({
+			name: "A",
+			service: "S",
+			urls: {
+				getOn: {
+					url: "http://h/a",
+					inconclusive: { url: "http://h/b", inconclusive: { url: "http://h/c" } },
+				},
+			},
+		});
+		const fallback = find(device, "On").get.inconclusive;
+		expect(fallback.url).toBe("http://h/b");
+		expect(fallback).not.toHaveProperty("inconclusive");
+		expect(warnings).toEqual([expect.stringMatching(/inconclusive action inside the fallback action/)]);
+	});
+
 	describe("templates", () => {
 		const migrateUrl = (url, body) => migrateAccessory({ name: "A", service: "S", urls: { setOn: { url, body } } });
 

@@ -95,7 +95,7 @@ function migrateMapper(mapper, where, warnings) {
 	return undefined;
 }
 
-function migrateAction(description, where, warnings) {
+function migrateAction(description, where, warnings, depth = 0) {
 	const action = {};
 
 	for (const key of ACTION_KEYS) {
@@ -113,8 +113,11 @@ function migrateAction(description, where, warnings) {
 			.map((mapper, index) => migrateMapper(mapper, `${where} mapper ${index + 1}`, warnings))
 			.filter(Boolean);
 	}
-	if (description.inconclusive) {
-		action.inconclusive = migrateAction(description.inconclusive, `${where} inconclusive`, warnings);
+	if (description.inconclusive && depth >= 1) {
+		// The 2.0 settings describe one fallback level, deeper ones would make the whole device invalid
+		warnings.push(`${where}: an inconclusive action inside the fallback action is not supported and was dropped`);
+	} else if (description.inconclusive) {
+		action.inconclusive = migrateAction(description.inconclusive, `${where} inconclusive`, warnings, depth + 1);
 	}
 
 	return action;
