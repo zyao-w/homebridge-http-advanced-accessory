@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-10-07
+
+### Fixed
+
+- The plugin failed to load on Node.js 18 because `jsonpath-plus` 11 requires a newer Node.js. It now uses `jsonpath-plus` 10.4, which supports Node.js 18.
+
 ## 1.1.0 - 2026-10-07
 
 Settings of existing `config.json` files keep working. The plugin is still configured as an accessory; a notice in the log announces that 2.0.0 will switch to a Dynamic Platform.

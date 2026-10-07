@@ -324,9 +324,12 @@ describe("redirects (real servers)", () => {
 		originUrl = "http://127.0.0.1:" + origin.address().port + "/start";
 	});
 
-	afterAll(() => {
-		target.close();
-		origin.close();
+	afterAll(async () => {
+		// fetch keeps connections alive, which would hold close() open
+		for (const server of [target, origin]) {
+			server.closeAllConnections();
+			await new Promise((resolve) => server.close(resolve));
+		}
 	});
 
 	test("does not forward Authorization to a different origin", async () => {
