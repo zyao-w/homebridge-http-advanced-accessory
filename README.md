@@ -354,7 +354,7 @@ Be careful with the code you write, this mapper can be very flexible but it can 
 If the remote API requires Bearer Token authentication, add `bearerToken`
 to the accessory configuration:
 
-````json
+```json
 {
   "accessory": "HttpAdvancedAccessory",
   "service": "CarbonDioxideSensor",
@@ -374,6 +374,17 @@ to the accessory configuration:
     }
   }
 }
+```
+
+To keep the token out of `config.json`, `bearerToken` can also reference an environment variable or a file:
+
+| Value | Source |
+| --- | --- |
+| `"abc123"` | Literal token |
+| `"env:MY_TOKEN"` | Environment variable `MY_TOKEN` |
+| `"file:/path/to/token"` | Content of the file (whitespace and newlines are trimmed) |
+
+Leading and trailing whitespace is always trimmed. If the environment variable or file cannot be read, an error is logged and requests for that accessory fail (they do not fall back to Basic authentication).
 
 ## Supported services
 
@@ -464,7 +475,7 @@ This first example is to configure a Bticino (BT-4200, 4201, 4202) as a HomeKit 
     }
   }
 }
-````
+```
 
 ### Bticino "Nuovo antifurto filare" Zones as ContactSensor
 
