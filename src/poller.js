@@ -20,7 +20,14 @@ class Poller {
 		let entry = this.entries.get(key);
 
 		if (!entry) {
-			entry = { poll: source.poll, intervalMs: source.intervalMs, subscribers: new Set(), timer: null, stopped: false, last: null };
+			entry = {
+				poll: source.poll,
+				intervalMs: source.intervalMs,
+				subscribers: new Set(),
+				timer: null,
+				stopped: false,
+				last: null,
+			};
 			this.entries.set(key, entry);
 			entry.subscribers.add(subscriber);
 			this._run(entry);

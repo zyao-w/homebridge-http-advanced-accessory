@@ -21,7 +21,7 @@ function resolveBearerToken(value) {
 		var name = raw.slice(4).trim();
 		var fromEnv = (process.env[name] || "").trim();
 		if (!fromEnv) {
-			throw new Error("bearerToken: environment variable \"" + name + "\" is not set or empty");
+			throw new Error('bearerToken: environment variable "' + name + '" is not set or empty');
 		}
 		return fromEnv;
 	}
@@ -32,10 +32,10 @@ function resolveBearerToken(value) {
 		try {
 			fromFile = fs.readFileSync(path, "utf8").trim();
 		} catch (e) {
-			throw new Error("bearerToken: cannot read file \"" + path + "\" (" + e.code + ")");
+			throw new Error('bearerToken: cannot read file "' + path + '" (' + e.code + ")");
 		}
 		if (!fromFile) {
-			throw new Error("bearerToken: file \"" + path + "\" is empty");
+			throw new Error('bearerToken: file "' + path + '" is empty');
 		}
 		return fromFile;
 	}
