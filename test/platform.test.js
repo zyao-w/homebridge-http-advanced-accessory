@@ -429,12 +429,26 @@ describe("writing", () => {
 		expect(log).toHaveBeenCalledWith("[Pump] SetState function failed: %s", "ECONNREFUSED");
 	});
 
-	test("reports a broken template as a communication error without sending a request", async () => {
+	test("refuses a template the expression language does not offer unless allowUnsafeEval is set", () => {
+		const device = {
+			name: "Pump",
+			service: "Switch",
+			characteristics: [{ characteristic: "On", set: { url: "http://h/${[1].map(n => n)}" } }],
+		};
+		const refused = launch({ devices: [device] });
+		expect(registered(refused.api)).toEqual([]);
+		expect(refused.log.error).toHaveBeenCalledWith(expect.stringContaining('"allowUnsafeEval": true'));
+
+		expect(registered(launch({ devices: [{ ...device, allowUnsafeEval: true }] }).api)).toHaveLength(1);
+	});
+
+	test("reports a template that fails when it runs as a communication error without sending a request", async () => {
 		const { api } = launch({
 			devices: [
 				{
 					name: "Pump",
 					service: "Switch",
+					allowUnsafeEval: true,
 					characteristics: [{ characteristic: "On", set: { url: "http://h/${missing.prop}" } }],
 				},
 			],

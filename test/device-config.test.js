@@ -116,6 +116,34 @@ describe("actions", () => {
 		expect(chain(characteristics[0].get.mappers, 0)).toBe("off");
 	});
 
+	test("an expression mapper sees the device state by characteristic name", () => {
+		const normalized = normalizeDevice({
+			...base,
+			characteristics: [
+				{
+					characteristic: "On",
+					get: { url: "u", mappers: [{ type: "expression", expression: "state.Target + value" }] },
+				},
+			],
+		});
+		normalized.state.Target = 10;
+		expect(chain(normalized.characteristics[0].get.mappers, 5)).toBe(15);
+	});
+
+	test("an expression the language does not offer is refused when the device loads", () => {
+		const entry = (expression) => ({
+			characteristic: "On",
+			get: { url: "u", mappers: [{ type: "expression", expression }] },
+		});
+		expect(() => device(entry("value.toFixed(1)"))).toThrow(/Only the built-in functions/);
+		expect(() => device(entry("let a = 1"))).toThrow(/Unexpected "="/);
+		expect(() => device(entry("process.exit()"))).toThrow(/Unknown name "process"/);
+		// allowUnsafeEval does not widen the expression language; script mappers are for that
+		expect(() =>
+			normalizeDevice({ ...base, allowUnsafeEval: true, characteristics: [entry("value.toFixed(1)")] })
+		).toThrow();
+	});
+
 	test("a script mapper needs allowUnsafeEval", () => {
 		const entry = { characteristic: "On", get: { url: "u", mappers: [{ type: "script", script: "value * 2" }] } };
 		expect(() => device(entry)).toThrow('needs "allowUnsafeEval": true');

@@ -21,6 +21,10 @@ test("leaves templates without placeholders untouched", () => {
 	expect(renderTemplate("http://h/status", { mappedValue: "x" })).toBe("http://h/status");
 });
 
-test("throws on an invalid expression", () => {
-	expect(() => renderTemplate("${missing.prop}", { mappedValue: "x" })).toThrow(ReferenceError);
+test("throws on an expression the language does not offer", () => {
+	expect(() => renderTemplate("${missing.prop}", { mappedValue: "x" })).toThrow(/Unknown name "missing"/);
+});
+
+test("evaluates full JavaScript only when unsafe", () => {
+	expect(() => renderTemplate("${missing.prop}", { mappedValue: "x" }, { unsafe: true })).toThrow(ReferenceError);
 });

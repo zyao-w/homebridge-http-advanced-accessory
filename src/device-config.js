@@ -1,5 +1,6 @@
 const { resolveBearerToken } = require("./http/auth.js");
 const { createMapper } = require("./mappers/index.js");
+const { compileTemplate } = require("./expression.js");
 
 const SETTING_KEYS = [
 	"forceRefreshDelay",
@@ -37,9 +38,6 @@ function createMapperFromEntry(entry, context, where) {
 		}
 		type = "eval";
 		parameters = { expression: parameters.script };
-	} else if (type === "expression") {
-		// Transitional: evaluated like a script until the restricted expression engine replaces the eval mapper
-		type = "eval";
 	} else if (type === "eval") {
 		// The 1.x name; 2.0 configs use "expression" or "script"
 		type = undefined;
@@ -78,6 +76,17 @@ function createAction(definition, context, where) {
 	return action;
 }
 
+// Set templates are compiled when the device loads, so a mistake shows at startup and not on the first set
+function checkTemplates(action, context, where) {
+	try {
+		for (const template of [action.url, action.body]) {
+			if (template) compileTemplate(template, { unsafe: context.allowUnsafeEval });
+		}
+	} catch (error) {
+		throw new Error(`${where}: ${error.message}. Full JavaScript needs "allowUnsafeEval": true`);
+	}
+}
+
 function createCharacteristic(entry, context, deviceName) {
 	if (!entry || typeof entry.characteristic !== "string" || !entry.characteristic) {
 		throw new Error(`Device "${deviceName}": a characteristic entry has no "characteristic" name`);
@@ -88,7 +97,10 @@ function createCharacteristic(entry, context, deviceName) {
 	const characteristic = { name, props: entry.props || {} };
 
 	if (entry.get) characteristic.get = createAction(entry.get, context, `${where} get`);
-	if (entry.set) characteristic.set = createAction(entry.set, context, `${where} set`);
+	if (entry.set) {
+		characteristic.set = createAction(entry.set, context, `${where} set`);
+		checkTemplates(characteristic.set, context, `${where} set`);
+	}
 
 	return characteristic;
 }
