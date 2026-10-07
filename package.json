@@ -21,7 +21,7 @@
     "@xmldom/xmldom": "^0.9.12",
     "ajv": "^8.20.0",
     "jsonpath-plus": "^11.2.0",
-    "xpath": "^0.0.34"
+    "xpath": "^0.0.35"
   },
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
   "files": [
