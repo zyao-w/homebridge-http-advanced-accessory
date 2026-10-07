@@ -303,6 +303,40 @@ describe("request limiting", () => {
 	});
 });
 
+describe("per-request bearer token override", () => {
+	test("replaces the client token for one request", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, auth: { bearerToken: "client" } });
+		await client.read({ url: "http://h/a" }, { auth: { bearerToken: "action" } });
+		await client.read({ url: "http://h/b" });
+		await client.write({ url: "http://h/c" }, { auth: { bearerToken: "write" } });
+		expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer action");
+		expect(fetch.mock.calls[1][1].headers.Authorization).toBe("Bearer client");
+		expect(fetch.mock.calls[2][1].headers.Authorization).toBe("Bearer write");
+	});
+
+	test("an empty override turns the token off and falls back to Basic credentials", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, auth: { bearerToken: "client", username: "u", password: "p" } });
+		await client.read({ url: "http://h/a" }, { auth: { bearerToken: "" } });
+		expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Basic " + Buffer.from("u:p").toString("base64"));
+	});
+
+	test("requests with different tokens are neither shared nor cached together", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, cacheTTL: 60, auth: { bearerToken: "client" } });
+		await Promise.all([
+			client.read({ url: "http://h/a" }),
+			client.read({ url: "http://h/a" }, { auth: { bearerToken: "other" } }),
+		]);
+		await client.read({ url: "http://h/a" }, { auth: { bearerToken: "other" } });
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(client.keyFor({ url: "http://h/a" })).not.toBe(
+			client.keyFor({ url: "http://h/a" }, { bearerToken: "other" })
+		);
+	});
+});
+
 describe("redirects (real servers)", () => {
 	let target, origin, targetSeen, originUrl, targetUrl;
 
