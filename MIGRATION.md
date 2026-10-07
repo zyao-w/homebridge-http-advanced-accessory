@@ -72,12 +72,11 @@ In a script, `self.state.getOn` is now `state.On` (the migration renames it for 
 ```json
 "mappers": [
   { "type": "jpath", "jpath": "$.data.pm25" },
-  { "type": "expression", "expression": "toNumber(value)" },
-  { "type": "expression", "expression": "value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : 4" }
+  { "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : 4" }
 ]
 ```
 
-A response that is not JSON, or a missing field, gives `toNumber(value)` = 0, as the usual `try { JSON.parse } catch` and `Number.isFinite` guards did. See the [air quality example](README.md#json-api-as-airqualitysensor-expression-mappers).
+A response that is not JSON, or a missing field, gives `inconclusive` here, which shows as "No Response". The `try { JSON.parse } catch` and `Number.isFinite` guards of a 1.x script usually made it a plain 0 instead; the README explains [why `inconclusive` is the safer end of a chain](README.md#unexpected-responses).
 
 ### Settings
 
