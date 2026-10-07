@@ -8,7 +8,7 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 
 ## Installation
 
-1. Install Homebridge (Node.js 22 or newer is required): `npm install -g homebridge`
+1. Install Homebridge (Homebridge 2.4.0 or newer and Node.js 22 or newer are required): `npm install -g homebridge`
 2. Install this plugin: `npm install -g homebridge-http-advanced-accessory-zyao`
 3. Configure it in the Homebridge UI (plugin page > Settings), or add the platform block below to the top-level `platforms` list of `config.json`. `sample-config.json` in this repository is a complete example.
 

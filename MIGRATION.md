@@ -2,7 +2,7 @@
 
 2.0.0 replaces the `HttpAdvancedAccessory` accessory with the `HttpAdvancedPlatform` platform. One platform block describes all your devices. The old accessory is gone, so a 1.x configuration does not load any more and has to be converted. A script does most of the work.
 
-Requirements: Node.js 22 or newer and Homebridge 1.6 or newer.
+Requirements: Node.js 22 or newer and Homebridge 2.4.0 or newer.
 
 ## 1. Convert the configuration
 
