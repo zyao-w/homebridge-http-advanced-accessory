@@ -16,6 +16,7 @@ const DEVICE_KEYS = [
 	"retries",
 	"cacheTTL",
 	"maxConcurrent",
+	"allowUnsafeEval",
 ];
 const IGNORED_KEYS = ["accessory", "urls", "props", "uriCallsDelay"];
 const ACTION_KEYS = ["url", "httpMethod", "body", "resultOnError"];
@@ -34,6 +35,8 @@ const PROP_KEYS = [
 // JavaScript that the restricted expression language of 2.0.0 does not offer
 const JS_ONLY =
 	/\b(Math|parseInt|parseFloat|Number|String|JSON|Date|Object|Array|new|function)\b|\.\s*[A-Za-z_]\w*\s*\(/;
+// Statements, optional chaining and assignments make an eval mapper a script
+const SCRIPT_ONLY = /\b(let|const|var|if|else|for|while|return|try|catch|throw|switch)\b|[;{}]|\?\.|(^|[^=!<>])=(?!=)/;
 const STATE_KEY = /\b(?:self\.)?state(?:\.get(\w+)|\[\s*(["'])get(\w+)\2\s*\])/g;
 
 /** state used to be keyed by action name (getOn), it is now keyed by characteristic name (On). */
@@ -46,7 +49,7 @@ function migrateStateReferences(text) {
 function warnAboutJavaScript(expression, where, warnings) {
 	if (JS_ONLY.test(expression)) {
 		warnings.push(
-			`${where}: "${expression}" uses JavaScript that the 2.0.0 expression language may not support, review it`
+			`${where}: "${expression}" uses JavaScript that the restricted expression language does not offer; it needs "allowUnsafeEval": true`
 		);
 	}
 }
@@ -71,8 +74,13 @@ function migrateMapper(mapper, where, warnings) {
 	}
 	if (type === "eval") {
 		const expression = migrateStateReferences(String(parameters.expression === undefined ? "" : parameters.expression));
-		warnAboutJavaScript(expression, where, warnings);
-		return { type, expression };
+		if (SCRIPT_ONLY.test(expression) || JS_ONLY.test(expression)) {
+			warnings.push(
+				`${where}: uses JavaScript statements or functions, so it became a "script" mapper; set "allowUnsafeEval": true to keep it working`
+			);
+			return { type: "script", script: expression };
+		}
+		return { type: "expression", expression };
 	}
 	if (["regex", "xpath", "jpath"].includes(type)) {
 		return { type, ...parameters };

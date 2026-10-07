@@ -125,7 +125,7 @@ describe("migrateAccessory", () => {
 				},
 				{ type: "xpath", xpath: "//a/text()", index: 1 },
 				{ type: "jpath", jpath: "$.a", index: "0" },
-				{ type: "eval", expression: 'value === "OK" ? 1 : 0' },
+				{ type: "expression", expression: 'value === "OK" ? 1 : 0' },
 			]);
 			expect(result.warnings).toEqual([]);
 		});
@@ -136,9 +136,40 @@ describe("migrateAccessory", () => {
 			expect(result.warnings[0]).toMatch('"nope"');
 		});
 
-		test("flags JavaScript an expression language may not offer", () => {
-			const result = migrateMappers([{ type: "eval", parameters: { expression: "Math.round(value / 2)" } }]);
-			expect(result.warnings[0]).toMatch("Math.round");
+		test.each`
+			script
+			${"Math.round(value / 2)"}
+			${"let v = parseFloat(value); value = v"}
+			${"value = value * 2"}
+			${"obj?.data?.pm25"}
+			${"if (value) { 1 } else { 2 }"}
+			${"try { JSON.parse(value) } catch (e) { 0 }"}
+		`("turns $script into a script mapper that needs allowUnsafeEval", ({ script }) => {
+			const result = migrateMappers([{ type: "eval", parameters: { expression: script } }]);
+			expect(mappersOf(result)).toEqual([{ type: "script", script }]);
+			expect(result.warnings[0]).toMatch('"allowUnsafeEval": true');
+		});
+
+		test.each`
+			expression
+			${'value == 1 ? "on" : "off"'}
+			${"value <= 12 ? 1 : value <= 35 ? 2 : 3"}
+			${"(value - 30) * 100 / 69 >= 50"}
+			${"state.getTarget + 1"}
+		`("keeps $expression as an expression mapper", ({ expression }) => {
+			const result = migrateMappers([{ type: "eval", parameters: { expression } }]);
+			expect(mappersOf(result)[0].type).toBe("expression");
+			expect(result.warnings).toEqual([]);
+		});
+
+		test("renames state keys inside scripts and expressions", () => {
+			const result = migrateMappers([{ type: "eval", parameters: { expression: "self.state.getTarget + value" } }]);
+			expect(mappersOf(result)).toEqual([{ type: "expression", expression: "state.Target + value" }]);
+		});
+
+		test("allowUnsafeEval is carried over to the device", () => {
+			const { device } = migrateAccessory({ name: "A", service: "S", allowUnsafeEval: true });
+			expect(device.allowUnsafeEval).toBe(true);
 		});
 	});
 
@@ -180,6 +211,7 @@ describe("migrateAccessory", () => {
 		test("flags JavaScript calls in templates", () => {
 			const result = migrateUrl("http://h/p?v=${Math.round(value)}");
 			expect(result.warnings[0]).toMatch("Math.round");
+			expect(result.warnings[0]).toMatch('"allowUnsafeEval": true');
 		});
 	});
 });
