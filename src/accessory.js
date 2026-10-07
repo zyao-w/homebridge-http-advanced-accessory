@@ -301,8 +301,14 @@ class HttpAdvancedAccessory {
 			.setCharacteristic(Characteristic.Model, "HTTP Accessory Model")
 			.setCharacteristic(Characteristic.SerialNumber, "HTTP Accessory Serial Number");
 
-		if (!Service[this.service]) {
-			throw new Error('Unknown service "' + this.service + '"');
+		// A throw here would take down every accessory of the bridge, so only this one is left out
+		if (typeof Service[this.service] !== "function") {
+			this.log(
+				this.service === undefined
+					? `ERROR: Accessory "${this.name}" has no "service" setting, it was not loaded.`
+					: `ERROR: Accessory "${this.name}" has an unknown service "${this.service}", it was not loaded.`
+			);
+			return [informationService];
 		}
 		const service = new Service[this.service](this.name);
 

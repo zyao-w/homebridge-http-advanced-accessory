@@ -285,8 +285,21 @@ describe("polling (forceRefreshDelay)", () => {
 });
 
 describe("robustness", () => {
-	test("reports an unknown service", () => {
-		expect(() => build({ service: "Nope" })).toThrow('Unknown service "Nope"');
+	test.each`
+		service      | message
+		${undefined} | ${'Accessory "CO2 Sensor" has no "service" setting'}
+		${"Nope"}    | ${'Accessory "CO2 Sensor" has an unknown service "Nope"'}
+		${"UUID"}    | ${'Accessory "CO2 Sensor" has an unknown service "UUID"'}
+	`("leaves out an accessory with service $service instead of failing the bridge", ({ service, message }) => {
+		const log = jest.fn();
+		const accessory = new AccessoryClass(log, { name: "CO2 Sensor", service }, { hap });
+
+		const services = accessory.getServices();
+
+		expect(services).toHaveLength(1);
+		expect(services[0]).toBeInstanceOf(FakeInformationService);
+		expect(log).toHaveBeenCalledWith(expect.stringContaining(message));
+		expect(log).toHaveBeenCalledWith(expect.stringContaining("it was not loaded"));
 	});
 
 	test("reports an unknown mapper type but keeps working", async () => {
