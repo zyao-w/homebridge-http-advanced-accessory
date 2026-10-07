@@ -10,11 +10,9 @@ module.exports = [
 			sourceType: "commonjs",
 			globals: { ...globals.node },
 		},
-		// Legacy patterns in index.js; revisit in the structure refactor (phase 3)
+		// Arguments such as `value` and `state` are read by eval'd expressions
 		rules: {
 			"no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
-			"no-redeclare": "warn",
-			"no-prototype-builtins": "warn",
 		},
 	},
 	{

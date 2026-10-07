@@ -8,6 +8,8 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 This version is maintained independently and includes additional features
 such as Bearer Token authentication.
 
+> **Note:** configuring this plugin as an accessory (`"accessory": "HttpAdvancedAccessory"`) will be replaced by a Dynamic Platform in 2.0.0, which is a breaking change. See [CHANGELOG.md](CHANGELOG.md).
+
 ## Installation
 
 1. Install homebridge using: npm install -g homebridge (Node.js 18 or newer is required)
@@ -312,7 +314,7 @@ In this case this mapper will return "ARMED*IMMEDIATE". The \*\*\_index*\*\* par
 
 #### JSONPath mapper
 
-The JSONPath mapper can be used to extract data from a JSON object. See https://www.npmjs.com/package/JSONPath#syntax-through-examples for syntax and more examples.
+The JSONPath mapper can be used to extract data from a JSON object. It uses [jsonpath-plus](https://www.npmjs.com/package/jsonpath-plus); see its documentation for syntax and more examples. Filter expressions such as `$..[?(@.n>1)]` are evaluated in its safe subset.
 
 When using this mapper, make sure that you select text elements or arrays and not entire objects.
 
@@ -357,6 +359,7 @@ Configuration is as follows:
 
 In this example, if the mapper receives the string `OK` it will return `1`, for anything else it will return `0`.  
 Be careful with the code you write, this mapper can be very flexible but it can also blow up quite easily.
+The expression runs with the full privileges of Homebridge, so only use expressions from a configuration you trust. The same applies to `${...}` expressions in URL and body templates.
 
 ### Bearer Token Authentication
 
