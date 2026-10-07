@@ -99,18 +99,17 @@ function mapper(path) {
 	});
 }
 
-// The form adds a "None" entry to a select unless one entry has no value. The schema must not contain null:
-// the form crashes on it, so the allowed values are checked in validate.js instead of an enum here.
+// A select always gets a "None" entry or shows blank when unset, and the schema cannot hold null (the form crashes on it).
+// Radio buttons need neither: nothing selected means the default.
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 function httpMethod() {
 	return {
 		title: "HTTP method",
 		type: ["string", "null"],
-		"x-schema-form": {
-			type: "select",
-			titleMap: [{ name: "GET (default)" }, ...HTTP_METHODS.slice(1).map((name) => ({ name, value: name }))],
-		},
+		enum: HTTP_METHODS,
+		description: "Defaults to GET when none is selected.",
+		"x-schema-form": { type: "radios-inline" },
 	};
 }
 

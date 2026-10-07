@@ -145,29 +145,16 @@
                           "string",
                           "null"
                         ],
+                        "enum": [
+                          "GET",
+                          "POST",
+                          "PUT",
+                          "PATCH",
+                          "DELETE"
+                        ],
+                        "description": "Defaults to GET when none is selected.",
                         "x-schema-form": {
-                          "type": "select",
-                          "titleMap": [
-                            {
-                              "name": "GET (default)"
-                            },
-                            {
-                              "name": "POST",
-                              "value": "POST"
-                            },
-                            {
-                              "name": "PUT",
-                              "value": "PUT"
-                            },
-                            {
-                              "name": "PATCH",
-                              "value": "PATCH"
-                            },
-                            {
-                              "name": "DELETE",
-                              "value": "DELETE"
-                            }
-                          ]
+                          "type": "radios-inline"
                         }
                       },
                       "body": {
@@ -339,29 +326,16 @@
                               "string",
                               "null"
                             ],
+                            "enum": [
+                              "GET",
+                              "POST",
+                              "PUT",
+                              "PATCH",
+                              "DELETE"
+                            ],
+                            "description": "Defaults to GET when none is selected.",
                             "x-schema-form": {
-                              "type": "select",
-                              "titleMap": [
-                                {
-                                  "name": "GET (default)"
-                                },
-                                {
-                                  "name": "POST",
-                                  "value": "POST"
-                                },
-                                {
-                                  "name": "PUT",
-                                  "value": "PUT"
-                                },
-                                {
-                                  "name": "PATCH",
-                                  "value": "PATCH"
-                                },
-                                {
-                                  "name": "DELETE",
-                                  "value": "DELETE"
-                                }
-                              ]
+                              "type": "radios-inline"
                             }
                           },
                           "body": {
@@ -550,29 +524,16 @@
                           "string",
                           "null"
                         ],
+                        "enum": [
+                          "GET",
+                          "POST",
+                          "PUT",
+                          "PATCH",
+                          "DELETE"
+                        ],
+                        "description": "Defaults to GET when none is selected.",
                         "x-schema-form": {
-                          "type": "select",
-                          "titleMap": [
-                            {
-                              "name": "GET (default)"
-                            },
-                            {
-                              "name": "POST",
-                              "value": "POST"
-                            },
-                            {
-                              "name": "PUT",
-                              "value": "PUT"
-                            },
-                            {
-                              "name": "PATCH",
-                              "value": "PATCH"
-                            },
-                            {
-                              "name": "DELETE",
-                              "value": "DELETE"
-                            }
-                          ]
+                          "type": "radios-inline"
                         }
                       },
                       "body": {
@@ -744,29 +705,16 @@
                               "string",
                               "null"
                             ],
+                            "enum": [
+                              "GET",
+                              "POST",
+                              "PUT",
+                              "PATCH",
+                              "DELETE"
+                            ],
+                            "description": "Defaults to GET when none is selected.",
                             "x-schema-form": {
-                              "type": "select",
-                              "titleMap": [
-                                {
-                                  "name": "GET (default)"
-                                },
-                                {
-                                  "name": "POST",
-                                  "value": "POST"
-                                },
-                                {
-                                  "name": "PUT",
-                                  "value": "PUT"
-                                },
-                                {
-                                  "name": "PATCH",
-                                  "value": "PATCH"
-                                },
-                                {
-                                  "name": "DELETE",
-                                  "value": "DELETE"
-                                }
-                              ]
+                              "type": "radios-inline"
                             }
                           },
                           "body": {

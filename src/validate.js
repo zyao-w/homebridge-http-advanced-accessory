@@ -1,7 +1,7 @@
 const Ajv = require("ajv");
 const { buildSchema, HTTP_METHODS } = require("./schema.js");
 
-// The form schema cannot list the methods (see schema.js), so they are added to the copy used for validation.
+// The form schema cannot contain null (see schema.js), so the validation copy accepts it for an unset method.
 function withMethodEnum(node) {
 	if (!node || typeof node !== "object") return node;
 	if (node.properties && node.properties.httpMethod) node.properties.httpMethod.enum = [null, ...HTTP_METHODS];
