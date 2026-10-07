@@ -1,7 +1,7 @@
 {
   "displayName": "HTTP Advanced Accessory",
   "name": "homebridge-http-advanced-accessory-zyao",
-  "version": "1.0.0",
+  "version": "1.1.0-alpha.1",
   "description": "http plugin for homebridge: https://github.com/nfarina/homebridge",
   "license": "ISC",
   "keywords": [
