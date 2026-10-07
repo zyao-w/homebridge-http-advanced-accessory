@@ -26,6 +26,7 @@
   "files": [
     "src/",
     "config.schema.json",
+    "CHANGELOG.md",
     "sample-config.json"
   ],
   "devDependencies": {
