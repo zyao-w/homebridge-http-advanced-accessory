@@ -20,6 +20,7 @@ Pre-releases are published under the `next` tag. The accessory registration of 1
 - Mappers are written flat (`{ "type": "regex", "regexp": "..." }`), and a static mapping is a list of `{ "from", "to" }` pairs.
 - `state` in templates and expressions is keyed by characteristic name (`state.Brightness`).
 - Characteristic handlers use `onGet` / `onSet`; failed requests are reported to HomeKit as communication errors.
+- In the Homebridge UI form, *Defaults*, *Set action*, *Characteristic properties* and *Fallback action* start collapsed.
 
 ## 1.1.2 - 2026-10-07
 
