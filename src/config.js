@@ -1,5 +1,17 @@
 const { resolveBearerToken } = require("./http/auth.js");
 
+const DEFAULT_INFORMATION = {
+	manufacturer: "Custom Manufacturer",
+	model: "HTTP Accessory Model",
+	serialNumber: "HTTP Accessory Serial Number",
+};
+
+// HomeKit rejects an empty value, so anything but text or a number falls back to the default
+function informationValue(value, fallback) {
+	const text = typeof value === "number" && Number.isFinite(value) ? String(value) : value;
+	return typeof text === "string" && text.trim() ? text.trim() : fallback;
+}
+
 /**
  * Turns the raw accessory configuration into normalized options.
  *
@@ -26,6 +38,11 @@ function parseConfig(config) {
 		name: config.name,
 		service: config.service,
 		optionCharacteristic: config.optionCharacteristic || [],
+		information: {
+			manufacturer: informationValue(config.manufacturer, DEFAULT_INFORMATION.manufacturer),
+			model: informationValue(config.model, DEFAULT_INFORMATION.model),
+			serialNumber: informationValue(config.serialNumber, DEFAULT_INFORMATION.serialNumber),
+		},
 		props: config.props || {},
 		forceRefreshDelay,
 		setterDelay: config.setterDelay || 0,

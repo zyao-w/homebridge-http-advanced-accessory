@@ -39,3 +39,25 @@ test("reports an unavailable token source instead of throwing", () => {
 test("honours immediately: false", () => {
 	expect(parseConfig({ immediately: false }).auth.immediately).toBe(false);
 });
+
+describe("accessory information", () => {
+	test("defaults to the generic values", () => {
+		expect(parseConfig({}).information).toEqual({
+			manufacturer: "Custom Manufacturer",
+			model: "HTTP Accessory Model",
+			serialNumber: "HTTP Accessory Serial Number",
+		});
+	});
+
+	test("takes manufacturer, model and serialNumber, trimmed", () => {
+		expect(parseConfig({ manufacturer: " Acme ", model: "M1", serialNumber: 12345 }).information).toEqual({
+			manufacturer: "Acme",
+			model: "M1",
+			serialNumber: "12345",
+		});
+	});
+
+	test.each(["", "   ", null, true, {}, [], NaN])("falls back to the default for %p", (value) => {
+		expect(parseConfig({ manufacturer: value }).information.manufacturer).toBe("Custom Manufacturer");
+	});
+});

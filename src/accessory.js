@@ -25,6 +25,7 @@ class HttpAdvancedAccessory {
 		this.name = options.name;
 		this.service = options.service;
 		this.optionCharacteristic = options.optionCharacteristic;
+		this.information = options.information;
 		this.props = options.props;
 		this.forceRefreshDelay = options.forceRefreshDelay;
 		this.setterDelay = options.setterDelay;
@@ -297,9 +298,9 @@ class HttpAdvancedAccessory {
 
 		const informationService = new Service.AccessoryInformation();
 		informationService
-			.setCharacteristic(Characteristic.Manufacturer, "Custom Manufacturer")
-			.setCharacteristic(Characteristic.Model, "HTTP Accessory Model")
-			.setCharacteristic(Characteristic.SerialNumber, "HTTP Accessory Serial Number");
+			.setCharacteristic(Characteristic.Manufacturer, this.information.manufacturer)
+			.setCharacteristic(Characteristic.Model, this.information.model)
+			.setCharacteristic(Characteristic.SerialNumber, this.information.serialNumber);
 
 		// A throw here would take down every accessory of the bridge, so only this one is left out
 		if (typeof Service[this.service] !== "function") {

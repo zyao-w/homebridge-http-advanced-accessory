@@ -21,7 +21,11 @@ class FakeCharacteristic {
 }
 
 class FakeInformationService {
-	setCharacteristic() {
+	constructor() {
+		this.values = {};
+	}
+	setCharacteristic(characteristic, value) {
+		this.values[characteristic] = value;
 		return this;
 	}
 }
@@ -96,6 +100,44 @@ const initOf = (call) => fetchMock.mock.calls[call][1];
 
 test("registers under the published package name", () => {
 	expect(registered).toEqual({ plugin: "homebridge-http-advanced-accessory-zyao", name: "HttpAdvancedAccessory" });
+});
+
+describe("accessory information", () => {
+	// The fake HAP names its characteristics m (Manufacturer), mo (Model) and s (SerialNumber)
+	const informationOf = (config) => {
+		const accessory = new AccessoryClass(jest.fn(), Object.assign({ service: "Switch", name: "Test" }, config), {
+			hap,
+		});
+		return accessory.getServices()[0].values;
+	};
+
+	test("keeps the generic values when nothing is configured", () => {
+		expect(informationOf({})).toEqual({
+			m: "Custom Manufacturer",
+			mo: "HTTP Accessory Model",
+			s: "HTTP Accessory Serial Number",
+		});
+	});
+
+	test("uses manufacturer, model and serialNumber from the configuration", () => {
+		expect(informationOf({ manufacturer: "Acme", model: "Pump 3000", serialNumber: "SN-42" })).toEqual({
+			m: "Acme",
+			mo: "Pump 3000",
+			s: "SN-42",
+		});
+	});
+
+	test("each value can be set on its own", () => {
+		expect(informationOf({ manufacturer: "Acme" })).toEqual({
+			m: "Acme",
+			mo: "HTTP Accessory Model",
+			s: "HTTP Accessory Serial Number",
+		});
+	});
+
+	test("an accessory that is left out still carries the configured information", () => {
+		expect(informationOf({ service: undefined, manufacturer: "Acme" }).m).toBe("Acme");
+	});
 });
 
 describe("getter actions", () => {
