@@ -5,6 +5,15 @@ const { renderTemplate } = require("./template.js");
 
 const INTEGER_FORMATS = ["int", "uint16", "uint8", "uint32", "uint64"];
 
+// A failing poll is logged once, then reminded about at this interval until it recovers
+const OUTAGE_REMINDER_MS = 5 * 60 * 1000;
+
+function formatDuration(ms) {
+	const minutes = Math.round(ms / 60000);
+	if (minutes < 1) return `${Math.max(1, Math.round(ms / 1000))}s`;
+	return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+}
+
 const compactName = (characteristic) => characteristic.displayName.replace(/\s/g, "");
 
 /** Binds one normalized device to a HomeKit accessory. */
@@ -24,6 +33,8 @@ class DeviceController {
 		this.setTimers = new Map();
 		// Characteristics whose last poll failed; HomeKit reads them as a communication error until a poll succeeds
 		this.pollFailures = new Set();
+		// When each failing poll started and when it was last logged
+		this.outages = new Map();
 		this.unsubscribers = [];
 	}
 
@@ -145,11 +156,25 @@ class DeviceController {
 
 		const publish = (value) => {
 			this.debugLog(name + " poller returned data: " + value);
+			const outage = this.outages.get(name);
+			if (outage) {
+				this.outages.delete(name);
+				this.log("Poller for %s recovered after %s", name, formatDuration(Date.now() - outage.since));
+			}
 			this._publish(name, characteristic, value);
 		};
 		const failed = (error) => {
 			this.pollFailures.add(name);
-			this.log("Poller for %s errored: %s", name, error && error.message);
+			const message = error && error.message;
+			const now = Date.now();
+			const outage = this.outages.get(name);
+			if (!outage) {
+				this.outages.set(name, { since: now, lastLogged: now });
+				this.log("Poller for %s errored: %s", name, message);
+			} else if (now - outage.lastLogged >= OUTAGE_REMINDER_MS) {
+				outage.lastLogged = now;
+				this.log("Poller for %s is still failing after %s: %s", name, formatDuration(now - outage.since), message);
+			}
 		};
 
 		// Actions that issue the same request share one poll
