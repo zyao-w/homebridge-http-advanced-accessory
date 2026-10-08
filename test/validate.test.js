@@ -268,7 +268,7 @@ describe("validateDevice", () => {
 		});
 		expect(errors).toEqual([
 			expect.stringMatching(
-				/mappers\[0\]\.type must be one of: regex, static, xpath, jpath, scale, expression, script/
+				/mappers\[0\]\.type must be one of: regex, static, xpath, jpath, number, scale, expression, script/
 			),
 		]);
 	});
