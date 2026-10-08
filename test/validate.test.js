@@ -247,6 +247,13 @@ describe("validateDevice", () => {
 		]);
 	});
 
+	test("accepts the accessory information settings", () => {
+		expect(valid({ name: "A", service: "Switch", manufacturer: "Acme", model: "M1", serialNumber: "SN-1" })).toEqual(
+			[]
+		);
+		expect(valid({ name: "A", service: "Switch", manufacturer: 5 })).toEqual([]);
+	});
+
 	test("reports wrong types", () => {
 		expect(valid({ name: "A", service: "Switch", debug: "maybe" })).toEqual([
 			expect.stringMatching(/^debug must be boolean/),

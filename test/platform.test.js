@@ -38,6 +38,14 @@ class FakeService {
 
 class InformationService extends FakeService {
 	static UUID = "information";
+	constructor(name) {
+		super(name);
+		this.values = {};
+	}
+	setCharacteristic(characteristic, value) {
+		this.values[characteristic] = value;
+		return this;
+	}
 }
 
 class SwitchService extends FakeService {
@@ -260,6 +268,37 @@ describe("registering accessories", () => {
 
 		const fromDefaults = launch({ defaults: { allowUnsafeEval: true }, devices: [device] });
 		expect(registered(fromDefaults.api)).toHaveLength(1);
+	});
+});
+
+describe("accessory information", () => {
+	// The fake HAP names its characteristics m (Manufacturer), mo (Model) and s (SerialNumber)
+	const informationOf = (config) => {
+		const { api } = launch(config);
+		return registered(api)[0].getService(InformationService).values;
+	};
+
+	test("keeps the generic values when nothing is configured", () => {
+		expect(informationOf({ devices: [switchDevice()] })).toEqual({
+			m: "Custom Manufacturer",
+			mo: "HTTP Accessory Model",
+			s: "HTTP Accessory Serial Number",
+		});
+	});
+
+	test("uses the device settings over the platform defaults", () => {
+		const device = switchDevice({ model: "Pump 3000", serialNumber: "SN-42" });
+		expect(informationOf({ defaults: { manufacturer: "Acme", model: "Generic" }, devices: [device] })).toEqual({
+			m: "Acme",
+			mo: "Pump 3000",
+			s: "SN-42",
+		});
+	});
+
+	test("does not change the identity of the accessory", () => {
+		const plain = registered(launch({ devices: [switchDevice()] }).api)[0].UUID;
+		const described = registered(launch({ devices: [switchDevice({ serialNumber: "SN-42" })] }).api)[0].UUID;
+		expect(described).toBe(plain);
 	});
 });
 

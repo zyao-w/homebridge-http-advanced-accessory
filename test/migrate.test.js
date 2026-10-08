@@ -76,16 +76,28 @@ describe("migrateAccessory", () => {
 		expect(device.maxConcurrent).toBe(3);
 	});
 
-	test("warns about settings it cannot carry over", () => {
+	test("carries manufacturer, model and serialNumber over", () => {
 		const { device, warnings } = migrateAccessory({
 			name: "A",
 			service: "Switch",
 			manufacturer: "Acme",
+			model: "M1",
+			serialNumber: "SN-1",
+		});
+		expect(device).toMatchObject({ manufacturer: "Acme", model: "M1", serialNumber: "SN-1" });
+		expect(warnings).toEqual([]);
+	});
+
+	test("warns about settings it cannot carry over", () => {
+		const { device, warnings } = migrateAccessory({
+			name: "A",
+			service: "Switch",
+			colour: "red",
 			urls: { refresh: { url: "http://h" } },
 		});
-		expect(device).not.toHaveProperty("manufacturer");
+		expect(device).not.toHaveProperty("colour");
 		expect(warnings).toEqual(
-			expect.arrayContaining([expect.stringContaining('"manufacturer"'), expect.stringContaining('"refresh"')])
+			expect.arrayContaining([expect.stringContaining('"colour"'), expect.stringContaining('"refresh"')])
 		);
 	});
 
