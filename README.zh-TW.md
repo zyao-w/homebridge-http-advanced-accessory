@@ -1,4 +1,4 @@
-<p align="center"><img src="branding/icon-128.png" width="100" height="100" alt="HTTP Advanced Accessory icon"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/zyao-w/homebridge-http-advanced-accessory/master/branding/icon.png" width="100" height="100" alt="HTTP Advanced Accessory icon"></p>
 
 <h1 align="center">homebridge http advanced accessory</h1>
 
