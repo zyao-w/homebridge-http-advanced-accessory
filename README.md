@@ -83,6 +83,7 @@ The `platform` block belongs in the top-level `platforms` list of `config.json`.
 | `optionCharacteristic`                  | List of optional characteristics of the service that you want to expose, for example `["Brightness"]`.                                                                                                                                                                          |
 | `manufacturer`, `model`, `serialNumber` | Shown in the accessory information of HomeKit. They default to `Custom Manufacturer`, `HTTP Accessory Model` and `HTTP Accessory Serial Number`; an empty value is ignored. The serial number does not change the identity of the accessory. They can be set in `defaults` too. |
 | `characteristics`                       | What to read and write, see [Characteristics](#characteristics).                                                                                                                                                                                                                |
+| `additionalServices`                    | More services on the same accessory, see [Additional services](#additional-services).                                                                                                                                                                                           |
 | `forceRefreshDelay`                     | Polling interval in seconds. Defaults to 0, which disables polling.                                                                                                                                                                                                             |
 | `setterDelay`                           | Milliseconds to wait before sending a _set_ request; if more arrive meanwhile, only the last one is sent. HomeKit gets its answer at once. Defaults to 0.                                                                                                                       |
 | `username`, `password`                  | HTTP Basic credentials, see [Authentication](#authentication).                                                                                                                                                                                                                  |
@@ -114,6 +115,26 @@ Read requests with the same method, URL, body and credentials that are in flight
 - `get` is the action that reads the value (see [Actions](#actions)). Without it the characteristic is not polled and answers with its last known value.
 - `set` is the action that writes the value. Without it a value set from HomeKit is accepted, but nothing is sent.
 - `props` overrides properties of the characteristic: `format`, `unit`, `minValue`, `maxValue`, `minStep`, `validValues`, `validValueRanges`, `perms` and `maxLen`.
+
+### Additional services
+
+One accessory can carry more than one HomeKit service, for example a CO2 sensor that also reports temperature and humidity, or a sensor with a battery. The service of the device (`service` and `characteristics`) stays as it is; every further service is an entry of `additionalServices`:
+
+| Setting                | Description                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`                   | Permanent identifier of the service on this accessory. Required and unique within the device.                            |
+| `service`              | The HomeKit service, for example `HumiditySensor` or `BatteryService`. Required.                                         |
+| `name`                 | Name of the service in HomeKit. Defaults to the name of the device followed by the `id`.                                 |
+| `optionCharacteristic` | Optional characteristics of this service to expose, for example `["BatteryLevel"]`.                                      |
+| `characteristics`      | What to read and write in this service, with the same settings as [the characteristics of the device](#characteristics). |
+
+- The `id` is what HomeKit uses to recognise the service. Do not change or remove it afterwards: HomeKit would see another service and lose what you built on it (names, rooms, automations). Adding a service never affects the others, and none of this changes the identity of the accessory itself.
+- The services share everything else with the device: authentication, polling interval, timeouts, retries, cache and `allowUnsafeEval`. Characteristics of different services that read the same URL share one request.
+- The values of a service are in `state.<id>.<Characteristic>`, for example `state.battery.BatteryLevel`, while those of the device keep `state.<Characteristic>`. An `id` therefore may not be the name of a characteristic of the device.
+- Two services can have a characteristic with the same name (two batteries, say) without sharing values. A failing read in one service does not affect the others.
+- A service with an unknown type, a missing `id` or a repeated `id` keeps the whole device from loading, and the log says which. The accessory that HomeKit already has stays as it is.
+
+A complete example is [a CO2 sensor with temperature, humidity and battery](#co2-sensor-with-temperature-humidity-and-battery).
 
 ## Actions
 
@@ -399,6 +420,106 @@ A `jpath` mapper picks a field out of the JSON response and `expression` mappers
 ```
 
 The three characteristics read the same URL, so the plugin sends one request for all of them.
+
+### CO2 sensor with temperature, humidity and battery
+
+One accessory with four services. Every characteristic reads the same URL, so the plugin sends one request for all of them, and a response that is not usable makes the characteristic fail ("No Response") instead of showing a made-up value.
+
+```json
+{
+	"name": "Living room air",
+	"service": "CarbonDioxideSensor",
+	"optionCharacteristic": ["CarbonDioxideLevel"],
+	"forceRefreshDelay": 30,
+	"bearerToken": "env:AIR_API_TOKEN",
+	"characteristics": [
+		{
+			"characteristic": "CarbonDioxideDetected",
+			"get": {
+				"url": "https://example.com/api/air/",
+				"mappers": [
+					{ "type": "jpath", "jpath": "$.data.co2" },
+					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value > 1200 ? 1 : 0" }
+				]
+			}
+		},
+		{
+			"characteristic": "CarbonDioxideLevel",
+			"get": {
+				"url": "https://example.com/api/air/",
+				"mappers": [
+					{ "type": "jpath", "jpath": "$.data.co2" },
+					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
+				]
+			}
+		}
+	],
+	"additionalServices": [
+		{
+			"id": "temperature",
+			"name": "Temperature",
+			"service": "TemperatureSensor",
+			"characteristics": [
+				{
+					"characteristic": "CurrentTemperature",
+					"get": {
+						"url": "https://example.com/api/air/",
+						"mappers": [
+							{ "type": "jpath", "jpath": "$.data.temperature" },
+							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
+						]
+					}
+				}
+			]
+		},
+		{
+			"id": "humidity",
+			"name": "Humidity",
+			"service": "HumiditySensor",
+			"characteristics": [
+				{
+					"characteristic": "CurrentRelativeHumidity",
+					"get": {
+						"url": "https://example.com/api/air/",
+						"mappers": [
+							{ "type": "jpath", "jpath": "$.data.humidity" },
+							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
+						]
+					}
+				}
+			]
+		},
+		{
+			"id": "battery",
+			"name": "Battery",
+			"service": "BatteryService",
+			"optionCharacteristic": ["BatteryLevel"],
+			"characteristics": [
+				{
+					"characteristic": "StatusLowBattery",
+					"get": {
+						"url": "https://example.com/api/air/",
+						"mappers": [
+							{ "type": "jpath", "jpath": "$.data.battery" },
+							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value < 20 ? 1 : 0" }
+						]
+					}
+				},
+				{
+					"characteristic": "BatteryLevel",
+					"get": {
+						"url": "https://example.com/api/air/",
+						"mappers": [
+							{ "type": "jpath", "jpath": "$.data.battery" },
+							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
+						]
+					}
+				}
+			]
+		}
+	]
+}
+```
 
 ### Bticino "Nuovo antifurto filare"
 
