@@ -51,7 +51,12 @@ function createMapperFromEntry(entry, context, where) {
 		throw new Error(`${where}: a "script" mapper runs arbitrary JavaScript and needs "allowUnsafeEval": true`);
 	}
 
-	const mapper = createMapper(type, parameters, context);
+	let mapper;
+	try {
+		mapper = createMapper(type, parameters, context);
+	} catch (error) {
+		throw new Error(`${where}: ${error.message}`);
+	}
 	if (!mapper && context.warn) {
 		context.warn(`${where}: unknown mapper type "${entry.type}" ignored`);
 	}
