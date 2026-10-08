@@ -127,6 +127,43 @@ describe("form conditions", () => {
 		expect(run(set, model, [0, 0])).toBe(false);
 	});
 
+	test("the fields of a mapper in an additional service use the position of that service", () => {
+		const service =
+			buildSchema().schema.properties.devices.items.properties.additionalServices.items.properties.characteristics
+				.items;
+		const fields = (location) =>
+			location.split(".").reduce((node, key) => node.properties[key], service).properties.mappers.items.properties;
+		const withServices = {
+			devices: [
+				{
+					characteristics: [{ get: { mappers: [{ type: "script" }] } }],
+					additionalServices: [
+						{
+							characteristics: [
+								{ get: { mappers: [{ type: "jpath" }], inconclusive: { mappers: [{ type: "regex" }] } } },
+							],
+						},
+						{ characteristics: [{ get: { mappers: [{ type: "regex" }, { type: "scale" }] } }] },
+					],
+				},
+			],
+		};
+
+		// indexes: device, service, characteristic, mapper
+		expect(run(fields("get").jpath, withServices, [0, 0, 0, 0])).toBe(true);
+		expect(run(fields("get").regexp, withServices, [0, 0, 0, 0])).toBe(false);
+		expect(run(fields("get").regexp, withServices, [0, 1, 0, 0])).toBe(true);
+		expect(run(fields("get").inputMin, withServices, [0, 1, 0, 1])).toBe(true);
+		expect(run(fields("get").inputMin, withServices, [0, 1, 0, 0])).toBe(false);
+		expect(run(fields("get.inconclusive").regexp, withServices, [0, 0, 0, 0])).toBe(true);
+		// the mapper of the device itself is not the one at the same indexes
+		expect(run(fields("get").script, withServices, [0, 0, 0, 0])).toBe(false);
+
+		const fallback = service.properties.get.properties.inconclusive;
+		expect(run(fallback, withServices, [0, 0, 0])).toBe(true);
+		expect(run(fallback, withServices, [0, 1, 0])).toBe(false);
+	});
+
 	test("every mapper field except the type depends on the type", () => {
 		for (const location of ["get", "set", "get.inconclusive", "set.inconclusive"]) {
 			const fields = mapperFields(location);
@@ -246,6 +283,42 @@ describe("validateDevice", () => {
 		expect(valid(device("POST"))).toEqual([]);
 		expect(valid(device("FETCH"))).toEqual([
 			expect.stringMatching(/get\.httpMethod must be one of: GET, POST, PUT, PATCH, DELETE/),
+		]);
+	});
+
+	test("validates additional services like the device itself", () => {
+		const entry = (service) => ({ name: "A", service: "Switch", additionalServices: [service] });
+		const humidity = {
+			id: "humidity",
+			service: "HumiditySensor",
+			name: "Humidity",
+			optionCharacteristic: ["Foo"],
+			characteristics: [
+				{
+					characteristic: "CurrentRelativeHumidity",
+					get: { url: "u", mappers: [{ type: "regex", regexp: "(\\d+)" }] },
+				},
+			],
+		};
+		expect(valid(entry(humidity))).toEqual([]);
+		expect(valid(entry({ ...humidity, colour: "red" }))).toEqual([
+			'additionalServices[0] has an unknown setting "colour"',
+		]);
+		expect(
+			valid(
+				entry({
+					...humidity,
+					characteristics: [{ characteristic: "X", get: { url: "u", mappers: [{ type: "nope" }] } }],
+				})
+			)
+		).toEqual([
+			expect.stringMatching(/additionalServices\[0\]\.characteristics\[0\]\.get\.mappers\[0\]\.type must be one of/),
+		]);
+		expect(valid(entry({ ...humidity, characteristics: "On" }))).toEqual([
+			expect.stringMatching(/^additionalServices\[0\]\.characteristics must be array/),
+		]);
+		expect(valid({ name: "A", service: "Switch", additionalServices: "battery" })).toEqual([
+			expect.stringMatching(/^additionalServices must be array/),
 		]);
 	});
 

@@ -60,6 +60,108 @@ describe("accessory information", () => {
 	});
 });
 
+describe("additional services", () => {
+	const battery = (extra = {}) => ({
+		id: "battery",
+		service: "BatteryService",
+		optionCharacteristic: ["BatteryLevel"],
+		characteristics: [{ characteristic: "BatteryLevel", get: { url: "http://h/battery" } }],
+		...extra,
+	});
+	const device = (...services) => normalizeDevice({ ...base, additionalServices: services });
+
+	test("a device has none by default", () => {
+		expect(normalizeDevice(base).additionalServices).toEqual([]);
+	});
+
+	test("normalizes the services with their own characteristics and state", () => {
+		const normalized = device(battery(), { id: "rh", name: "Humidity", service: "HumiditySensor" });
+		expect(normalized.additionalServices).toHaveLength(2);
+
+		const [first, second] = normalized.additionalServices;
+		expect(first).toMatchObject({
+			id: "battery",
+			name: "Light battery",
+			service: "BatteryService",
+			optionCharacteristic: ["BatteryLevel"],
+			state: {},
+		});
+		expect(first.characteristics.map((c) => c.name)).toEqual(["BatteryLevel"]);
+		expect(second).toMatchObject({ id: "rh", name: "Humidity", optionCharacteristic: [], characteristics: [] });
+		// The values of a service are kept in the state of the device under its id
+		expect(normalized.state.battery).toBe(first.state);
+		expect(normalized.state.rh).toBe(second.state);
+	});
+
+	test("lets expressions read the state of a service", () => {
+		const normalized = device(battery());
+		const entry = {
+			characteristic: "On",
+			get: { url: "u", mappers: [{ type: "expression", expression: "state.battery.BatteryLevel + value" }] },
+		};
+		const withExpression = normalizeDevice({ ...base, characteristics: [entry], additionalServices: [battery()] });
+		withExpression.additionalServices[0].state.BatteryLevel = 40;
+		expect(chain(withExpression.characteristics[0].get.mappers, 2)).toBe(42);
+		expect(normalized.additionalServices[0].state).toEqual({});
+	});
+
+	test("two services may list the same characteristic", () => {
+		const normalized = device(battery(), battery({ id: "spare" }));
+		expect(normalized.additionalServices.map((s) => s.characteristics[0].name)).toEqual([
+			"BatteryLevel",
+			"BatteryLevel",
+		]);
+	});
+
+	test("ignores the empty row of the form", () => {
+		expect(device({}, battery(), {}).additionalServices.map((s) => s.id)).toEqual(["battery"]);
+	});
+
+	test.each([
+		["no id", battery({ id: undefined }), /Device "Light" additional service 1 has no "id"/],
+		["a blank id", battery({ id: "  " }), /additional service 1 has no "id"/],
+		["no service", battery({ service: undefined }), /Device "Light" service "battery" has no "service"/],
+		["a clashing id", battery({ id: "On" }), /service "On": the id clashes with a characteristic of the device/],
+		["the prototype as id", battery({ id: "__proto__" }), /the id clashes/],
+		[
+			"a listed twice characteristic",
+			battery({ characteristics: [{ characteristic: "A" }, { characteristic: "A" }] }),
+			/Device "Light" service "battery": characteristic "A" is listed twice/,
+		],
+		[
+			"an unnamed characteristic",
+			battery({ characteristics: [{ get: { url: "u" } }] }),
+			/Device "Light" service "battery": a characteristic entry has no "characteristic" name/,
+		],
+		[
+			"an action without a url",
+			battery({ characteristics: [{ characteristic: "A", get: {} }] }),
+			/Device "Light" service "battery" A get has no url/,
+		],
+		[
+			"a broken mapper",
+			battery({ characteristics: [{ characteristic: "A", get: { url: "u", mappers: [{ type: "scale" }] } }] }),
+			/Device "Light" service "battery" A get: a "scale" mapper needs a number for "inputMin"/,
+		],
+	])("refuses a service with %s", (_, service, message) => {
+		expect(() =>
+			normalizeDevice({ ...base, characteristics: [{ characteristic: "On" }], additionalServices: [service] })
+		).toThrow(message);
+	});
+
+	test("refuses two services with the same id", () => {
+		expect(() => device(battery(), battery())).toThrow('Device "Light": the service id "battery" is used twice');
+	});
+
+	test("the script and template rules apply inside a service", () => {
+		const script = battery({
+			characteristics: [{ characteristic: "A", get: { url: "u", mappers: [{ type: "script", script: "value" }] } }],
+		});
+		expect(() => device(script)).toThrow('needs "allowUnsafeEval": true');
+		expect(() => normalizeDevice({ ...base, allowUnsafeEval: true, additionalServices: [script] })).not.toThrow();
+	});
+});
+
 describe("settings", () => {
 	test("device settings win over platform defaults", () => {
 		const device = normalizeDevice(

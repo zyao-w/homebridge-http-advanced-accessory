@@ -68,6 +68,23 @@ class LightService extends FakeService {
 	}
 }
 
+class HumidityService extends FakeService {
+	static UUID = "humidity";
+	constructor(name) {
+		super(name);
+		this.characteristics = [new FakeCharacteristic("Current Relative Humidity", "float")];
+	}
+}
+
+class BatteryService extends FakeService {
+	static UUID = "battery";
+	constructor(name) {
+		super(name);
+		this.characteristics = [new FakeCharacteristic("Status Low Battery", "int")];
+		this.optionalCharacteristics = [new FakeCharacteristic("Battery Level", "int")];
+	}
+}
+
 class FakeAccessory {
 	constructor(displayName, UUID) {
 		this.displayName = displayName;
@@ -77,8 +94,9 @@ class FakeAccessory {
 	getService(Type) {
 		return this.services.find((service) => service instanceof Type);
 	}
-	addService(Type, name) {
+	addService(Type, name, subtype) {
 		const service = new Type(name);
+		service.subtype = subtype;
 		this.services.push(service);
 		return service;
 	}
@@ -98,7 +116,13 @@ function makeApi() {
 	const listeners = {};
 	return {
 		hap: {
-			Service: { AccessoryInformation: InformationService, Switch: SwitchService, Lightbulb: LightService },
+			Service: {
+				AccessoryInformation: InformationService,
+				Switch: SwitchService,
+				Lightbulb: LightService,
+				HumiditySensor: HumidityService,
+				BatteryService,
+			},
 			Characteristic: { Manufacturer: "m", Model: "mo", SerialNumber: "s" },
 			uuid: { generate: (seed) => "uuid:" + seed },
 			HapStatusError,
@@ -575,6 +599,216 @@ describe("writing", () => {
 		await jest.advanceTimersByTimeAsync(1000);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(urlOf(0)).toBe("http://h/set?v=on");
+	});
+});
+
+describe("additional services", () => {
+	const sensor = (extra = {}) => ({
+		name: "Air",
+		service: "Switch",
+		forceRefreshDelay: 5,
+		characteristics: [{ characteristic: "On", get: { url: "http://h/air" } }],
+		additionalServices: [
+			{
+				id: "humidity",
+				service: "HumiditySensor",
+				characteristics: [
+					{
+						characteristic: "CurrentRelativeHumidity",
+						get: { url: "http://h/air", mappers: [{ type: "jpath", jpath: "$.rh" }] },
+					},
+				],
+			},
+			{
+				id: "battery",
+				name: "Battery",
+				service: "BatteryService",
+				optionCharacteristic: ["BatteryLevel"],
+				characteristics: [
+					{ characteristic: "StatusLowBattery", get: { url: "http://h/battery/low" } },
+					{ characteristic: "BatteryLevel", get: { url: "http://h/battery/level" } },
+				],
+			},
+		],
+		...extra,
+	});
+	const characteristicsOf = (accessory, UUID) => serviceOf(accessory, UUID).characteristics;
+	const named = (accessory, UUID, name) =>
+		serviceOf(accessory, UUID).characteristics.find((c) => c.displayName === name);
+
+	test("adds the services to the accessory in order, each with its own identifier", () => {
+		const { api } = launch({ devices: [sensor()] });
+		const [accessory] = registered(api);
+		expect(accessory.services.map((s) => [s.UUID, s.subtype, s.displayName])).toEqual([
+			["information", undefined, undefined],
+			["switch", undefined, "Air"],
+			["humidity", "humidity", "Air humidity"],
+			["battery", "battery", "Battery"],
+		]);
+	});
+
+	test("reads every service and shares one request between services that use the same URL", async () => {
+		jest.useFakeTimers();
+		responses["http://h/air"] = '{"rh":55.5}';
+		responses["http://h/battery/low"] = "0";
+		responses["http://h/battery/level"] = "87";
+		const { api } = launch({ devices: [sensor()] });
+		const [accessory] = registered(api);
+		await jest.advanceTimersByTimeAsync(0);
+
+		expect(fetchMock.mock.calls.map((call) => call[0]).sort()).toEqual([
+			"http://h/air",
+			"http://h/battery/level",
+			"http://h/battery/low",
+		]);
+		expect(await named(accessory, "humidity", "Current Relative Humidity").getHandler()).toBe(55.5);
+		expect(await named(accessory, "battery", "Status Low Battery").getHandler()).toBe(0);
+		expect(await named(accessory, "battery", "Battery Level").getHandler()).toBe(87);
+	});
+
+	test("templates reach the values of an additional service as state.<id>.<characteristic>", async () => {
+		jest.useFakeTimers();
+		responses["http://h/air"] = "{}";
+		responses["http://h/battery/level"] = "87";
+		const device = sensor();
+		device.characteristics[0].set = { url: "http://h/set?battery=${state.battery.BatteryLevel}&v={value}" };
+		const { api } = launch({ devices: [device] });
+		const [accessory] = registered(api);
+		await jest.advanceTimersByTimeAsync(0);
+
+		await characteristicsOf(accessory, "switch")[0].setHandler(1);
+		expect(fetchMock.mock.calls.map((call) => call[0])).toContain("http://h/set?battery=87&v=1");
+	});
+
+	test("two services can use the same characteristic name without sharing values or failures", async () => {
+		jest.useFakeTimers();
+		responses["http://h/a"] = "11";
+		responses["http://h/b"] = { status: 503, body: "" };
+		const battery = (id, url) => ({
+			id,
+			service: "BatteryService",
+			optionCharacteristic: ["BatteryLevel"],
+			characteristics: [{ characteristic: "BatteryLevel", get: { url } }],
+		});
+		const device = {
+			name: "Pair",
+			service: "Switch",
+			forceRefreshDelay: 5,
+			additionalServices: [battery("a", "http://h/a"), battery("b", "http://h/b")],
+		};
+		const { api, log } = launch({ devices: [device] });
+		const [accessory] = registered(api);
+		await jest.advanceTimersByTimeAsync(0);
+
+		const [first, second] = accessory.services.filter((s) => s.UUID === "battery");
+		const level = (service) => service.characteristics.find((c) => c.displayName === "Battery Level");
+		expect(await level(first).getHandler()).toBe(11);
+		await expect(level(second).getHandler()).rejects.toMatchObject({ status: -70402 });
+		expect(log).toHaveBeenCalledWith(
+			"[Pair] Poller for %s errored: %s",
+			"b.BatteryLevel",
+			"HTTP 503 Service Unavailable"
+		);
+		expect(log).not.toHaveBeenCalledWith("[Pair] Poller for %s errored: %s", "a.BatteryLevel", expect.anything());
+	});
+
+	test("a failed read in an additional service does not touch the others", async () => {
+		jest.useFakeTimers();
+		responses["http://h/air"] = '{"rh":40}';
+		responses["http://h/battery/low"] = { status: 401, body: "" };
+		responses["http://h/battery/level"] = "50";
+		const { api } = launch({ devices: [sensor()] });
+		const [accessory] = registered(api);
+		await jest.advanceTimersByTimeAsync(0);
+
+		await expect(named(accessory, "battery", "Status Low Battery").getHandler()).rejects.toMatchObject({
+			status: -70402,
+		});
+		expect(await named(accessory, "battery", "Battery Level").getHandler()).toBe(50);
+		expect(await named(accessory, "humidity", "Current Relative Humidity").getHandler()).toBe(40);
+	});
+
+	test("reads without polling answer from the request of the service", async () => {
+		responses["http://h/air"] = '{"rh":61}';
+		const device = sensor({ forceRefreshDelay: 0 });
+		const { api } = launch({ devices: [device] });
+		const [accessory] = registered(api);
+		expect(await named(accessory, "humidity", "Current Relative Humidity").getHandler()).toBe(61);
+	});
+
+	test("rebuilds the services of a cached accessory, including the additional ones", () => {
+		const cached = new FakeAccessory("Air", "uuid:HttpAdvancedPlatform:Air");
+		cached.addService(SwitchService, "Old");
+		cached.addService(BatteryService, "Leftover", "gone");
+
+		const { api } = launch({ devices: [sensor()] }, { cached: [cached] });
+		expect(api.updatePlatformAccessories).toHaveBeenCalledWith([cached]);
+		expect(cached.services.map((s) => [s.UUID, s.subtype])).toEqual([
+			["information", undefined],
+			["switch", undefined],
+			["humidity", "humidity"],
+			["battery", "battery"],
+		]);
+	});
+
+	test("a cached accessory keeps its services when an additional service is unknown", () => {
+		const cached = new FakeAccessory("Air", "uuid:HttpAdvancedPlatform:Air");
+		cached.addService(SwitchService, "Old");
+		const before = [...cached.services];
+
+		const device = sensor();
+		device.additionalServices[0].service = "Nope";
+		const { api, log } = launch({ devices: [device] }, { cached: [cached] });
+
+		expect(log.error).toHaveBeenCalledWith('Device "Air" service "humidity" has an unknown service "Nope"');
+		expect(api.updatePlatformAccessories).not.toHaveBeenCalled();
+		expect(cached.services).toEqual(before);
+	});
+
+	test.each([
+		["has no id", { id: undefined }, /additional service 1 has no "id"/],
+		["has no service", { service: undefined }, /service "humidity" has no "service"/],
+		["clashes with a characteristic", { id: "On" }, /the id clashes with a characteristic of the device/],
+		["is the prototype", { id: "__proto__" }, /the id clashes/],
+	])("refuses a service that %s and keeps the other devices", (_, change, message) => {
+		const device = sensor();
+		device.additionalServices[0] = { ...device.additionalServices[0], ...change };
+		const { api, log } = launch({ devices: [device, switchDevice()] });
+		expect(registered(api).map((a) => a.displayName)).toEqual(["Pump"]);
+		expect(log.error).toHaveBeenCalledWith(expect.stringMatching(message));
+	});
+
+	test("refuses two services with the same id", () => {
+		const device = sensor();
+		device.additionalServices[1].id = "humidity";
+		const { api, log } = launch({ devices: [device] });
+		expect(registered(api)).toEqual([]);
+		expect(log.error).toHaveBeenCalledWith('Device "Air": the service id "humidity" is used twice');
+	});
+
+	test("ignores the empty row that the form shows for an empty list", () => {
+		const { api } = launch({ devices: [switchDevice({ additionalServices: [{}] })] });
+		expect(registered(api)[0].services.map((s) => s.UUID)).toEqual(["information", "switch"]);
+	});
+
+	test("warns about a characteristic the additional service does not have", () => {
+		const device = sensor();
+		device.additionalServices[0].characteristics.push({ characteristic: "Nope" });
+		const { log } = launch({ devices: [device] });
+		expect(log).toHaveBeenCalledWith(
+			'[Air] WARNING: service "humidity" (HumiditySensor) has no characteristic "Nope" to bind, or it is not listed in optionCharacteristic'
+		);
+	});
+
+	test("the startup log counts the services", () => {
+		const { log } = launch({ devices: [sensor()] });
+		expect(log).toHaveBeenCalledWith('Configured Device "Air" with 4 characteristic(s) and 2 additional service(s)');
+	});
+
+	test("the identity of the accessory does not depend on the additional services", () => {
+		const plain = registered(launch({ devices: [sensor({ additionalServices: [] })] }).api)[0].UUID;
+		const extended = registered(launch({ devices: [sensor()] }).api)[0].UUID;
+		expect(extended).toBe(plain);
 	});
 });
 
