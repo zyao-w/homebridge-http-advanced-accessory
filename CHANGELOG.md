@@ -133,3 +133,15 @@ Settings of existing `config.json` files keep working. The plugin is still confi
 - With `"immediately": false`, Basic credentials are sent after a `401` response; HTTP Digest authentication is no longer supported.
 - Getters without a configured action are no longer polled.
 - An accessory whose `bearerToken` source cannot be read logs an error and fails its requests instead of falling back to Basic authentication.
+
+## 1.0.0 - 2026-10-07
+
+First release of this fork, published as `homebridge-http-advanced-accessory-zyao`. It is based on the original [homebridge-http-advanced-accessory](https://github.com/staromeste/homebridge-http-advanced-accessory) and adds one feature: Bearer Token authentication.
+
+### Added
+
+- `bearerToken`: when set, every request is sent with `Authorization: Bearer <token>`. It takes precedence over `username` and `password`; without it, HTTP Basic authentication works as before.
+
+### Changed
+
+- The package is renamed to `homebridge-http-advanced-accessory-zyao` and the README documents Bearer Token authentication.
