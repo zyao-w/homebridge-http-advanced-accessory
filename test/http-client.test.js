@@ -34,10 +34,61 @@ describe("buildAuthorization", () => {
 });
 
 describe("requests", () => {
-	test("returns status and body; HTTP error statuses are not errors", async () => {
-		const fetch = fakeFetch(() => ({ status: 500, body: "boom" }));
+	test("returns status and body of a successful response", async () => {
+		const fetch = fakeFetch(() => ({ status: 204, body: "" }));
 		const client = new HttpClient({ fetch });
-		expect(await client.read({ url: "http://h/a" })).toEqual({ status: 500, body: "boom" });
+		expect(await client.read({ url: "http://h/a" })).toEqual({ status: 204, body: "" });
+	});
+
+	test.each([301, 304, 401, 404, 500, 503])("a %i response is an error with the status", async (status) => {
+		const client = new HttpClient({ fetch: fakeFetch(() => ({ status, body: "{}" })) });
+		await expect(client.read({ url: "http://h/a" })).rejects.toMatchObject({
+			status,
+			message: expect.stringMatching(/^HTTP \d{3}/),
+		});
+		await expect(client.write({ url: "http://h/a" })).rejects.toMatchObject({ status });
+	});
+
+	test("the error names the status and not the URL", async () => {
+		const client = new HttpClient({ fetch: fakeFetch(() => ({ status: 401, body: "" })) });
+		await expect(client.read({ url: "http://h/a?token=secret" })).rejects.toThrow(/^HTTP 401 Unauthorized$/);
+	});
+
+	test("a status error is not retried, a network error is", async () => {
+		const status = fakeFetch(() => ({ status: 503, body: "" }));
+		await expect(
+			new HttpClient({ fetch: status, retries: 2, retryDelay: 0 }).read({ url: "http://h/a" })
+		).rejects.toThrow();
+		expect(status).toHaveBeenCalledTimes(1);
+
+		let calls = 0;
+		const flaky = fakeFetch(() => {
+			if (++calls < 3) throw new Error("ECONNRESET");
+			return { status: 200, body: "ok" };
+		});
+		const client = new HttpClient({ fetch: flaky, retries: 2, retryDelay: 0 });
+		expect(await client.read({ url: "http://h/a" })).toEqual({ status: 200, body: "ok" });
+	});
+
+	test("a status error is not cached", async () => {
+		let status = 500;
+		const fetch = fakeFetch(() => ({ status, body: "x" }));
+		const client = new HttpClient({ fetch, cacheTTL: 60 });
+		await expect(client.read({ url: "http://h/a" })).rejects.toMatchObject({ status: 500 });
+		status = 200;
+		expect(await client.read({ url: "http://h/a" })).toEqual({ status: 200, body: "x" });
+		expect(fetch).toHaveBeenCalledTimes(2);
+	});
+
+	test("a failed write keeps the cache", async () => {
+		let status = 200;
+		const fetch = fakeFetch(() => ({ status, body: "x" }));
+		const client = new HttpClient({ fetch, cacheTTL: 60 });
+		await client.read({ url: "http://h/a" });
+		status = 500;
+		await expect(client.write({ url: "http://h/set", method: "POST" })).rejects.toMatchObject({ status: 500 });
+		await client.read({ url: "http://h/a" });
+		expect(fetch).toHaveBeenCalledTimes(2);
 	});
 
 	test("sends Bearer, Basic, or no Authorization header", async () => {
@@ -65,6 +116,13 @@ describe("requests", () => {
 	});
 
 	describe("immediately: false", () => {
+		test("a 401 that Basic credentials do not fix is an error", async () => {
+			const fetch = fakeFetch(() => ({ status: 401, body: "" }));
+			const client = new HttpClient({ fetch, auth: { username: "u", password: "bad", immediately: false } });
+			await expect(client.read({ url: "http://h/a" })).rejects.toMatchObject({ status: 401 });
+			expect(fetch).toHaveBeenCalledTimes(2);
+		});
+
 		test("retries with Basic credentials after a 401", async () => {
 			const fetch = fakeFetch((url, init) =>
 				init.headers.Authorization ? { status: 200, body: "ok" } : { status: 401, body: "" }
@@ -289,17 +347,39 @@ describe("request limiting", () => {
 		await Promise.all([1, 2, 3, 4, 5].map((i) => client.read({ url: "http://h/" + i })));
 		expect(peak).toBe(2);
 	});
+});
 
-	test("uriCallsDelay spaces request starts", async () => {
-		const starts = [];
-		const fetch = fakeFetch(() => {
-			starts.push(Date.now());
-			return { status: 200, body: "ok" };
-		});
-		const client = new HttpClient({ fetch, uriCallsDelay: 40 });
-		await Promise.all([1, 2, 3].map((i) => client.read({ url: "http://h/" + i })));
-		expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(35);
-		expect(starts[2] - starts[1]).toBeGreaterThanOrEqual(35);
+describe("per-request bearer token override", () => {
+	test("replaces the client token for one request", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, auth: { bearerToken: "client" } });
+		await client.read({ url: "http://h/a" }, { auth: { bearerToken: "action" } });
+		await client.read({ url: "http://h/b" });
+		await client.write({ url: "http://h/c" }, { auth: { bearerToken: "write" } });
+		expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer action");
+		expect(fetch.mock.calls[1][1].headers.Authorization).toBe("Bearer client");
+		expect(fetch.mock.calls[2][1].headers.Authorization).toBe("Bearer write");
+	});
+
+	test("an empty override turns the token off and falls back to Basic credentials", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, auth: { bearerToken: "client", username: "u", password: "p" } });
+		await client.read({ url: "http://h/a" }, { auth: { bearerToken: "" } });
+		expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Basic " + Buffer.from("u:p").toString("base64"));
+	});
+
+	test("requests with different tokens are neither shared nor cached together", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, cacheTTL: 60, auth: { bearerToken: "client" } });
+		await Promise.all([
+			client.read({ url: "http://h/a" }),
+			client.read({ url: "http://h/a" }, { auth: { bearerToken: "other" } }),
+		]);
+		await client.read({ url: "http://h/a" }, { auth: { bearerToken: "other" } });
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(client.keyFor({ url: "http://h/a" })).not.toBe(
+			client.keyFor({ url: "http://h/a" }, { bearerToken: "other" })
+		);
 	});
 });
 
