@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>HTTP Advanced Accessory</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2B5FD6" />
+      <stop offset="100%" stop-color="#5A1E96" />
+    </linearGradient>
+    <radialGradient id="highlight" cx="50%" cy="8%" r="65%">
+      <stop offset="0%" stop-color="#3BA3E8" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#3BA3E8" stop-opacity="0" />
+    </radialGradient>
+    <!-- userSpaceOnUse so the blur is not clipped to the bounding box of small elements -->
+    <filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="115" ry="115" fill="url(#bg)" />
+  <rect width="512" height="512" rx="115" ry="115" fill="url(#highlight)" />
+  <g fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2">
+    <circle cx="255" cy="265" r="150" />
+    <circle cx="255" cy="265" r="200" />
+  </g>
+
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="2" stroke-opacity="0.3">
+      <path d="M 255 89 L 255 175 M 255 89 L 160 300 M 255 89 L 350 300" />
+      <path d="M 117 198 L 255 175 M 393 198 L 255 175 M 117 198 L 160 300 M 393 198 L 350 300" />
+      <path d="M 255 175 L 160 300 M 255 175 L 350 300" />
+      <path d="M 117 395 L 160 300 M 393 395 L 350 300 M 160 300 L 255 395 M 350 300 L 255 395" />
+      <path d="M 117 198 L 255 395 M 393 198 L 255 395" />
+    </g>
+    <g stroke-width="5">
+      <path d="M 117 198 L 255 89 L 393 198 L 393 395 L 117 395 Z" />
+      <path d="M 322 142 L 322 110 L 367 110 L 367 177" />
+    </g>
+  </g>
+
+  <g fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M 178 190 C 156 190 158 215 158 240 C 158 256 148 265 138 265 C 148 265 158 274 158 290 C 158 315 156 340 178 340" />
+    <path d="M 332 190 C 354 190 352 215 352 240 C 352 256 362 265 372 265 C 362 265 352 274 352 290 C 352 315 354 340 332 340" />
+  </g>
+
+  <g stroke="#FFFFFF" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round">
+    <line x1="255.0" y1="265.0" x2="290.3" y2="270.3" />
+    <line x1="255.0" y1="265.0" x2="223.3" y2="281.0" />
+    <line x1="255.0" y1="265.0" x2="222.1" y2="250.8" />
+    <line x1="255.0" y1="265.0" x2="281.3" y2="238.6" />
+    <line x1="290.3" y1="270.3" x2="321.3" y2="265.4" />
+    <line x1="262.2" y1="297.5" x2="248.4" y2="329.2" />
+    <line x1="222.1" y1="250.8" x2="188.8" y2="252.5" />
+    <line x1="250.2" y1="230.6" x2="260.0" y2="196.4" />
+    <line x1="281.3" y1="238.6" x2="298.9" y2="216.9" />
+    <line x1="293.9" y1="321.9" x2="248.4" y2="329.2" />
+    <line x1="215.7" y1="212.7" x2="260.0" y2="196.4" />
+  </g>
+  <g fill="#FFFFFF" filter="url(#glow)">
+    <circle cx="264.7" cy="281.7" r="2.2" />
+    <circle cx="248.4" cy="281.0" r="2.2" />
+    <circle cx="240.1" cy="254.7" r="2.2" />
+    <circle cx="251.6" cy="246.7" r="2.2" />
+    <circle cx="271.9" cy="265.3" r="2.2" />
+    <circle cx="300.3" cy="284.0" r="2.2" />
+    <circle cx="289.5" cy="306.4" r="2.2" />
+    <circle cx="260.9" cy="315.4" r="2.2" />
+    <circle cx="243.3" cy="317.5" r="2.2" />
+    <circle cx="212.2" cy="296.9" r="2.2" />
+    <circle cx="201.5" cy="270.6" r="2.2" />
+    <circle cx="206.5" cy="250.9" r="2.2" />
+    <circle cx="222.6" cy="228.0" r="2.2" />
+    <circle cx="248.8" cy="211.4" r="2.2" />
+    <circle cx="269.2" cy="212.6" r="2.2" />
+    <circle cx="289.3" cy="224.6" r="2.2" />
+    <circle cx="307.0" cy="259.0" r="2.2" />
+    <circle cx="334.4" cy="275.3" r="2.2" />
+    <circle cx="322.9" cy="306.6" r="2.2" />
+    <circle cx="303.0" cy="332.7" r="2.2" />
+    <circle cx="279.6" cy="343.1" r="2.2" />
+    <circle cx="247.1" cy="343.0" r="2.2" />
+    <circle cx="223.4" cy="335.6" r="2.2" />
+    <circle cx="192.4" cy="310.9" r="2.2" />
+    <circle cx="178.7" cy="290.0" r="2.2" />
+    <circle cx="175.4" cy="258.6" r="2.2" />
+    <circle cx="182.9" cy="232.0" r="2.2" />
+    <circle cx="200.9" cy="205.5" r="2.2" />
+    <circle cx="231.8" cy="185.8" r="2.2" />
+    <circle cx="258.0" cy="182.2" r="2.2" />
+    <circle cx="299.2" cy="196.3" r="2.2" />
+    <circle cx="316.8" cy="215.5" r="2.2" />
+    <circle cx="333.7" cy="246.2" r="2.2" />
+    <circle cx="321.3" cy="265.4" r="4.2" />
+    <circle cx="293.9" cy="321.9" r="4.2" />
+    <circle cx="248.4" cy="329.2" r="4.2" />
+    <circle cx="204.9" cy="311.6" r="4.2" />
+    <circle cx="188.8" cy="252.5" r="4.2" />
+    <circle cx="215.7" cy="212.7" r="4.2" />
+    <circle cx="260.0" cy="196.4" r="4.2" />
+    <circle cx="298.9" cy="216.9" r="4.2" />
+    <circle cx="290.3" cy="270.3" r="4.8" />
+    <circle cx="262.2" cy="297.5" r="4.8" />
+    <circle cx="223.3" cy="281.0" r="4.8" />
+    <circle cx="222.1" cy="250.8" r="4.8" />
+    <circle cx="250.2" cy="230.6" r="4.8" />
+    <circle cx="281.3" cy="238.6" r="4.8" />
+    <circle cx="255.0" cy="265.0" r="8" />
+  </g>
+</svg>

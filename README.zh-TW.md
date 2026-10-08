@@ -1,6 +1,8 @@
-# homebridge http advanced accessory（繁體中文說明）
+<p align="center"><img src="branding/icon-128.png" width="100" height="100" alt="HTTP Advanced Accessory icon"></p>
 
-[English](README.md) | 繁體中文
+<h1 align="center">homebridge http advanced accessory</h1>
+
+<p align="center"><a href="README.md">English</a> | 繁體中文</p>
 
 這是一個 Homebridge 外掛，可以把幾乎任何提供 HTTP API 的裝置變成 HomeKit 配件。每個裝置都在設定檔中描述：它是哪一種 HomeKit 服務、要呼叫哪些 URL 來「讀取」與「變更」每個特性（characteristic），以及如何把回應轉換成 HomeKit 需要的值。
 

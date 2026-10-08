@@ -1,6 +1,8 @@
-# homebridge http advanced accessory
+<p align="center"><img src="branding/icon-128.png" width="100" height="100" alt="HTTP Advanced Accessory icon"></p>
 
-English | [繁體中文](README.zh-TW.md)
+<h1 align="center">homebridge http advanced accessory</h1>
+
+<p align="center">English | <a href="README.zh-TW.md">繁體中文</a></p>
 
 Homebridge plugin that turns virtually any device with an HTTP API into HomeKit accessories. Each device is described in the configuration: which HomeKit service it is, which URLs to call to _read_ and _change_ every characteristic, and how to turn the responses into the values HomeKit expects.
 
