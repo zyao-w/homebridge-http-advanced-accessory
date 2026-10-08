@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.3.0 - 2026-10-08
+
+### Added
+
+- `headers`: custom request headers, a list of `{ name, value }` in `defaults`, in a device and in a single action (API keys, `Content-Type`, `Authorization: Token ...`, ...). Values can be literal, `env:NAME` or `file:/path`, like a bearer token, and are never logged. The lists of the three levels are combined, and a header with the same name replaces the one from a wider level. A value that cannot be read makes the requests fail instead of going out without it. A wrong header name or a value with a line break keeps the device from loading.
+- `statusFault`: with `true`, the `StatusFault` characteristic of every service that offers it shows a fault while a read of that service fails, and is cleared by the next successful read. HomeKit can be notified of it, unlike a read error. Services without it get a warning; a `StatusFault` that the configuration maps itself is left alone.
+- The `number` mapper turns the input into a number, optionally rounded (`round`, 0 to 10), and treats anything else as `inconclusive`. It replaces the `isNaN(parseFloat(value)) ? "inconclusive" : parseFloat(value)` expression of the examples.
+- The Homebridge UI form can edit the headers of the defaults, devices and actions, and `statusFault`.
+
+### Changed
+
+- Requests that differ only in their headers are no longer shared or cached together.
+
 ## 2.2.0 - 2026-10-08
 
 ### Added

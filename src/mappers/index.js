@@ -5,6 +5,7 @@ const JPathMapper = require("./jpath.js");
 const ScriptMapper = require("./script.js");
 const ExpressionMapper = require("./expression.js");
 const ScaleMapper = require("./scale.js");
+const NumberMapper = require("./number.js");
 const { INCONCLUSIVE } = require("./constants.js");
 
 const registry = {
@@ -15,6 +16,7 @@ const registry = {
 	script: ScriptMapper,
 	expression: ExpressionMapper,
 	scale: ScaleMapper,
+	number: NumberMapper,
 };
 
 /**
@@ -38,6 +40,7 @@ module.exports = {
 	ScriptMapper,
 	ExpressionMapper,
 	ScaleMapper,
+	NumberMapper,
 	createMapper,
 	INCONCLUSIVE,
 };

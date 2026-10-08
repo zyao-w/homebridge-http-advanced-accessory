@@ -1,4 +1,5 @@
 const { PLATFORM_NAME } = require("./constants.js");
+const { HEADER_NAME } = require("./http/headers.js");
 
 // The Homebridge UI form generator cannot render objects with user-defined keys and drops what the schema
 // does not describe when the form is saved, so everything below is an object with fixed properties or an array.
@@ -24,8 +25,30 @@ const object = (properties, extra = {}) => ({ type: "object", properties, additi
 
 const TOKEN_HELP = "A literal token, env:NAME for an environment variable, or file:/path/to/token.";
 
+/** A list of { name, value } because the form cannot edit an object with names that the user chooses. */
+function headersList(title, intro) {
+	return {
+		title,
+		type: "array",
+		description: `${intro}A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.`,
+		items: {
+			...object({
+				name: text("Name", {
+					placeholder: "X-API-Key",
+					pattern: HEADER_NAME.source,
+				}),
+				value: secret("Value", {
+					description: "A literal value, env:NAME for an environment variable, or file:/path/to/value.",
+				}),
+			}),
+			title: "Header",
+		},
+	};
+}
+
 function settings() {
 	return {
+		headers: headersList("Headers", "Sent with every request, for example X-API-Key. "),
 		manufacturer: text("Manufacturer", {
 			placeholder: "Custom Manufacturer",
 			description: "Shown in the accessory information of HomeKit.",
@@ -54,6 +77,10 @@ function settings() {
 			description:
 				"Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge.",
 		}),
+		statusFault: bool("Report failed reads as Status Fault", {
+			description:
+				"Sets the Status Fault characteristic of a service while one of its reads fails, so that the Home app shows the accessory as faulty. Only for services that have this characteristic.",
+		}),
 		debug: bool("Debug logging"),
 	};
 }
@@ -63,6 +90,7 @@ const MAPPER_TYPES = [
 	["static", "Static mapping"],
 	["xpath", "XPath"],
 	["jpath", "JSONPath"],
+	["number", "Number"],
 	["scale", "Scale a number"],
 	["expression", "Expression"],
 	["script", "Script (needs allowUnsafeEval)"],
@@ -121,8 +149,8 @@ function mapper(scope, path) {
 		round: integer("Decimal places", {
 			maximum: 10,
 			placeholder: "no rounding",
-			description: "Type scale.",
-			...typeIs("scale"),
+			description: "Type number or scale.",
+			...typeIs("number", "scale"),
 		}),
 		clamp: bool("Limit to the input range", {
 			description: "Type scale. Without it, numbers outside the input range extrapolate.",
@@ -163,6 +191,7 @@ function action(scope, path, withInconclusive) {
 			description: "Used as the value when the request fails, instead of reporting an error.",
 		}),
 		bearerToken: secret("Bearer token", { description: "Overrides the device token for this action. " + TOKEN_HELP }),
+		headers: headersList("Headers", "Sent with this request in addition to those of the device. "),
 		mappers: { title: "Mappers", type: "array", items: { ...mapper(scope, path), title: "Mapper" } },
 	};
 	if (withInconclusive) {

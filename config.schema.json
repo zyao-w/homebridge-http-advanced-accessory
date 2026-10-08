@@ -14,6 +14,33 @@
       "defaults": {
         "type": "object",
         "properties": {
+          "headers": {
+            "title": "Headers",
+            "type": "array",
+            "description": "Sent with every request, for example X-API-Key. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "placeholder": "X-API-Key",
+                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                },
+                "value": {
+                  "title": "Value",
+                  "type": "string",
+                  "widget": "password",
+                  "x-schema-form": {
+                    "type": "password"
+                  },
+                  "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                }
+              },
+              "additionalProperties": false,
+              "title": "Header"
+            }
+          },
           "manufacturer": {
             "title": "Manufacturer",
             "type": "string",
@@ -101,6 +128,11 @@
             "title": "Allow unsafe eval",
             "type": "boolean",
             "description": "Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge."
+          },
+          "statusFault": {
+            "title": "Report failed reads as Status Fault",
+            "type": "boolean",
+            "description": "Sets the Status Fault characteristic of a service while one of its reads fails, so that the Home app shows the accessory as faulty. Only for services that have this characteristic."
           },
           "debug": {
             "title": "Debug logging",
@@ -190,6 +222,33 @@
                         },
                         "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                       },
+                      "headers": {
+                        "title": "Headers",
+                        "type": "array",
+                        "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "title": "Name",
+                              "type": "string",
+                              "placeholder": "X-API-Key",
+                              "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                            },
+                            "value": {
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "password",
+                              "x-schema-form": {
+                                "type": "password"
+                              },
+                              "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Header"
+                        }
+                      },
                       "mappers": {
                         "title": "Mappers",
                         "type": "array",
@@ -222,6 +281,12 @@
                                   "title": "JSONPath",
                                   "enum": [
                                     "jpath"
+                                  ]
+                                },
+                                {
+                                  "title": "Number",
+                                  "enum": [
+                                    "number"
                                   ]
                                 },
                                 {
@@ -348,9 +413,9 @@
                               "minimum": 0,
                               "maximum": 10,
                               "placeholder": "no rounding",
-                              "description": "Type scale.",
+                              "description": "Type number or scale.",
                               "condition": {
-                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                               }
                             },
                             "clamp": {
@@ -425,6 +490,33 @@
                             },
                             "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                           },
+                          "headers": {
+                            "title": "Headers",
+                            "type": "array",
+                            "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "title": "Name",
+                                  "type": "string",
+                                  "placeholder": "X-API-Key",
+                                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                },
+                                "value": {
+                                  "title": "Value",
+                                  "type": "string",
+                                  "widget": "password",
+                                  "x-schema-form": {
+                                    "type": "password"
+                                  },
+                                  "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "title": "Header"
+                            }
+                          },
                           "mappers": {
                             "title": "Mappers",
                             "type": "array",
@@ -457,6 +549,12 @@
                                       "title": "JSONPath",
                                       "enum": [
                                         "jpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Number",
+                                      "enum": [
+                                        "number"
                                       ]
                                     },
                                     {
@@ -583,9 +681,9 @@
                                   "minimum": 0,
                                   "maximum": 10,
                                   "placeholder": "no rounding",
-                                  "description": "Type scale.",
+                                  "description": "Type number or scale.",
                                   "condition": {
-                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                                   }
                                 },
                                 "clamp": {
@@ -677,6 +775,33 @@
                         },
                         "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                       },
+                      "headers": {
+                        "title": "Headers",
+                        "type": "array",
+                        "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "title": "Name",
+                              "type": "string",
+                              "placeholder": "X-API-Key",
+                              "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                            },
+                            "value": {
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "password",
+                              "x-schema-form": {
+                                "type": "password"
+                              },
+                              "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Header"
+                        }
+                      },
                       "mappers": {
                         "title": "Mappers",
                         "type": "array",
@@ -709,6 +834,12 @@
                                   "title": "JSONPath",
                                   "enum": [
                                     "jpath"
+                                  ]
+                                },
+                                {
+                                  "title": "Number",
+                                  "enum": [
+                                    "number"
                                   ]
                                 },
                                 {
@@ -835,9 +966,9 @@
                               "minimum": 0,
                               "maximum": 10,
                               "placeholder": "no rounding",
-                              "description": "Type scale.",
+                              "description": "Type number or scale.",
                               "condition": {
-                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                               }
                             },
                             "clamp": {
@@ -912,6 +1043,33 @@
                             },
                             "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                           },
+                          "headers": {
+                            "title": "Headers",
+                            "type": "array",
+                            "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "title": "Name",
+                                  "type": "string",
+                                  "placeholder": "X-API-Key",
+                                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                },
+                                "value": {
+                                  "title": "Value",
+                                  "type": "string",
+                                  "widget": "password",
+                                  "x-schema-form": {
+                                    "type": "password"
+                                  },
+                                  "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "title": "Header"
+                            }
+                          },
                           "mappers": {
                             "title": "Mappers",
                             "type": "array",
@@ -944,6 +1102,12 @@
                                       "title": "JSONPath",
                                       "enum": [
                                         "jpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Number",
+                                      "enum": [
+                                        "number"
                                       ]
                                     },
                                     {
@@ -1070,9 +1234,9 @@
                                   "minimum": 0,
                                   "maximum": 10,
                                   "placeholder": "no rounding",
-                                  "description": "Type scale.",
+                                  "description": "Type number or scale.",
                                   "condition": {
-                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                                   }
                                 },
                                 "clamp": {
@@ -1361,6 +1525,33 @@
                               },
                               "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                             },
+                            "headers": {
+                              "title": "Headers",
+                              "type": "array",
+                              "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "title": "Name",
+                                    "type": "string",
+                                    "placeholder": "X-API-Key",
+                                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                  },
+                                  "value": {
+                                    "title": "Value",
+                                    "type": "string",
+                                    "widget": "password",
+                                    "x-schema-form": {
+                                      "type": "password"
+                                    },
+                                    "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Header"
+                              }
+                            },
                             "mappers": {
                               "title": "Mappers",
                               "type": "array",
@@ -1393,6 +1584,12 @@
                                         "title": "JSONPath",
                                         "enum": [
                                           "jpath"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Number",
+                                        "enum": [
+                                          "number"
                                         ]
                                       },
                                       {
@@ -1519,9 +1716,9 @@
                                     "minimum": 0,
                                     "maximum": 10,
                                     "placeholder": "no rounding",
-                                    "description": "Type scale.",
+                                    "description": "Type number or scale.",
                                     "condition": {
-                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                     }
                                   },
                                   "clamp": {
@@ -1596,6 +1793,33 @@
                                   },
                                   "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                                 },
+                                "headers": {
+                                  "title": "Headers",
+                                  "type": "array",
+                                  "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "title": "Name",
+                                        "type": "string",
+                                        "placeholder": "X-API-Key",
+                                        "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                      },
+                                      "value": {
+                                        "title": "Value",
+                                        "type": "string",
+                                        "widget": "password",
+                                        "x-schema-form": {
+                                          "type": "password"
+                                        },
+                                        "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "title": "Header"
+                                  }
+                                },
                                 "mappers": {
                                   "title": "Mappers",
                                   "type": "array",
@@ -1628,6 +1852,12 @@
                                             "title": "JSONPath",
                                             "enum": [
                                               "jpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Number",
+                                            "enum": [
+                                              "number"
                                             ]
                                           },
                                           {
@@ -1754,9 +1984,9 @@
                                         "minimum": 0,
                                         "maximum": 10,
                                         "placeholder": "no rounding",
-                                        "description": "Type scale.",
+                                        "description": "Type number or scale.",
                                         "condition": {
-                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                         }
                                       },
                                       "clamp": {
@@ -1848,6 +2078,33 @@
                               },
                               "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                             },
+                            "headers": {
+                              "title": "Headers",
+                              "type": "array",
+                              "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "title": "Name",
+                                    "type": "string",
+                                    "placeholder": "X-API-Key",
+                                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                  },
+                                  "value": {
+                                    "title": "Value",
+                                    "type": "string",
+                                    "widget": "password",
+                                    "x-schema-form": {
+                                      "type": "password"
+                                    },
+                                    "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Header"
+                              }
+                            },
                             "mappers": {
                               "title": "Mappers",
                               "type": "array",
@@ -1880,6 +2137,12 @@
                                         "title": "JSONPath",
                                         "enum": [
                                           "jpath"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Number",
+                                        "enum": [
+                                          "number"
                                         ]
                                       },
                                       {
@@ -2006,9 +2269,9 @@
                                     "minimum": 0,
                                     "maximum": 10,
                                     "placeholder": "no rounding",
-                                    "description": "Type scale.",
+                                    "description": "Type number or scale.",
                                     "condition": {
-                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                     }
                                   },
                                   "clamp": {
@@ -2083,6 +2346,33 @@
                                   },
                                   "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                                 },
+                                "headers": {
+                                  "title": "Headers",
+                                  "type": "array",
+                                  "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "title": "Name",
+                                        "type": "string",
+                                        "placeholder": "X-API-Key",
+                                        "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                      },
+                                      "value": {
+                                        "title": "Value",
+                                        "type": "string",
+                                        "widget": "password",
+                                        "x-schema-form": {
+                                          "type": "password"
+                                        },
+                                        "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "title": "Header"
+                                  }
+                                },
                                 "mappers": {
                                   "title": "Mappers",
                                   "type": "array",
@@ -2115,6 +2405,12 @@
                                             "title": "JSONPath",
                                             "enum": [
                                               "jpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Number",
+                                            "enum": [
+                                              "number"
                                             ]
                                           },
                                           {
@@ -2241,9 +2537,9 @@
                                         "minimum": 0,
                                         "maximum": 10,
                                         "placeholder": "no rounding",
-                                        "description": "Type scale.",
+                                        "description": "Type number or scale.",
                                         "condition": {
-                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                         }
                                       },
                                       "clamp": {
@@ -2461,6 +2757,33 @@
                 "title": "Service"
               }
             },
+            "headers": {
+              "title": "Headers",
+              "type": "array",
+              "description": "Sent with every request, for example X-API-Key. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "title": "Name",
+                    "type": "string",
+                    "placeholder": "X-API-Key",
+                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                  },
+                  "value": {
+                    "title": "Value",
+                    "type": "string",
+                    "widget": "password",
+                    "x-schema-form": {
+                      "type": "password"
+                    },
+                    "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Header"
+              }
+            },
             "manufacturer": {
               "title": "Manufacturer",
               "type": "string",
@@ -2548,6 +2871,11 @@
               "title": "Allow unsafe eval",
               "type": "boolean",
               "description": "Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge."
+            },
+            "statusFault": {
+              "title": "Report failed reads as Status Fault",
+              "type": "boolean",
+              "description": "Sets the Status Fault characteristic of a service while one of its reads fails, so that the Home app shows the accessory as faulty. Only for services that have this characteristic."
             },
             "debug": {
               "title": "Debug logging",

@@ -16,9 +16,11 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 
 - Configurable HTTP endpoints for reading and writing every characteristic, with GET or POST (and PUT, PATCH, DELETE), parameters in the URL or in the body
 - Bearer Token and HTTP Basic authentication; a token can come from an environment variable or a file
-- Chains of mappers (regular expression, XPath, JSONPath, static table, expression, script) that turn a response into a HomeKit value, and a fallback action when a response is inconclusive
+- Custom request headers (API keys, `Content-Type`, ...) for all devices, one device or a single action
+- Chains of mappers (regular expression, XPath, JSONPath, static table, number, scale, expression, script) that turn a response into a HomeKit value, and a fallback action when a response is inconclusive
 - URL and body templates that use the value being set and the current state of the other characteristics
 - Interval polling, so HomeKit notifications work even when the device is changed by something else
+- Optional Status Fault, so the Home app shows an accessory as faulty while its reads fail
 - One shared request for characteristics that read the same URL, a short response cache, request timeouts, read retries and a cap on concurrent requests
 - Accessories keep their identity in HomeKit when the configuration is edited
 
@@ -88,6 +90,8 @@ The `platform` block belongs in the top-level `platforms` list of `config.json`.
 | `setterDelay`                           | Milliseconds to wait before sending a _set_ request; if more arrive meanwhile, only the last one is sent. HomeKit gets its answer at once. Defaults to 0.                                                                                                                       |
 | `username`, `password`                  | HTTP Basic credentials, see [Authentication](#authentication).                                                                                                                                                                                                                  |
 | `bearerToken`                           | Bearer token, see [Authentication](#authentication).                                                                                                                                                                                                                            |
+| `headers`                               | Extra request headers, see [Custom headers](#custom-headers). Headers of `defaults` and of the device are combined.                                                                                                                                                             |
+| `statusFault`                           | With `true`, the Status Fault characteristic of a service shows a fault while one of its reads fails, see [Status Fault](#status-fault). Defaults to `false`.                                                                                                                   |
 | `immediately`                           | With `false`, Basic credentials are only sent after the server answered `401`. Defaults to `true`.                                                                                                                                                                              |
 | `timeout`                               | Milliseconds after which a request is aborted. Defaults to 10000; 0 disables it.                                                                                                                                                                                                |
 | `retries`                               | Extra attempts for _read_ requests that fail with a network error or a timeout. HTTP error statuses are not retried and set requests never are. Defaults to 0.                                                                                                                  |
@@ -136,6 +140,17 @@ One accessory can carry more than one HomeKit service, for example a CO2 sensor 
 
 A complete example is [a CO2 sensor with temperature, humidity and battery](#co2-sensor-with-temperature-humidity-and-battery).
 
+### Status Fault
+
+HomeKit cannot be told about an error at the moment it happens (see [Actions](#actions)). Many services, mainly the sensors, have the optional `StatusFault` characteristic, and a change of it is sent to HomeKit like any other value. With `"statusFault": true` the plugin adds it to every service that offers it:
+
+- It is `0` (no fault) at the start and as long as the reads of the service work, and `1` (general fault) while the last poll of one of its characteristics failed. It goes back to `0` at the first successful poll.
+- Without polling (`forceRefreshDelay` is 0) it follows the reads that HomeKit asks for.
+- Each service has its own fault: a failing read in one service does not mark the others. A failure that `resultOnError` turns into a value is not a fault.
+- A service that has no `StatusFault` (a `Switch`, for example) gets a warning in the log and is left alone. If you list `StatusFault` in `optionCharacteristic` and map it yourself, the plugin does not touch it.
+
+How the Home app shows a fault depends on the type of accessory. The characteristic is also visible in the Homebridge UI and in other HomeKit apps.
+
 ## Actions
 
 An action describes one HTTP request. The same settings are used for `get` and `set`:
@@ -148,6 +163,7 @@ An action describes one HTTP request. The same settings are used for `get` and `
 | `mappers`       | A chain of [mappers](#mappers). For a _get_ it turns the response into the value for HomeKit; for a _set_ it turns the value from HomeKit into what the device expects (`{value}`). |
 | `resultOnError` | The value to use when the request fails (see below), instead of reporting an error to HomeKit. Useful for health checks, where "cannot connect" is a valid state.                   |
 | `bearerToken`   | A token for this action only; it replaces the device token.                                                                                                                         |
+| `headers`       | Headers for this request only, added to those of the device; see [Custom headers](#custom-headers).                                                                                 |
 | `inconclusive`  | Another _get_ action to run when the mapper chain ends with the word `inconclusive`. It cannot have an `inconclusive` action of its own.                                            |
 
 When a request fails and there is no `resultOnError`, HomeKit shows the accessory as not responding and the reason is written to the Homebridge log. A request fails when the device cannot be reached, when it times out, or when it answers with a status outside 2xx (`HTTP 401 Unauthorized`, `HTTP 503 Service Unavailable`, ...); the body of such an answer is not mapped.
@@ -220,6 +236,17 @@ Extracts data from a JSON document with [jsonpath-plus](https://www.npmjs.com/pa
 { "type": "jpath", "jpath": "$.partitionsStatus.partition[2]", "index": 0 }
 ```
 
+### Number mapper
+
+Turns the input into a number and rejects everything else. `round` is the number of decimal places, from 0 to 10; without it the number is not rounded.
+
+```json
+{ "type": "number", "round": 1 }
+```
+
+- `" 12.34 "` and `12.34` give `12.3`; `"1e3"` gives `1000`.
+- Input that is not a number (`offline`, an empty answer, `null`, `12px`) is `inconclusive`: the `inconclusive` fallback of a _get_ runs, or the request fails, and no made-up value reaches HomeKit. It is what the [Unexpected responses](#unexpected-responses) expression does, without writing it.
+
 ### Scale mapper
 
 Converts a number from one range to another, for example the `0` to `255` of a dimmer to the `0` to `100` of HomeKit's brightness. It works in both directions: use it in a _get_ action with the device range as input, and in a _set_ action with the HomeKit range as input.
@@ -259,7 +286,7 @@ A response with status 2xx that does not contain what the mappers expect is not 
 
 - A mapper chain that ends with the word `inconclusive` means "no usable answer". The `inconclusive` action of a _get_ runs; without one the request fails, HomeKit shows the accessory as not responding and the log says `Inconclusive response and no fallback action`.
 - The `jpath` mapper returns `inconclusive` when the response is not a JSON object. When the path does not exist it returns `[]` (an empty list, as text).
-- Mappers after it receive that text. `toNumber(value)` turns both into 0, so a broken API can show as "0 ppm" or "air quality excellent". To turn them into an error, end a numeric chain with an expression that returns `inconclusive` for anything that is not a number:
+- Mappers after it receive that text. `toNumber(value)` turns both into 0, so a broken API can show as "0 ppm" or "air quality excellent". To turn them into an error, put a [`number` mapper](#number-mapper) after them, or end a numeric chain with an expression that returns `inconclusive` for anything that is not a number:
 
 ```json
 { "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
@@ -297,6 +324,40 @@ To keep a token out of `config.json`, `bearerToken` can reference an environment
 | `"file:/path/to/token"` | Content of the file (whitespace and newlines are trimmed) |
 
 Leading and trailing whitespace is always trimmed. If the environment variable or the file cannot be read, an error is logged and the requests fail; they do not fall back to Basic authentication. The `bearerToken` of an action overrides the one of the device.
+
+### Custom headers
+
+`headers` is a list of `{ "name": ..., "value": ... }` that is sent with the requests, for an API key, a `Content-Type` or anything else the device wants. It can be set in `defaults`, in a device, and in a single action:
+
+```json
+{
+	"defaults": { "headers": [{ "name": "X-Api-Key", "value": "env:MY_API_KEY" }] },
+	"devices": [
+		{
+			"name": "Lamp",
+			"service": "Switch",
+			"characteristics": [
+				{
+					"characteristic": "On",
+					"get": { "url": "http://lamp/api/state" },
+					"set": {
+						"url": "http://lamp/api/state",
+						"httpMethod": "POST",
+						"body": "{\"on\": {value}}",
+						"headers": [{ "name": "Content-Type", "value": "application/json" }]
+					}
+				}
+			]
+		}
+	]
+}
+```
+
+- The value is a literal text, `env:NAME` or `file:/path`, like a bearer token (trimmed). A value that cannot be read makes the requests fail with a message in the log; the request is never sent without the header.
+- The headers of the platform defaults, of the device and of the action are combined. A header with the same name (letters can differ in case) replaces the one from the wider level.
+- A POST body is sent without a `Content-Type` unless you add one, so add it for JSON (`application/json`) or forms (`application/x-www-form-urlencoded`).
+- A header named `Authorization` replaces the one that `bearerToken` or Basic authentication would send, for APIs that want `Authorization: Token ...`.
+- The name must be a valid header name, and the value cannot contain a line break; otherwise the device is not loaded. Values are never written to the log.
 
 ## Supported services
 
@@ -399,20 +460,14 @@ A `jpath` mapper picks a field out of the JSON response and `expression` mappers
 			"characteristic": "PM2.5Density",
 			"get": {
 				"url": "https://example.com/api/air/",
-				"mappers": [
-					{ "type": "jpath", "jpath": "$.data.pm25" },
-					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
-				]
+				"mappers": [{ "type": "jpath", "jpath": "$.data.pm25" }, { "type": "number" }]
 			}
 		},
 		{
 			"characteristic": "VOCDensity",
 			"get": {
 				"url": "https://example.com/api/air/",
-				"mappers": [
-					{ "type": "jpath", "jpath": "$.data.tvoc" },
-					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
-				]
+				"mappers": [{ "type": "jpath", "jpath": "$.data.tvoc" }, { "type": "number" }]
 			}
 		}
 	]
@@ -447,10 +502,7 @@ One accessory with four services. Every characteristic reads the same URL, so th
 			"characteristic": "CarbonDioxideLevel",
 			"get": {
 				"url": "https://example.com/api/air/",
-				"mappers": [
-					{ "type": "jpath", "jpath": "$.data.co2" },
-					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
-				]
+				"mappers": [{ "type": "jpath", "jpath": "$.data.co2" }, { "type": "number" }]
 			}
 		}
 	],
@@ -464,10 +516,7 @@ One accessory with four services. Every characteristic reads the same URL, so th
 					"characteristic": "CurrentTemperature",
 					"get": {
 						"url": "https://example.com/api/air/",
-						"mappers": [
-							{ "type": "jpath", "jpath": "$.data.temperature" },
-							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
-						]
+						"mappers": [{ "type": "jpath", "jpath": "$.data.temperature" }, { "type": "number" }]
 					}
 				}
 			]
@@ -481,10 +530,7 @@ One accessory with four services. Every characteristic reads the same URL, so th
 					"characteristic": "CurrentRelativeHumidity",
 					"get": {
 						"url": "https://example.com/api/air/",
-						"mappers": [
-							{ "type": "jpath", "jpath": "$.data.humidity" },
-							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
-						]
+						"mappers": [{ "type": "jpath", "jpath": "$.data.humidity" }, { "type": "number" }]
 					}
 				}
 			]
@@ -509,10 +555,7 @@ One accessory with four services. Every characteristic reads the same URL, so th
 					"characteristic": "BatteryLevel",
 					"get": {
 						"url": "https://example.com/api/air/",
-						"mappers": [
-							{ "type": "jpath", "jpath": "$.data.battery" },
-							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : parseFloat(value)" }
-						]
+						"mappers": [{ "type": "jpath", "jpath": "$.data.battery" }, { "type": "number" }]
 					}
 				}
 			]

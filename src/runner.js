@@ -37,9 +37,9 @@ class ActionRunner {
 		return value;
 	}
 
-	// An unreadable token fails the request instead of silently falling back to Basic authentication
+	// An unreadable token or header value fails the request instead of sending it without, or with Basic authentication
 	_authProblem(action) {
-		return this.authError || (action.auth && action.auth.error) || null;
+		return this.authError || (action.auth && action.auth.error) || action.headersError || null;
 	}
 
 	_authOverride(action) {
@@ -50,7 +50,8 @@ class ActionRunner {
 	pollKey(action) {
 		return this.client.keyFor(
 			{ url: action.url, method: action.httpMethod, body: action.body },
-			this._authOverride(action)
+			this._authOverride(action),
+			action.headers
 		);
 	}
 
@@ -62,7 +63,7 @@ class ActionRunner {
 		}
 		return this.client.read(
 			{ url: action.url, method: action.httpMethod, body: action.body },
-			{ fresh, auth: this._authOverride(action) }
+			{ fresh, auth: this._authOverride(action), headers: action.headers }
 		);
 	}
 
@@ -72,7 +73,10 @@ class ActionRunner {
 		if (problem) {
 			return Promise.reject(problem);
 		}
-		return this.client.write({ url, method: action.httpMethod, body }, { auth: this._authOverride(action) });
+		return this.client.write(
+			{ url, method: action.httpMethod, body },
+			{ auth: this._authOverride(action), headers: action.headers }
+		);
 	}
 
 	/** Reads an action and resolves to the value. Rejects when the request or the mapping fails. */

@@ -383,6 +383,62 @@ describe("per-request bearer token override", () => {
 	});
 });
 
+describe("custom headers", () => {
+	const sent = (fetch, index = 0) => fetch.mock.calls[index][1].headers;
+
+	test("are sent with every request, writes included", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, headers: { "X-Api-Key": "k" } });
+		await client.read({ url: "http://h/a" });
+		await client.write(
+			{ url: "http://h/b", method: "POST", body: "{}" },
+			{ headers: { "Content-Type": "application/json" } }
+		);
+		expect(sent(fetch, 0)).toEqual({ "X-Api-Key": "k" });
+		expect(sent(fetch, 1)).toEqual({ "X-Api-Key": "k", "Content-Type": "application/json" });
+	});
+
+	test("a header of the request replaces one of the client with the same name in any case", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, headers: { "X-Api-Key": "client" } });
+		await client.read({ url: "http://h/a" }, { headers: { "x-api-key": "request" } });
+		expect(sent(fetch)).toEqual({ "x-api-key": "request" });
+	});
+
+	test("a configured Authorization header replaces the computed one", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, auth: { bearerToken: "t" }, headers: { authorization: "Token abc" } });
+		await client.read({ url: "http://h/a" });
+		expect(sent(fetch)).toEqual({ authorization: "Token abc" });
+	});
+
+	test("are sent again by the Basic retry after a 401", async () => {
+		const fetch = fakeFetch((url, init) =>
+			init.headers.Authorization ? { status: 200, body: "ok" } : { status: 401, body: "" }
+		);
+		const client = new HttpClient({
+			fetch,
+			auth: { username: "u", password: "p", immediately: false },
+			headers: { "X-K": "1" },
+		});
+		await client.read({ url: "http://h/a" });
+		expect(sent(fetch, 0)).toEqual({ "X-K": "1" });
+		expect(sent(fetch, 1)).toMatchObject({ "X-K": "1", Authorization: expect.stringMatching(/^Basic /) });
+	});
+
+	test("requests with different headers are neither shared nor cached together", async () => {
+		const fetch = fakeFetch();
+		const client = new HttpClient({ fetch, cacheTTL: 60, headers: { "X-A": "1" } });
+		await Promise.all([
+			client.read({ url: "http://h/a" }),
+			client.read({ url: "http://h/a" }, { headers: { "X-A": "2" } }),
+			client.read({ url: "http://h/a" }, { headers: { "x-a": "1" } }),
+		]);
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(client.keyFor({ url: "http://h/a" }, undefined, { "x-a": "1" })).toBe(client.keyFor({ url: "http://h/a" }));
+	});
+});
+
 describe("redirects (real servers)", () => {
 	let target, origin, targetSeen, originUrl, targetUrl;
 

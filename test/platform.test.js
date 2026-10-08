@@ -73,6 +73,7 @@ class HumidityService extends FakeService {
 	constructor(name) {
 		super(name);
 		this.characteristics = [new FakeCharacteristic("Current Relative Humidity", "float")];
+		this.optionalCharacteristics = [new FakeCharacteristic("Status Fault", "int")];
 	}
 }
 
@@ -123,7 +124,12 @@ function makeApi() {
 				HumiditySensor: HumidityService,
 				BatteryService,
 			},
-			Characteristic: { Manufacturer: "m", Model: "mo", SerialNumber: "s" },
+			Characteristic: {
+				Manufacturer: "m",
+				Model: "mo",
+				SerialNumber: "s",
+				StatusFault: { NO_FAULT: 0, GENERAL_FAULT: 1 },
+			},
 			uuid: { generate: (seed) => "uuid:" + seed },
 			HapStatusError,
 			HAPStatus: { SERVICE_COMMUNICATION_FAILURE: -70402 },
@@ -602,6 +608,108 @@ describe("writing", () => {
 	});
 });
 
+describe("status fault", () => {
+	const room = (extra = {}) => ({
+		name: "Room",
+		service: "Switch",
+		forceRefreshDelay: 5,
+		statusFault: true,
+		characteristics: [],
+		additionalServices: [
+			{
+				id: "first",
+				service: "HumiditySensor",
+				characteristics: [{ characteristic: "CurrentRelativeHumidity", get: { url: "http://h/first" } }],
+			},
+			{
+				id: "second",
+				service: "HumiditySensor",
+				characteristics: [{ characteristic: "CurrentRelativeHumidity", get: { url: "http://h/second" } }],
+			},
+		],
+		...extra,
+	});
+	const faultOf = (accessory, id) =>
+		accessory.services.find((s) => s.subtype === id).characteristics.find((c) => c.displayName === "Status Fault");
+
+	test("is off by default", () => {
+		const { api } = launch({ devices: [room({ statusFault: undefined })] });
+		expect(faultOf(registered(api)[0], "first")).toBeUndefined();
+	});
+
+	test("follows the reads of each service on its own", async () => {
+		jest.useFakeTimers();
+		responses["http://h/first"] = "40";
+		responses["http://h/second"] = "50";
+		const { api } = launch({ devices: [room()] });
+		const first = faultOf(registered(api)[0], "first");
+		const second = faultOf(registered(api)[0], "second");
+		await jest.advanceTimersByTimeAsync(0);
+		expect([first.value, second.value]).toEqual([0, 0]);
+
+		responses["http://h/first"] = { status: 503, body: "" };
+		await jest.advanceTimersByTimeAsync(5000);
+		expect([first.value, second.value]).toEqual([1, 0]);
+
+		responses["http://h/first"] = "41";
+		await jest.advanceTimersByTimeAsync(5000);
+		expect([first.value, second.value]).toEqual([0, 0]);
+	});
+
+	test("a failed read makes the service faulty when there is no polling", async () => {
+		responses["http://h/first"] = { status: 500, body: "" };
+		responses["http://h/second"] = "50";
+		const { api } = launch({ devices: [room({ forceRefreshDelay: 0 })] });
+		const accessory = registered(api)[0];
+		const humidity = (id) => accessory.services.find((s) => s.subtype === id).characteristics[0];
+
+		await expect(humidity("first").getHandler()).rejects.toMatchObject({ status: -70402 });
+		expect(faultOf(accessory, "first").value).toBe(1);
+
+		responses["http://h/first"] = "40";
+		await humidity("first").getHandler();
+		expect(faultOf(accessory, "first").value).toBe(0);
+	});
+
+	test("a result that resultOnError replaces is not a fault", async () => {
+		jest.useFakeTimers();
+		responses["http://h/first"] = { status: 503, body: "" };
+		const device = room();
+		device.additionalServices[0].characteristics[0].get.resultOnError = "0";
+		const { api } = launch({ devices: [device] });
+		await jest.advanceTimersByTimeAsync(0);
+		expect(faultOf(registered(api)[0], "first").value).toBe(0);
+	});
+
+	test("warns about a service without the characteristic and leaves it as it is", () => {
+		const { log } = launch({ devices: [room({ characteristics: [{ characteristic: "On" }] })] });
+		expect(log).toHaveBeenCalledWith(expect.stringContaining("the service Switch has no Status Fault characteristic"));
+		expect(log).not.toHaveBeenCalledWith(expect.stringContaining('"first"'));
+	});
+
+	test("leaves a Status Fault that the configuration maps itself", async () => {
+		jest.useFakeTimers();
+		responses["http://h/fault"] = "0";
+		responses["http://h/first"] = { status: 503, body: "" };
+		const device = room({
+			additionalServices: [
+				{
+					id: "first",
+					service: "HumiditySensor",
+					optionCharacteristic: ["StatusFault"],
+					characteristics: [
+						{ characteristic: "CurrentRelativeHumidity", get: { url: "http://h/first" } },
+						{ characteristic: "StatusFault", get: { url: "http://h/fault" } },
+					],
+				},
+			],
+		});
+		const { api } = launch({ devices: [device] });
+		await jest.advanceTimersByTimeAsync(0);
+		expect(faultOf(registered(api)[0], "first").value).toBe(0);
+	});
+});
+
 describe("additional services", () => {
 	const sensor = (extra = {}) => ({
 		name: "Air",
@@ -1046,6 +1154,68 @@ describe("authentication", () => {
 			devices: [switchDevice({ password: "super-secret-password" })],
 		});
 		const characteristic = serviceOf(registered(api)[0]).characteristics[0];
+		await characteristic.getHandler();
+		await characteristic.setHandler("1");
+		expect(JSON.stringify(log.mock.calls)).not.toMatch(/super-secret/);
+	});
+});
+
+describe("custom headers", () => {
+	const open = (config) => {
+		const { api, log } = launch(config);
+		return { characteristic: serviceOf(registered(api)[0]).characteristics[0], log };
+	};
+
+	test("combines the headers of the defaults, the device and the action", async () => {
+		const device = switchDevice({
+			headers: [
+				{ name: "X-Device", value: "d" },
+				{ name: "x-shared", value: "device" },
+			],
+		});
+		device.characteristics[0].set.headers = [{ name: "Content-Type", value: "application/json" }];
+		const { characteristic } = open({
+			defaults: {
+				headers: [
+					{ name: "X-Default", value: "p" },
+					{ name: "X-Shared", value: "default" },
+				],
+			},
+			devices: [device],
+		});
+		await characteristic.getHandler();
+		await characteristic.setHandler("1");
+		expect(initOf(0).headers).toEqual({ "X-Default": "p", "x-shared": "device", "X-Device": "d" });
+		expect(initOf(1).headers).toEqual({
+			"X-Default": "p",
+			"x-shared": "device",
+			"X-Device": "d",
+			"Content-Type": "application/json",
+		});
+	});
+
+	test("fails requests when a value cannot be read and says why", async () => {
+		const { characteristic, log } = open({
+			devices: [switchDevice({ headers: [{ name: "X-Key", value: "env:HHAA_PLATFORM_HEADER_MISSING" }] })],
+		});
+		await expect(characteristic.getHandler()).rejects.toMatchObject({ status: -70402 });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(log).toHaveBeenCalledWith(expect.stringContaining("HHAA_PLATFORM_HEADER_MISSING"));
+	});
+
+	test("a device with a wrong header name is not added and the others are", () => {
+		const { api, log } = launch({
+			devices: [switchDevice({ name: "Bad", headers: [{ name: "bad name", value: "x" }] }), switchDevice()],
+		});
+		expect(registered(api)).toHaveLength(1);
+		expect(log.error).toHaveBeenCalledWith(expect.stringMatching(/^Device "Bad": .*header/i));
+	});
+
+	test("debug logging never contains header values", async () => {
+		const { characteristic, log } = open({
+			defaults: { debug: true },
+			devices: [switchDevice({ headers: [{ name: "X-Api-Key", value: "super-secret-key" }] })],
+		});
 		await characteristic.getHandler();
 		await characteristic.setHandler("1");
 		expect(JSON.stringify(log.mock.calls)).not.toMatch(/super-secret/);

@@ -113,6 +113,8 @@ class DeviceController {
 	_bindService(service, bucket) {
 		const entries = new Map(bucket.characteristics.map((entry) => [entry.name, entry]));
 		const bound = new Set();
+		// The slots of this service, to tell whether any of its reads is failing
+		bucket.keys = new Set();
 		const bind = (characteristic) => {
 			bound.add(compactName(characteristic));
 			this._bind(characteristic, entries.get(compactName(characteristic)), bucket);
@@ -126,6 +128,9 @@ class DeviceController {
 				bind(characteristic);
 				service.addCharacteristic(characteristic);
 			}
+		}
+		if (this.device.statusFault) {
+			this._attachFault(service, bucket, bound);
 		}
 
 		for (const name of entries.keys()) {
@@ -148,7 +153,9 @@ class DeviceController {
 			key: bucket.id ? `${bucket.id}.${name}` : name,
 			state: bucket.state,
 			displayName: bucket.displayName,
+			bucket,
 		};
+		bucket.keys.add(slot.key);
 
 		if (entry && Object.keys(entry.props).length > 0) {
 			characteristic.setProps(entry.props);
@@ -161,6 +168,35 @@ class DeviceController {
 		}
 	}
 
+	/**
+	 * Adds the Status Fault characteristic to a service that offers it. A characteristic that the configuration maps
+	 * itself is left alone.
+	 */
+	_attachFault(service, bucket, bound) {
+		const where = bucket.id ? `service "${bucket.id}" (${bucket.serviceType})` : `the service ${bucket.serviceType}`;
+		if (bound.has("StatusFault")) {
+			return;
+		}
+		const offered = [...service.characteristics, ...service.optionalCharacteristics].find(
+			(characteristic) => compactName(characteristic) === "StatusFault"
+		);
+		if (!offered) {
+			this.log(`WARNING: ${where} has no Status Fault characteristic, so statusFault does not apply to it`);
+			return;
+		}
+		service.addCharacteristic(offered);
+		bucket.fault = offered;
+		offered.updateValue(this.api.hap.Characteristic.StatusFault.NO_FAULT);
+	}
+
+	/** Shows the service as faulty while any of its characteristics fails to read. */
+	_updateFault(bucket) {
+		if (!bucket.fault) return;
+		const { StatusFault } = this.api.hap.Characteristic;
+		const failing = [...bucket.keys].some((key) => this.pollFailures.has(key));
+		bucket.fault.updateValue(failing ? StatusFault.GENERAL_FAULT : StatusFault.NO_FAULT);
+	}
+
 	_publish(slot, characteristic, value) {
 		if (INTEGER_FORMATS.includes(characteristic.props.format)) value = parseInt(value);
 		if (characteristic.props.format === "float") value = parseFloat(value);
@@ -168,6 +204,7 @@ class DeviceController {
 		slot.state[slot.name] = value;
 		this.pollFailures.delete(slot.key);
 		characteristic.updateValue(value);
+		this._updateFault(slot.bucket);
 		return value;
 	}
 
@@ -190,6 +227,8 @@ class DeviceController {
 			return this._publish(slot, characteristic, value);
 		} catch (error) {
 			this.log("GetState function failed: %s", error.message);
+			this.pollFailures.add(slot.key);
+			this._updateFault(slot.bucket);
 			throw this._communicationError();
 		}
 	}
@@ -209,6 +248,7 @@ class DeviceController {
 		};
 		const failed = (error) => {
 			this.pollFailures.add(key);
+			this._updateFault(slot.bucket);
 			const message = error && error.message;
 			const now = Date.now();
 			const outage = this.outages.get(key);
