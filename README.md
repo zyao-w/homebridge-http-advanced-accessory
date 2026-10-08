@@ -75,24 +75,25 @@ The `platform` block belongs in the top-level `platforms` list of `config.json`.
 
 ### Device settings
 
-| Setting                | Description                                                                                                                                                                                 |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                 | Name of the accessory in HomeKit. Required.                                                                                                                                                 |
-| `id`                   | Optional stable identifier. By default the accessory is identified by its `name`, so renaming it creates a new accessory in HomeKit; with an `id` it can be renamed freely. Must be unique. |
-| `service`              | The HomeKit service, for example `Switch`, `Lightbulb` or `TemperatureSensor`. See [Supported services](#supported-services). Required.                                                     |
-| `optionCharacteristic` | List of optional characteristics of the service that you want to expose, for example `["Brightness"]`.                                                                                      |
-| `characteristics`      | What to read and write, see [Characteristics](#characteristics).                                                                                                                            |
-| `forceRefreshDelay`    | Polling interval in seconds. Defaults to 0, which disables polling.                                                                                                                         |
-| `setterDelay`          | Milliseconds to wait before sending a _set_ request; if more arrive meanwhile, only the last one is sent. HomeKit gets its answer at once. Defaults to 0.                                   |
-| `username`, `password` | HTTP Basic credentials, see [Authentication](#authentication).                                                                                                                              |
-| `bearerToken`          | Bearer token, see [Authentication](#authentication).                                                                                                                                        |
-| `immediately`          | With `false`, Basic credentials are only sent after the server answered `401`. Defaults to `true`.                                                                                          |
-| `timeout`              | Milliseconds after which a request is aborted. Defaults to 10000; 0 disables it.                                                                                                            |
-| `retries`              | Extra attempts for _read_ requests that fail with a network error or a timeout. HTTP error statuses are not retried and set requests never are. Defaults to 0.                              |
-| `cacheTTL`             | Seconds a successful read response is reused. Defaults to the value of `forceRefreshDelay`, so it is off unless polling is on. Any set request clears the cache.                            |
-| `maxConcurrent`        | Maximum simultaneous HTTP requests of the device, for devices that cannot take many at once. `1` runs them one after the other. Defaults to 0, unlimited.                                   |
-| `allowUnsafeEval`      | Allows `script` mappers and JavaScript in `${...}` templates, see [Expressions and scripts](#expressions-and-scripts). Defaults to `false`.                                                 |
-| `debug`                | Logs every request and the whole mapping process.                                                                                                                                           |
+| Setting                                 | Description                                                                                                                                                                                                                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                                  | Name of the accessory in HomeKit. Required.                                                                                                                                                                                                                                     |
+| `id`                                    | Optional stable identifier. By default the accessory is identified by its `name`, so renaming it creates a new accessory in HomeKit; with an `id` it can be renamed freely. Must be unique.                                                                                     |
+| `service`                               | The HomeKit service, for example `Switch`, `Lightbulb` or `TemperatureSensor`. See [Supported services](#supported-services). Required.                                                                                                                                         |
+| `optionCharacteristic`                  | List of optional characteristics of the service that you want to expose, for example `["Brightness"]`.                                                                                                                                                                          |
+| `manufacturer`, `model`, `serialNumber` | Shown in the accessory information of HomeKit. They default to `Custom Manufacturer`, `HTTP Accessory Model` and `HTTP Accessory Serial Number`; an empty value is ignored. The serial number does not change the identity of the accessory. They can be set in `defaults` too. |
+| `characteristics`                       | What to read and write, see [Characteristics](#characteristics).                                                                                                                                                                                                                |
+| `forceRefreshDelay`                     | Polling interval in seconds. Defaults to 0, which disables polling.                                                                                                                                                                                                             |
+| `setterDelay`                           | Milliseconds to wait before sending a _set_ request; if more arrive meanwhile, only the last one is sent. HomeKit gets its answer at once. Defaults to 0.                                                                                                                       |
+| `username`, `password`                  | HTTP Basic credentials, see [Authentication](#authentication).                                                                                                                                                                                                                  |
+| `bearerToken`                           | Bearer token, see [Authentication](#authentication).                                                                                                                                                                                                                            |
+| `immediately`                           | With `false`, Basic credentials are only sent after the server answered `401`. Defaults to `true`.                                                                                                                                                                              |
+| `timeout`                               | Milliseconds after which a request is aborted. Defaults to 10000; 0 disables it.                                                                                                                                                                                                |
+| `retries`                               | Extra attempts for _read_ requests that fail with a network error or a timeout. HTTP error statuses are not retried and set requests never are. Defaults to 0.                                                                                                                  |
+| `cacheTTL`                              | Seconds a successful read response is reused. Defaults to the value of `forceRefreshDelay`, so it is off unless polling is on. Any set request clears the cache.                                                                                                                |
+| `maxConcurrent`                         | Maximum simultaneous HTTP requests of the device, for devices that cannot take many at once. `1` runs them one after the other. Defaults to 0, unlimited.                                                                                                                       |
+| `allowUnsafeEval`                       | Allows `script` mappers and JavaScript in `${...}` templates, see [Expressions and scripts](#expressions-and-scripts). Defaults to `false`.                                                                                                                                     |
+| `debug`                                 | Logs every request and the whole mapping process.                                                                                                                                                                                                                               |
 
 Read requests with the same method, URL, body and credentials that are in flight at the same time are sent only once. With polling on, all characteristics that read the same request share one poll.
 
@@ -130,7 +131,7 @@ An action describes one HTTP request. The same settings are used for `get` and `
 
 When a request fails and there is no `resultOnError`, HomeKit shows the accessory as not responding and the reason is written to the Homebridge log. A request fails when the device cannot be reached, when it times out, or when it answers with a status outside 2xx (`HTTP 401 Unauthorized`, `HTTP 503 Service Unavailable`, ...); the body of such an answer is not mapped.
 
-With polling (`forceRefreshDelay`), the plugin remembers that the last poll of a characteristic failed (or ended in `inconclusive` without a fallback). The next time HomeKit reads the characteristic it gets the error, so the Home app shows "No Response"; the first successful poll clears it. HomeKit cannot be told about an error at the moment it happens, so the Home app may keep showing the last value until it reads again, for example when you open it or pull to refresh. Every failed poll is written to the Homebridge log (`Poller for <characteristic> errored: ...`).
+With polling (`forceRefreshDelay`), the plugin remembers that the last poll of a characteristic failed (or ended in `inconclusive` without a fallback). The next time HomeKit reads the characteristic it gets the error, so the Home app shows "No Response"; the first successful poll clears it. HomeKit cannot be told about an error at the moment it happens, so the Home app may keep showing the last value until it reads again, for example when you open it or pull to refresh. Every failed poll is written to the Homebridge log, but a failure that keeps going is not repeated at every poll: the first failure is logged (`Poller for <characteristic> errored: ...`), then a reminder every five minutes (`still failing after 10m`), and the recovery once it works again (`recovered after 12m`).
 
 ### Templates
 
@@ -197,6 +198,19 @@ Extracts data from a JSON document with [jsonpath-plus](https://www.npmjs.com/pa
 ```json
 { "type": "jpath", "jpath": "$.partitionsStatus.partition[2]", "index": 0 }
 ```
+
+### Scale mapper
+
+Converts a number from one range to another, for example the `0` to `255` of a dimmer to the `0` to `100` of HomeKit's brightness. It works in both directions: use it in a _get_ action with the device range as input, and in a _set_ action with the HomeKit range as input.
+
+```json
+{ "type": "scale", "inputMin": 0, "inputMax": 255, "outputMin": 0, "outputMax": 100, "round": 0, "clamp": true }
+```
+
+- `inputMin`, `inputMax`, `outputMin` and `outputMax` are numbers (they may be negative, and a range may run backwards). `inputMin` must differ from `inputMax`.
+- `round` is the number of decimal places, from 0 to 10. Without it the result is not rounded.
+- `clamp` limits the input to its range first. Without it, a number outside the range extrapolates: with the example above, an input of `510` gives `200`.
+- Input that is not a number (`offline`, an empty answer, `null`) is `inconclusive`. In a _get_ action the `inconclusive` fallback runs, or the request fails; a _set_ fails before anything is sent, and HomeKit shows an error.
 
 ### Expression mapper
 
@@ -770,6 +784,8 @@ This is still incomplete, but the unofficial [Daikin documentation](https://gith
 {
 	"name": "Pool Light",
 	"service": "Lightbulb",
+	"manufacturer": "Custom",
+	"model": "Virtual Device",
 	"optionCharacteristic": ["Hue", "Saturation", "Brightness"],
 	"characteristics": [
 		{

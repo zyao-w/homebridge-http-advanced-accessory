@@ -38,6 +38,14 @@ class FakeService {
 
 class InformationService extends FakeService {
 	static UUID = "information";
+	constructor(name) {
+		super(name);
+		this.values = {};
+	}
+	setCharacteristic(characteristic, value) {
+		this.values[characteristic] = value;
+		return this;
+	}
 }
 
 class SwitchService extends FakeService {
@@ -263,6 +271,37 @@ describe("registering accessories", () => {
 	});
 });
 
+describe("accessory information", () => {
+	// The fake HAP names its characteristics m (Manufacturer), mo (Model) and s (SerialNumber)
+	const informationOf = (config) => {
+		const { api } = launch(config);
+		return registered(api)[0].getService(InformationService).values;
+	};
+
+	test("keeps the generic values when nothing is configured", () => {
+		expect(informationOf({ devices: [switchDevice()] })).toEqual({
+			m: "Custom Manufacturer",
+			mo: "HTTP Accessory Model",
+			s: "HTTP Accessory Serial Number",
+		});
+	});
+
+	test("uses the device settings over the platform defaults", () => {
+		const device = switchDevice({ model: "Pump 3000", serialNumber: "SN-42" });
+		expect(informationOf({ defaults: { manufacturer: "Acme", model: "Generic" }, devices: [device] })).toEqual({
+			m: "Acme",
+			mo: "Pump 3000",
+			s: "SN-42",
+		});
+	});
+
+	test("does not change the identity of the accessory", () => {
+		const plain = registered(launch({ devices: [switchDevice()] }).api)[0].UUID;
+		const described = registered(launch({ devices: [switchDevice({ serialNumber: "SN-42" })] }).api)[0].UUID;
+		expect(described).toBe(plain);
+	});
+});
+
 describe("characteristics", () => {
 	test("binds the optional characteristics that are listed and warns about unknown ones", () => {
 		const { api, log } = launch({
@@ -410,6 +449,44 @@ describe("writing", () => {
 		expect(urlOf(0)).toBe("http://h/set?v=on");
 	});
 
+	test("scales the value of a set and fails before sending when it is not a number", async () => {
+		const scale = { type: "scale", inputMin: 0, inputMax: 100, outputMin: 0, outputMax: 255, round: 0 };
+		const device = switchDevice({
+			characteristics: [{ characteristic: "On", set: { url: "http://h/level/{value}", mappers: [scale] } }],
+		});
+		const { api, log } = launch({ devices: [device] });
+		const characteristic = characteristicOf(api);
+
+		await characteristic.setHandler(50);
+		expect(urlOf(0)).toBe("http://h/level/128");
+
+		fetchMock.mockClear();
+		await expect(characteristic.setHandler("abc")).rejects.toMatchObject({ status: -70402 });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(log).toHaveBeenCalledWith(
+			"[Pump] SetState function failed: %s",
+			"The mappers could not convert the value abc, nothing was sent"
+		);
+	});
+
+	test("scales a polled value and treats a non-number as an error", async () => {
+		jest.useFakeTimers();
+		responses["http://h/level"] = "255";
+		const scale = { type: "scale", inputMin: 0, inputMax: 255, outputMin: 0, outputMax: 100 };
+		const device = switchDevice({
+			forceRefreshDelay: 5,
+			characteristics: [{ characteristic: "On", get: { url: "http://h/level", mappers: [scale] } }],
+		});
+		const { api } = launch({ devices: [device] });
+		const characteristic = characteristicOf(api);
+		await jest.advanceTimersByTimeAsync(0);
+		expect(await characteristic.getHandler()).toBe(100);
+
+		responses["http://h/level"] = "offline";
+		await jest.advanceTimersByTimeAsync(5000);
+		await expect(characteristic.getHandler()).rejects.toMatchObject({ status: -70402 });
+	});
+
 	test("templates see the value and the state keyed by characteristic name", async () => {
 		const { api } = launch({
 			devices: [
@@ -553,6 +630,61 @@ describe("polling", () => {
 		responses["http://h/status"] = "7";
 		await jest.advanceTimersByTimeAsync(5000);
 		expect(serviceOf(registered(api)[0], "light").characteristics[0].updateValue).toHaveBeenLastCalledWith("7");
+	});
+
+	describe("log noise of a failing poll", () => {
+		const logged = (log, message, name = "On") =>
+			log.mock.calls.filter((call) => call[0] === `[Lamp] ${message}` && call[1] === name);
+		const minutes = (count) => count * 60 * 1000;
+
+		test("logs the first failure once and not every poll", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = { status: 503, body: "" };
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(4));
+			expect(logged(log, "Poller for %s errored: %s")).toHaveLength(1);
+			expect(logged(log, "Poller for %s is still failing after %s: %s")).toHaveLength(0);
+		});
+
+		test("reminds every five minutes while it keeps failing", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = { status: 503, body: "" };
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(5) + 10000);
+			const reminders = logged(log, "Poller for %s is still failing after %s: %s");
+			expect(reminders).toHaveLength(1);
+			expect(reminders[0].slice(1)).toEqual(["On", "5m", "HTTP 503 Service Unavailable"]);
+			await jest.advanceTimersByTimeAsync(minutes(5));
+			expect(logged(log, "Poller for %s is still failing after %s: %s")).toHaveLength(2);
+		});
+
+		test("logs the recovery and starts over for a new failure", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = { status: 503, body: "" };
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(2));
+
+			responses["http://h/status"] = "7";
+			await jest.advanceTimersByTimeAsync(10000);
+			expect(logged(log, "Poller for %s recovered after %s")).toHaveLength(1);
+			expect(logged(log, "Poller for %s recovered after %s")[0][2]).toBe("2m");
+
+			await jest.advanceTimersByTimeAsync(minutes(1));
+			expect(logged(log, "Poller for %s recovered after %s")).toHaveLength(1);
+
+			responses["http://h/status"] = { status: 503, body: "" };
+			await jest.advanceTimersByTimeAsync(10000);
+			expect(logged(log, "Poller for %s errored: %s")).toHaveLength(2);
+		});
+
+		test("a healthy poll logs nothing", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = "7";
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(10));
+			expect(logged(log, "Poller for %s errored: %s")).toHaveLength(0);
+			expect(logged(log, "Poller for %s recovered after %s")).toHaveLength(0);
+		});
 	});
 
 	test("a failed poll makes HomeKit reads fail until a poll succeeds", async () => {

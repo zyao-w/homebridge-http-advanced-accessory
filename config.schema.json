@@ -14,6 +14,23 @@
       "defaults": {
         "type": "object",
         "properties": {
+          "manufacturer": {
+            "title": "Manufacturer",
+            "type": "string",
+            "placeholder": "Custom Manufacturer",
+            "description": "Shown in the accessory information of HomeKit."
+          },
+          "model": {
+            "title": "Model",
+            "type": "string",
+            "placeholder": "HTTP Accessory Model"
+          },
+          "serialNumber": {
+            "title": "Serial number",
+            "type": "string",
+            "placeholder": "HTTP Accessory Serial Number",
+            "description": "Does not change the HomeKit identity of the accessory."
+          },
           "forceRefreshDelay": {
             "title": "Polling interval (seconds)",
             "type": "number",
@@ -208,6 +225,12 @@
                                   ]
                                 },
                                 {
+                                  "title": "Scale a number",
+                                  "enum": [
+                                    "scale"
+                                  ]
+                                },
+                                {
                                   "title": "Expression",
                                   "enum": [
                                     "expression"
@@ -285,6 +308,57 @@
                               },
                               "condition": {
                                 "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                              }
+                            },
+                            "inputMin": {
+                              "title": "Input minimum",
+                              "type": "number",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "inputMax": {
+                              "title": "Input maximum",
+                              "type": "number",
+                              "description": "Type scale. Must differ from the minimum.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "outputMin": {
+                              "title": "Output minimum",
+                              "type": "number",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "outputMax": {
+                              "title": "Output maximum",
+                              "type": "number",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "round": {
+                              "title": "Decimal places",
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10,
+                              "placeholder": "no rounding",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "clamp": {
+                              "title": "Limit to the input range",
+                              "type": "boolean",
+                              "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
                               }
                             },
                             "expression": {
@@ -386,6 +460,12 @@
                                       ]
                                     },
                                     {
+                                      "title": "Scale a number",
+                                      "enum": [
+                                        "scale"
+                                      ]
+                                    },
+                                    {
                                       "title": "Expression",
                                       "enum": [
                                         "expression"
@@ -463,6 +543,57 @@
                                   },
                                   "condition": {
                                     "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                                  }
+                                },
+                                "inputMin": {
+                                  "title": "Input minimum",
+                                  "type": "number",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "inputMax": {
+                                  "title": "Input maximum",
+                                  "type": "number",
+                                  "description": "Type scale. Must differ from the minimum.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "outputMin": {
+                                  "title": "Output minimum",
+                                  "type": "number",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "outputMax": {
+                                  "title": "Output maximum",
+                                  "type": "number",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "round": {
+                                  "title": "Decimal places",
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10,
+                                  "placeholder": "no rounding",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "clamp": {
+                                  "title": "Limit to the input range",
+                                  "type": "boolean",
+                                  "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
                                   }
                                 },
                                 "expression": {
@@ -581,6 +712,12 @@
                                   ]
                                 },
                                 {
+                                  "title": "Scale a number",
+                                  "enum": [
+                                    "scale"
+                                  ]
+                                },
+                                {
                                   "title": "Expression",
                                   "enum": [
                                     "expression"
@@ -658,6 +795,57 @@
                               },
                               "condition": {
                                 "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                              }
+                            },
+                            "inputMin": {
+                              "title": "Input minimum",
+                              "type": "number",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "inputMax": {
+                              "title": "Input maximum",
+                              "type": "number",
+                              "description": "Type scale. Must differ from the minimum.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "outputMin": {
+                              "title": "Output minimum",
+                              "type": "number",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "outputMax": {
+                              "title": "Output maximum",
+                              "type": "number",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "round": {
+                              "title": "Decimal places",
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10,
+                              "placeholder": "no rounding",
+                              "description": "Type scale.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                              }
+                            },
+                            "clamp": {
+                              "title": "Limit to the input range",
+                              "type": "boolean",
+                              "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                              "condition": {
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
                               }
                             },
                             "expression": {
@@ -759,6 +947,12 @@
                                       ]
                                     },
                                     {
+                                      "title": "Scale a number",
+                                      "enum": [
+                                        "scale"
+                                      ]
+                                    },
+                                    {
                                       "title": "Expression",
                                       "enum": [
                                         "expression"
@@ -836,6 +1030,57 @@
                                   },
                                   "condition": {
                                     "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                                  }
+                                },
+                                "inputMin": {
+                                  "title": "Input minimum",
+                                  "type": "number",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "inputMax": {
+                                  "title": "Input maximum",
+                                  "type": "number",
+                                  "description": "Type scale. Must differ from the minimum.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "outputMin": {
+                                  "title": "Output minimum",
+                                  "type": "number",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "outputMax": {
+                                  "title": "Output maximum",
+                                  "type": "number",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "round": {
+                                  "title": "Decimal places",
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10,
+                                  "placeholder": "no rounding",
+                                  "description": "Type scale.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                  }
+                                },
+                                "clamp": {
+                                  "title": "Limit to the input range",
+                                  "type": "boolean",
+                                  "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                                  "condition": {
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
                                   }
                                 },
                                 "expression": {
@@ -1039,6 +1284,23 @@
                 "title": "Characteristic",
                 "type": "string"
               }
+            },
+            "manufacturer": {
+              "title": "Manufacturer",
+              "type": "string",
+              "placeholder": "Custom Manufacturer",
+              "description": "Shown in the accessory information of HomeKit."
+            },
+            "model": {
+              "title": "Model",
+              "type": "string",
+              "placeholder": "HTTP Accessory Model"
+            },
+            "serialNumber": {
+              "title": "Serial number",
+              "type": "string",
+              "placeholder": "HTTP Accessory Serial Number",
+              "description": "Does not change the HomeKit identity of the accessory."
             },
             "forceRefreshDelay": {
               "title": "Polling interval (seconds)",

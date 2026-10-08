@@ -3,6 +3,9 @@ const { createMapper } = require("./mappers/index.js");
 const { compileTemplate } = require("./expression.js");
 
 const SETTING_KEYS = [
+	"manufacturer",
+	"model",
+	"serialNumber",
 	"forceRefreshDelay",
 	"setterDelay",
 	"debug",
@@ -16,6 +19,18 @@ const SETTING_KEYS = [
 	"maxConcurrent",
 	"allowUnsafeEval",
 ];
+
+const DEFAULT_INFORMATION = {
+	manufacturer: "Custom Manufacturer",
+	model: "HTTP Accessory Model",
+	serialNumber: "HTTP Accessory Serial Number",
+};
+
+// HomeKit rejects an empty value, so anything but text or a number falls back to the default
+function informationValue(value, fallback) {
+	const text = typeof value === "number" && Number.isFinite(value) ? String(value) : value;
+	return typeof text === "string" && text.trim() ? text.trim() : fallback;
+}
 
 function resolveToken(value) {
 	try {
@@ -36,7 +51,12 @@ function createMapperFromEntry(entry, context, where) {
 		throw new Error(`${where}: a "script" mapper runs arbitrary JavaScript and needs "allowUnsafeEval": true`);
 	}
 
-	const mapper = createMapper(type, parameters, context);
+	let mapper;
+	try {
+		mapper = createMapper(type, parameters, context);
+	} catch (error) {
+		throw new Error(`${where}: ${error.message}`);
+	}
 	if (!mapper && context.warn) {
 		context.warn(`${where}: unknown mapper type "${entry.type}" ignored`);
 	}
@@ -145,6 +165,11 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 		name: device.name,
 		service: device.service,
 		optionCharacteristic: device.optionCharacteristic || [],
+		information: {
+			manufacturer: informationValue(settings.manufacturer, DEFAULT_INFORMATION.manufacturer),
+			model: informationValue(settings.model, DEFAULT_INFORMATION.model),
+			serialNumber: informationValue(settings.serialNumber, DEFAULT_INFORMATION.serialNumber),
+		},
 		forceRefreshDelay,
 		setterDelay: settings.setterDelay || 0,
 		debug: settings.debug,

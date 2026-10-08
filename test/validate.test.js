@@ -230,7 +230,9 @@ describe("validateDevice", () => {
 			characteristics: [{ characteristic: "On", get: { url: "u", mappers: [{ type: "eval" }] } }],
 		});
 		expect(errors).toEqual([
-			expect.stringMatching(/mappers\[0\]\.type must be one of: regex, static, xpath, jpath, expression, script/),
+			expect.stringMatching(
+				/mappers\[0\]\.type must be one of: regex, static, xpath, jpath, scale, expression, script/
+			),
 		]);
 	});
 
@@ -245,6 +247,13 @@ describe("validateDevice", () => {
 		expect(valid(device("FETCH"))).toEqual([
 			expect.stringMatching(/get\.httpMethod must be one of: GET, POST, PUT, PATCH, DELETE/),
 		]);
+	});
+
+	test("accepts the accessory information settings", () => {
+		expect(valid({ name: "A", service: "Switch", manufacturer: "Acme", model: "M1", serialNumber: "SN-1" })).toEqual(
+			[]
+		);
+		expect(valid({ name: "A", service: "Switch", manufacturer: 5 })).toEqual([]);
 	});
 
 	test("reports wrong types", () => {

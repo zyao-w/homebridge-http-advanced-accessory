@@ -7,6 +7,7 @@ const { PLATFORM_NAME } = require("./constants.js");
 const text = (title, extra = {}) => ({ title, type: "string", ...extra });
 const number = (title, extra = {}) => ({ title, type: "number", minimum: 0, ...extra });
 const integer = (title, extra = {}) => ({ title, type: "integer", minimum: 0, ...extra });
+const signed = (title, extra = {}) => ({ title, type: "number", ...extra });
 const bool = (title, extra = {}) => ({ title, type: "boolean", ...extra });
 const secret = (title, extra = {}) =>
 	text(title, { widget: "password", "x-schema-form": { type: "password" }, ...extra });
@@ -25,6 +26,15 @@ const TOKEN_HELP = "A literal token, env:NAME for an environment variable, or fi
 
 function settings() {
 	return {
+		manufacturer: text("Manufacturer", {
+			placeholder: "Custom Manufacturer",
+			description: "Shown in the accessory information of HomeKit.",
+		}),
+		model: text("Model", { placeholder: "HTTP Accessory Model" }),
+		serialNumber: text("Serial number", {
+			placeholder: "HTTP Accessory Serial Number",
+			description: "Does not change the HomeKit identity of the accessory.",
+		}),
 		forceRefreshDelay: number("Polling interval (seconds)", { placeholder: "0", description: "0 disables polling." }),
 		setterDelay: number("Setter delay (ms)", {
 			placeholder: "0",
@@ -53,6 +63,7 @@ const MAPPER_TYPES = [
 	["static", "Static mapping"],
 	["xpath", "XPath"],
 	["jpath", "JSONPath"],
+	["scale", "Scale a number"],
 	["expression", "Expression"],
 	["script", "Script (needs allowUnsafeEval)"],
 ];
@@ -90,6 +101,23 @@ function mapper(path) {
 			items: { ...object({ from: text("From"), to: text("To") }), title: "Pair" },
 			...mapperTypeIs(path, ["static"]),
 		},
+		inputMin: signed("Input minimum", { description: "Type scale.", ...mapperTypeIs(path, ["scale"]) }),
+		inputMax: signed("Input maximum", {
+			description: "Type scale. Must differ from the minimum.",
+			...mapperTypeIs(path, ["scale"]),
+		}),
+		outputMin: signed("Output minimum", { description: "Type scale.", ...mapperTypeIs(path, ["scale"]) }),
+		outputMax: signed("Output maximum", { description: "Type scale.", ...mapperTypeIs(path, ["scale"]) }),
+		round: integer("Decimal places", {
+			maximum: 10,
+			placeholder: "no rounding",
+			description: "Type scale.",
+			...mapperTypeIs(path, ["scale"]),
+		}),
+		clamp: bool("Limit to the input range", {
+			description: "Type scale. Without it, numbers outside the input range extrapolate.",
+			...mapperTypeIs(path, ["scale"]),
+		}),
 		expression: text("Expression", {
 			widget: "textarea",
 			description: "Type expression.",

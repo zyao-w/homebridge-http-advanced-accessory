@@ -34,6 +34,32 @@ describe("validation", () => {
 	});
 });
 
+describe("accessory information", () => {
+	test("defaults to the generic values", () => {
+		expect(normalizeDevice(base).information).toEqual({
+			manufacturer: "Custom Manufacturer",
+			model: "HTTP Accessory Model",
+			serialNumber: "HTTP Accessory Serial Number",
+		});
+	});
+
+	test("takes the device values, trimmed, over the defaults", () => {
+		const device = normalizeDevice(
+			{ ...base, model: " M2 ", serialNumber: 12345 },
+			{ manufacturer: "Acme", model: "M1" }
+		);
+		expect(device.information).toEqual({
+			manufacturer: "Acme",
+			model: "M2",
+			serialNumber: "12345",
+		});
+	});
+
+	test.each(["", "   ", null, true, {}, [], NaN])("falls back to the default for %p", (value) => {
+		expect(normalizeDevice({ ...base, manufacturer: value }).information.manufacturer).toBe("Custom Manufacturer");
+	});
+});
+
 describe("settings", () => {
 	test("device settings win over platform defaults", () => {
 		const device = normalizeDevice(
