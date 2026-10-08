@@ -594,6 +594,61 @@ describe("polling", () => {
 		expect(serviceOf(registered(api)[0], "light").characteristics[0].updateValue).toHaveBeenLastCalledWith("7");
 	});
 
+	describe("log noise of a failing poll", () => {
+		const logged = (log, message, name = "On") =>
+			log.mock.calls.filter((call) => call[0] === `[Lamp] ${message}` && call[1] === name);
+		const minutes = (count) => count * 60 * 1000;
+
+		test("logs the first failure once and not every poll", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = { status: 503, body: "" };
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(4));
+			expect(logged(log, "Poller for %s errored: %s")).toHaveLength(1);
+			expect(logged(log, "Poller for %s is still failing after %s: %s")).toHaveLength(0);
+		});
+
+		test("reminds every five minutes while it keeps failing", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = { status: 503, body: "" };
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(5) + 10000);
+			const reminders = logged(log, "Poller for %s is still failing after %s: %s");
+			expect(reminders).toHaveLength(1);
+			expect(reminders[0].slice(1)).toEqual(["On", "5m", "HTTP 503 Service Unavailable"]);
+			await jest.advanceTimersByTimeAsync(minutes(5));
+			expect(logged(log, "Poller for %s is still failing after %s: %s")).toHaveLength(2);
+		});
+
+		test("logs the recovery and starts over for a new failure", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = { status: 503, body: "" };
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(2));
+
+			responses["http://h/status"] = "7";
+			await jest.advanceTimersByTimeAsync(10000);
+			expect(logged(log, "Poller for %s recovered after %s")).toHaveLength(1);
+			expect(logged(log, "Poller for %s recovered after %s")[0][2]).toBe("2m");
+
+			await jest.advanceTimersByTimeAsync(minutes(1));
+			expect(logged(log, "Poller for %s recovered after %s")).toHaveLength(1);
+
+			responses["http://h/status"] = { status: 503, body: "" };
+			await jest.advanceTimersByTimeAsync(10000);
+			expect(logged(log, "Poller for %s errored: %s")).toHaveLength(2);
+		});
+
+		test("a healthy poll logs nothing", async () => {
+			jest.useFakeTimers();
+			responses["http://h/status"] = "7";
+			const { log } = launch({ devices: [lamp()] });
+			await jest.advanceTimersByTimeAsync(minutes(10));
+			expect(logged(log, "Poller for %s errored: %s")).toHaveLength(0);
+			expect(logged(log, "Poller for %s recovered after %s")).toHaveLength(0);
+		});
+	});
+
 	test("a failed poll makes HomeKit reads fail until a poll succeeds", async () => {
 		jest.useFakeTimers();
 		responses["http://h/status"] = "7";
