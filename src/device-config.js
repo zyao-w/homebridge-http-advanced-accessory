@@ -100,13 +100,13 @@ function checkTemplates(action, context, where) {
 	}
 }
 
-function createCharacteristic(entry, context, deviceName) {
+function createCharacteristic(entry, context, label) {
 	if (!entry || typeof entry.characteristic !== "string" || !entry.characteristic) {
-		throw new Error(`Device "${deviceName}": a characteristic entry has no "characteristic" name`);
+		throw new Error(`${label}: a characteristic entry has no "characteristic" name`);
 	}
 
 	const name = entry.characteristic;
-	const where = `Device "${deviceName}" ${name}`;
+	const where = `${label} ${name}`;
 	const characteristic = { name, props: entry.props || {} };
 
 	if (entry.get) characteristic.get = createAction(entry.get, context, `${where} get`);
@@ -116,6 +116,65 @@ function createCharacteristic(entry, context, deviceName) {
 	}
 
 	return characteristic;
+}
+
+/** @param {string} label Names the device or service in messages, for example `Device "Lamp"` */
+function createCharacteristics(entries, context, label) {
+	const characteristics = (entries || []).map((entry) => createCharacteristic(entry, context, label));
+	const seen = new Set();
+	for (const { name } of characteristics) {
+		if (seen.has(name)) {
+			throw new Error(`${label}: characteristic "${name}" is listed twice`);
+		}
+		seen.add(name);
+	}
+	return characteristics;
+}
+
+/**
+ * Each additional service keeps its values in `state[id]`, next to the characteristics of the device in `state`.
+ * An id that equals the name of a characteristic of the device would clash with it.
+ */
+function createAdditionalServices(entries, device, state, context) {
+	const primaryNames = new Set((device.characteristics || []).map((entry) => entry && entry.characteristic));
+	const services = [];
+	const ids = new Set();
+
+	(entries || []).forEach((entry, index) => {
+		// The form shows an empty row for a list that has no entries; it is not a service
+		if (entry && typeof entry === "object" && Object.keys(entry).length === 0) {
+			return;
+		}
+
+		const where = `Device "${device.name}" additional service ${index + 1}`;
+		if (!entry || typeof entry.id !== "string" || !entry.id.trim()) {
+			throw new Error(`${where} has no "id"`);
+		}
+		const id = entry.id;
+		const label = `Device "${device.name}" service "${id}"`;
+		if (typeof entry.service !== "string" || !entry.service) {
+			throw new Error(`${label} has no "service"`);
+		}
+		if (ids.has(id)) {
+			throw new Error(`Device "${device.name}": the service id "${id}" is used twice`);
+		}
+		if (id === "__proto__" || primaryNames.has(id)) {
+			throw new Error(`${label}: the id clashes with a characteristic of the device, choose another one`);
+		}
+		ids.add(id);
+
+		state[id] = {};
+		services.push({
+			id,
+			name: typeof entry.name === "string" && entry.name ? entry.name : `${device.name} ${id}`,
+			service: entry.service,
+			optionCharacteristic: entry.optionCharacteristic || [],
+			characteristics: createCharacteristics(entry.characteristics, context, label),
+			state: state[id],
+		});
+	});
+
+	return services;
 }
 
 /**
@@ -149,16 +208,8 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 	const state = {};
 	const context = { state, warn: options.warn, allowUnsafeEval: settings.allowUnsafeEval === true };
 
-	const characteristics = (device.characteristics || []).map((entry) =>
-		createCharacteristic(entry, context, device.name)
-	);
-	const seen = new Set();
-	for (const { name } of characteristics) {
-		if (seen.has(name)) {
-			throw new Error(`Device "${device.name}": characteristic "${name}" is listed twice`);
-		}
-		seen.add(name);
-	}
+	const characteristics = createCharacteristics(device.characteristics, context, `Device "${device.name}"`);
+	const additionalServices = createAdditionalServices(device.additionalServices, device, state, context);
 
 	return {
 		id: typeof device.id === "string" && device.id ? device.id : device.name,
@@ -189,6 +240,7 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 		},
 		state,
 		characteristics,
+		additionalServices,
 	};
 }
 

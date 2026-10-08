@@ -61,8 +61,11 @@ class HttpAdvancedPlatform {
 			const { device, accessory, controller, isNew } = result;
 			(isNew ? register : update).push(accessory);
 			this.controllers.push(controller);
+			const extras = device.additionalServices.length;
+			const count =
+				device.characteristics.length + device.additionalServices.reduce((sum, e) => sum + e.characteristics.length, 0);
 			this.log(
-				`Configured ${label}${isNew ? "" : " (restored from cache)"} with ${device.characteristics.length} characteristic(s)`
+				`Configured ${label}${isNew ? "" : " (restored from cache)"} with ${count} characteristic(s)${extras ? ` and ${extras} additional service(s)` : ""}`
 			);
 		}
 
