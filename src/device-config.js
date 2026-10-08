@@ -19,6 +19,7 @@ const SETTING_KEYS = [
 	"cacheTTL",
 	"maxConcurrent",
 	"allowUnsafeEval",
+	"statusFault",
 ];
 
 const DEFAULT_INFORMATION = {
@@ -233,6 +234,7 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 		forceRefreshDelay,
 		setterDelay: settings.setterDelay || 0,
 		debug: settings.debug,
+		statusFault: settings.statusFault === true,
 		auth: {
 			username: settings.username || "",
 			password: settings.password || "",

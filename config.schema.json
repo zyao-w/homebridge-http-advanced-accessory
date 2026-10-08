@@ -129,6 +129,11 @@
             "type": "boolean",
             "description": "Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge."
           },
+          "statusFault": {
+            "title": "Report failed reads as Status Fault",
+            "type": "boolean",
+            "description": "Sets the Status Fault characteristic of a service while one of its reads fails, so that the Home app shows the accessory as faulty. Only for services that have this characteristic."
+          },
           "debug": {
             "title": "Debug logging",
             "type": "boolean"
@@ -2866,6 +2871,11 @@
               "title": "Allow unsafe eval",
               "type": "boolean",
               "description": "Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge."
+            },
+            "statusFault": {
+              "title": "Report failed reads as Status Fault",
+              "type": "boolean",
+              "description": "Sets the Status Fault characteristic of a service while one of its reads fails, so that the Home app shows the accessory as faulty. Only for services that have this characteristic."
             },
             "debug": {
               "title": "Debug logging",

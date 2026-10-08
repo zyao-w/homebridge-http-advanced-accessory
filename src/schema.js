@@ -77,6 +77,10 @@ function settings() {
 			description:
 				"Allows script mappers and JavaScript in ${...} templates, which run arbitrary code with the privileges of Homebridge.",
 		}),
+		statusFault: bool("Report failed reads as Status Fault", {
+			description:
+				"Sets the Status Fault characteristic of a service while one of its reads fails, so that the Home app shows the accessory as faulty. Only for services that have this characteristic.",
+		}),
 		debug: bool("Debug logging"),
 	};
 }
