@@ -30,10 +30,14 @@
     "xpath": "^0.0.35"
   },
   "homepage": "https://github.com/zyao-w/homebridge-http-advanced-accessory#readme",
+  "bugs": {
+    "url": "https://github.com/zyao-w/homebridge-http-advanced-accessory/issues"
+  },
   "files": [
     "src/",
     "scripts/",
     "config.schema.json",
+    "README.zh-TW.md",
     "CHANGELOG.md",
     "MIGRATION.md",
     "sample-config.json"
