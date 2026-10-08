@@ -14,6 +14,33 @@
       "defaults": {
         "type": "object",
         "properties": {
+          "headers": {
+            "title": "Headers",
+            "type": "array",
+            "description": "Sent with every request, for example X-API-Key. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "placeholder": "X-API-Key",
+                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                },
+                "value": {
+                  "title": "Value",
+                  "type": "string",
+                  "widget": "password",
+                  "x-schema-form": {
+                    "type": "password"
+                  },
+                  "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                }
+              },
+              "additionalProperties": false,
+              "title": "Header"
+            }
+          },
           "manufacturer": {
             "title": "Manufacturer",
             "type": "string",
@@ -189,6 +216,33 @@
                           "type": "password"
                         },
                         "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                      },
+                      "headers": {
+                        "title": "Headers",
+                        "type": "array",
+                        "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "title": "Name",
+                              "type": "string",
+                              "placeholder": "X-API-Key",
+                              "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                            },
+                            "value": {
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "password",
+                              "x-schema-form": {
+                                "type": "password"
+                              },
+                              "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Header"
+                        }
                       },
                       "mappers": {
                         "title": "Mappers",
@@ -430,6 +484,33 @@
                               "type": "password"
                             },
                             "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                          },
+                          "headers": {
+                            "title": "Headers",
+                            "type": "array",
+                            "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "title": "Name",
+                                  "type": "string",
+                                  "placeholder": "X-API-Key",
+                                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                },
+                                "value": {
+                                  "title": "Value",
+                                  "type": "string",
+                                  "widget": "password",
+                                  "x-schema-form": {
+                                    "type": "password"
+                                  },
+                                  "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "title": "Header"
+                            }
                           },
                           "mappers": {
                             "title": "Mappers",
@@ -689,6 +770,33 @@
                         },
                         "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                       },
+                      "headers": {
+                        "title": "Headers",
+                        "type": "array",
+                        "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "title": "Name",
+                              "type": "string",
+                              "placeholder": "X-API-Key",
+                              "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                            },
+                            "value": {
+                              "title": "Value",
+                              "type": "string",
+                              "widget": "password",
+                              "x-schema-form": {
+                                "type": "password"
+                              },
+                              "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Header"
+                        }
+                      },
                       "mappers": {
                         "title": "Mappers",
                         "type": "array",
@@ -929,6 +1037,33 @@
                               "type": "password"
                             },
                             "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                          },
+                          "headers": {
+                            "title": "Headers",
+                            "type": "array",
+                            "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "title": "Name",
+                                  "type": "string",
+                                  "placeholder": "X-API-Key",
+                                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                },
+                                "value": {
+                                  "title": "Value",
+                                  "type": "string",
+                                  "widget": "password",
+                                  "x-schema-form": {
+                                    "type": "password"
+                                  },
+                                  "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                }
+                              },
+                              "additionalProperties": false,
+                              "title": "Header"
+                            }
                           },
                           "mappers": {
                             "title": "Mappers",
@@ -1385,6 +1520,33 @@
                               },
                               "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                             },
+                            "headers": {
+                              "title": "Headers",
+                              "type": "array",
+                              "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "title": "Name",
+                                    "type": "string",
+                                    "placeholder": "X-API-Key",
+                                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                  },
+                                  "value": {
+                                    "title": "Value",
+                                    "type": "string",
+                                    "widget": "password",
+                                    "x-schema-form": {
+                                      "type": "password"
+                                    },
+                                    "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Header"
+                              }
+                            },
                             "mappers": {
                               "title": "Mappers",
                               "type": "array",
@@ -1625,6 +1787,33 @@
                                     "type": "password"
                                   },
                                   "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                                },
+                                "headers": {
+                                  "title": "Headers",
+                                  "type": "array",
+                                  "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "title": "Name",
+                                        "type": "string",
+                                        "placeholder": "X-API-Key",
+                                        "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                      },
+                                      "value": {
+                                        "title": "Value",
+                                        "type": "string",
+                                        "widget": "password",
+                                        "x-schema-form": {
+                                          "type": "password"
+                                        },
+                                        "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "title": "Header"
+                                  }
                                 },
                                 "mappers": {
                                   "title": "Mappers",
@@ -1884,6 +2073,33 @@
                               },
                               "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
                             },
+                            "headers": {
+                              "title": "Headers",
+                              "type": "array",
+                              "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "title": "Name",
+                                    "type": "string",
+                                    "placeholder": "X-API-Key",
+                                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                  },
+                                  "value": {
+                                    "title": "Value",
+                                    "type": "string",
+                                    "widget": "password",
+                                    "x-schema-form": {
+                                      "type": "password"
+                                    },
+                                    "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Header"
+                              }
+                            },
                             "mappers": {
                               "title": "Mappers",
                               "type": "array",
@@ -2124,6 +2340,33 @@
                                     "type": "password"
                                   },
                                   "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                                },
+                                "headers": {
+                                  "title": "Headers",
+                                  "type": "array",
+                                  "description": "Sent with this request in addition to those of the device. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "title": "Name",
+                                        "type": "string",
+                                        "placeholder": "X-API-Key",
+                                        "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                                      },
+                                      "value": {
+                                        "title": "Value",
+                                        "type": "string",
+                                        "widget": "password",
+                                        "x-schema-form": {
+                                          "type": "password"
+                                        },
+                                        "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "title": "Header"
+                                  }
                                 },
                                 "mappers": {
                                   "title": "Mappers",
@@ -2507,6 +2750,33 @@
                 },
                 "additionalProperties": false,
                 "title": "Service"
+              }
+            },
+            "headers": {
+              "title": "Headers",
+              "type": "array",
+              "description": "Sent with every request, for example X-API-Key. A header with the same name replaces the one from a wider level; Authorization replaces the one the plugin computes.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "title": "Name",
+                    "type": "string",
+                    "placeholder": "X-API-Key",
+                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                  },
+                  "value": {
+                    "title": "Value",
+                    "type": "string",
+                    "widget": "password",
+                    "x-schema-form": {
+                      "type": "password"
+                    },
+                    "description": "A literal value, env:NAME for an environment variable, or file:/path/to/value."
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Header"
               }
             },
             "manufacturer": {

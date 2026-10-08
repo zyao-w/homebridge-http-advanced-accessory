@@ -1,4 +1,5 @@
 const { resolveBearerToken } = require("./http/auth.js");
+const { mergeHeaders, resolveHeaders } = require("./http/headers.js");
 const { createMapper } = require("./mappers/index.js");
 const { compileTemplate } = require("./expression.js");
 
@@ -81,6 +82,12 @@ function createAction(definition, context, where) {
 	if (definition.bearerToken !== undefined) {
 		// Overrides the device and platform token for this action only
 		action.auth = resolveToken(definition.bearerToken);
+	}
+	if (Array.isArray(definition.headers) && mergeHeaders(definition.headers).length > 0) {
+		// Sent in addition to the headers of the device; the same name replaces them
+		const resolved = resolveHeaders(definition.headers, where);
+		action.headers = resolved.headers;
+		if (resolved.error) action.headersError = resolved.error;
 	}
 	if (definition.inconclusive) {
 		action.inconclusive = createAction(definition.inconclusive, context, `${where} inconclusive`);
@@ -205,6 +212,8 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 
 	const forceRefreshDelay = settings.forceRefreshDelay || 0;
 	const token = resolveToken(settings.bearerToken);
+	// The headers of the platform defaults come first, so that a device can replace them by name
+	const headers = resolveHeaders(mergeHeaders(defaults.headers, device.headers), `Device "${device.name}"`);
 	const state = {};
 	const context = { state, warn: options.warn, allowUnsafeEval: settings.allowUnsafeEval === true };
 
@@ -231,12 +240,13 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 			immediately: settings.immediately !== undefined ? settings.immediately : true,
 		},
 		allowUnsafeEval: context.allowUnsafeEval,
-		authError: token.error || null,
+		authError: token.error || headers.error || null,
 		http: {
 			timeout: settings.timeout,
 			retries: settings.retries,
 			cacheTTL: settings.cacheTTL !== undefined ? settings.cacheTTL : forceRefreshDelay,
 			maxConcurrent: settings.maxConcurrent,
+			headers: headers.headers,
 		},
 		state,
 		characteristics,

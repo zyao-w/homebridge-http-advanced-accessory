@@ -1,16 +1,14 @@
 var fs = require("fs");
 
 /**
- * Resolves the configured bearer token.
+ * Resolves a secret setting: a literal value, "env:NAME" (environment variable) or "file:/path" (file content).
+ * The result is trimmed. Throws an Error (never containing the secret) when the source is unavailable.
  *
- * Supported forms: a literal token, "env:NAME" (environment variable) and
- * "file:/path" (file content). The result is trimmed.
- * Throws an Error (never containing the token) when the source is unavailable.
- *
- * @param {*} value The raw `bearerToken` config value
- * @returns {string} The token, or "" when not configured
+ * @param {*} value The raw config value
+ * @param {string} label Names the setting in error messages
+ * @returns {string} The value, or "" when it is not a string
  */
-function resolveBearerToken(value) {
+function resolveSecret(value, label) {
 	if (typeof value !== "string") {
 		return "";
 	}
@@ -21,7 +19,7 @@ function resolveBearerToken(value) {
 		var name = raw.slice(4).trim();
 		var fromEnv = (process.env[name] || "").trim();
 		if (!fromEnv) {
-			throw new Error('bearerToken: environment variable "' + name + '" is not set or empty');
+			throw new Error(label + ': environment variable "' + name + '" is not set or empty');
 		}
 		return fromEnv;
 	}
@@ -32,15 +30,25 @@ function resolveBearerToken(value) {
 		try {
 			fromFile = fs.readFileSync(path, "utf8").trim();
 		} catch (e) {
-			throw new Error('bearerToken: cannot read file "' + path + '" (' + e.code + ")");
+			throw new Error(label + ': cannot read file "' + path + '" (' + e.code + ")");
 		}
 		if (!fromFile) {
-			throw new Error('bearerToken: file "' + path + '" is empty');
+			throw new Error(label + ': file "' + path + '" is empty');
 		}
 		return fromFile;
 	}
 
 	return raw;
+}
+
+/**
+ * Resolves the configured bearer token (a literal token, "env:NAME" or "file:/path", trimmed).
+ *
+ * @param {*} value The raw `bearerToken` config value
+ * @returns {string} The token, or "" when not configured
+ */
+function resolveBearerToken(value) {
+	return resolveSecret(value, "bearerToken");
 }
 
 /**
@@ -57,4 +65,4 @@ function buildAuthorization({ username = "", password = "", bearerToken = "" } =
 	return undefined;
 }
 
-module.exports = { resolveBearerToken, buildAuthorization };
+module.exports = { resolveBearerToken, resolveSecret, buildAuthorization };

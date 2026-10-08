@@ -84,7 +84,12 @@ class HttpAdvancedPlatform {
 			return null;
 		}
 
-		const { device: coerced, errors } = validateDevice({ ...defaults, ...raw });
+		const merged = { ...defaults, ...raw };
+		// A device adds to the headers of the defaults instead of replacing them; a wrong type is left for the validation
+		if (Array.isArray(defaults.headers) && Array.isArray(raw.headers)) {
+			merged.headers = [...defaults.headers, ...raw.headers];
+		}
+		const { device: coerced, errors } = validateDevice(merged);
 		if (errors.length) {
 			for (const error of errors) this.log.error(`${label}: ${error}`);
 			return null;

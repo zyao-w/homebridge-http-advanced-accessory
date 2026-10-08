@@ -30,6 +30,7 @@ class HttpClient {
 	constructor(options = {}) {
 		this.fetch = options.fetch || globalThis.fetch;
 		this.auth = options.auth || {};
+		this.headers = options.headers || {};
 		this.timeout = options.timeout === undefined ? 10000 : options.timeout;
 		this.retries = options.retries || 0;
 		this.retryDelay = options.retryDelay === undefined ? 500 : options.retryDelay;
@@ -46,23 +47,39 @@ class HttpClient {
 		return override ? { ...this.auth, bearerToken: override.bearerToken } : this.auth;
 	}
 
+	/** The headers of the client with those of one request on top; names are compared without regard to case. */
+	_headersFor(extra) {
+		const merged = new Map();
+		for (const source of [this.headers, extra]) {
+			for (const [name, value] of Object.entries(source || {})) {
+				merged.set(name.toLowerCase(), [name, value]);
+			}
+		}
+		return merged;
+	}
+
 	/** Identity of a request for sharing and caching; contains credentials, never log it. */
-	keyFor(req, override) {
+	keyFor(req, override, headers) {
 		const { username = "", password = "", bearerToken = "" } = this._authFor(override);
 		const authKey = bearerToken ? "b:" + bearerToken : "u:" + username + ":" + password;
-		return [normalize(req).method, req.url, req.body || "", authKey].join("\n");
+		const headersKey = [...this._headersFor(headers)]
+			.sort(([a], [b]) => (a < b ? -1 : 1))
+			.map(([key, [, value]]) => key + "=" + value)
+			.join("\n");
+		return [normalize(req).method, req.url, req.body || "", authKey, headersKey].join("\n");
 	}
 
 	/**
 	 * @param {{url: string, method?: string, body?: string}} req
-	 * @param {{fresh?: boolean, auth?: {bearerToken: string}}} [options]
+	 * @param {{fresh?: boolean, auth?: {bearerToken: string}, headers?: Object<string, string>}} [options]
 	 *   fresh: skip the cache lookup but still store the result
 	 *   auth: replaces the client's bearer token for this request ("" turns it off)
+	 *   headers: sent in addition to the headers of the client; the same name replaces them
 	 * @returns {Promise<{status: number, body: string}>}
 	 */
-	read(req, { fresh = false, auth } = {}) {
+	read(req, { fresh = false, auth, headers } = {}) {
 		const request = normalize(req);
-		const key = this.keyFor(request, auth);
+		const key = this.keyFor(request, auth, headers);
 
 		if (!fresh) {
 			const hit = this.cache.get(key);
@@ -75,7 +92,7 @@ class HttpClient {
 		let pending = this.inFlight.get(key);
 		if (!pending) {
 			const generation = this.generation;
-			pending = this._send(request, this.retries, auth)
+			pending = this._send(request, this.retries, auth, headers)
 				.then((response) => {
 					// A write that finished meanwhile may have made this response stale
 					if (this.cacheTTL > 0 && generation === this.generation) {
@@ -89,8 +106,8 @@ class HttpClient {
 		return pending;
 	}
 
-	write(req, { auth } = {}) {
-		return this._send(normalize(req), 0, auth).then((response) => {
+	write(req, { auth, headers } = {}) {
+		return this._send(normalize(req), 0, auth, headers).then((response) => {
 			this.invalidate();
 			return response;
 		});
@@ -101,13 +118,14 @@ class HttpClient {
 		this.cache.clear();
 	}
 
-	_send(request, retries, override) {
+	_send(request, retries, override, headers) {
 		const auth = this._authFor(override);
+		const merged = this._headersFor(headers);
 		return this.limiter.run(async () => {
 			for (let attempt = 0; ; attempt++) {
 				let response;
 				try {
-					response = await this._attempt(request, auth);
+					response = await this._attempt(request, auth, merged);
 				} catch (error) {
 					if (attempt >= retries) throw error;
 					await sleep(this.retryDelay * (attempt + 1));
@@ -119,23 +137,27 @@ class HttpClient {
 		});
 	}
 
-	async _attempt(request, auth) {
+	async _attempt(request, auth, headers) {
 		const authorization = buildAuthorization(auth);
 		// Bearer is always sent up front; Basic can wait for a 401 challenge
 		const immediately = Boolean(auth.bearerToken) || auth.immediately !== false;
 
-		const response = await this._fetchOnce(request, immediately ? authorization : undefined);
+		const response = await this._fetchOnce(request, immediately ? authorization : undefined, headers);
 		if (!immediately && authorization && response.status === 401) {
-			return this._fetchOnce(request, authorization);
+			return this._fetchOnce(request, authorization, headers);
 		}
 		return response;
 	}
 
-	async _fetchOnce(request, authorization) {
+	async _fetchOnce(request, authorization, headers = new Map()) {
 		const init = { method: request.method, headers: {} };
 
-		if (authorization) {
+		// A header that is configured by hand replaces the computed one, for example `Authorization: Token abc`
+		if (authorization && !headers.has("authorization")) {
 			init.headers.Authorization = authorization;
+		}
+		for (const [name, value] of headers.values()) {
+			init.headers[name] = value;
 		}
 		if (this.timeout > 0) {
 			init.signal = AbortSignal.timeout(this.timeout);
