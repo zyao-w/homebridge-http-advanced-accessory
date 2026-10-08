@@ -1285,6 +1285,1182 @@
                 "type": "string"
               }
             },
+            "additionalServices": {
+              "title": "Additional services",
+              "type": "array",
+              "description": "More services on the same accessory, for example humidity next to a temperature sensor, or a battery.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "title": "Identifier",
+                    "type": "string",
+                    "description": "Permanent identifier of the service on this accessory. Changing it makes HomeKit see a different service."
+                  },
+                  "name": {
+                    "title": "Name",
+                    "type": "string",
+                    "description": "Name of the service in HomeKit. Defaults to the device name and the identifier."
+                  },
+                  "service": {
+                    "title": "Service",
+                    "type": "string",
+                    "placeholder": "HumiditySensor",
+                    "description": "HomeKit service type, for example HumiditySensor or BatteryService."
+                  },
+                  "characteristics": {
+                    "title": "Characteristics",
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "characteristic": {
+                          "title": "Characteristic",
+                          "type": "string",
+                          "placeholder": "On",
+                          "description": "Characteristic name, for example On or Brightness."
+                        },
+                        "get": {
+                          "type": "object",
+                          "properties": {
+                            "url": {
+                              "title": "URL",
+                              "type": "string"
+                            },
+                            "httpMethod": {
+                              "title": "HTTP method",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "enum": [
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "PATCH",
+                                "DELETE"
+                              ],
+                              "description": "None uses GET."
+                            },
+                            "body": {
+                              "title": "Body",
+                              "type": "string",
+                              "widget": "textarea"
+                            },
+                            "resultOnError": {
+                              "title": "Result on error",
+                              "type": "string",
+                              "description": "Used as the value when the request fails, instead of reporting an error."
+                            },
+                            "bearerToken": {
+                              "title": "Bearer token",
+                              "type": "string",
+                              "widget": "password",
+                              "x-schema-form": {
+                                "type": "password"
+                              },
+                              "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                            },
+                            "mappers": {
+                              "title": "Mappers",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "title": "Type",
+                                    "type": "string",
+                                    "oneOf": [
+                                      {
+                                        "title": "Regular expression",
+                                        "enum": [
+                                          "regex"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Static mapping",
+                                        "enum": [
+                                          "static"
+                                        ]
+                                      },
+                                      {
+                                        "title": "XPath",
+                                        "enum": [
+                                          "xpath"
+                                        ]
+                                      },
+                                      {
+                                        "title": "JSONPath",
+                                        "enum": [
+                                          "jpath"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Scale a number",
+                                        "enum": [
+                                          "scale"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Expression",
+                                        "enum": [
+                                          "expression"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Script (needs allowUnsafeEval)",
+                                        "enum": [
+                                          "script"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "regexp": {
+                                    "title": "Regular expression",
+                                    "type": "string",
+                                    "description": "Type regex.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "capture": {
+                                    "title": "Capture group",
+                                    "type": "string",
+                                    "placeholder": "1",
+                                    "description": "Type regex.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "xpath": {
+                                    "title": "XPath",
+                                    "type": "string",
+                                    "description": "Type xpath.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"xpath\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "jpath": {
+                                    "title": "JSONPath",
+                                    "type": "string",
+                                    "description": "Type jpath.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"jpath\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "index": {
+                                    "title": "Index",
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "placeholder": "0",
+                                    "description": "Which match to return.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "mapping": {
+                                    "title": "Mapping",
+                                    "type": "array",
+                                    "description": "Type static.",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "from": {
+                                          "title": "From",
+                                          "type": "string"
+                                        },
+                                        "to": {
+                                          "title": "To",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "additionalProperties": false,
+                                      "title": "Pair"
+                                    },
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "inputMin": {
+                                    "title": "Input minimum",
+                                    "type": "number",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "inputMax": {
+                                    "title": "Input maximum",
+                                    "type": "number",
+                                    "description": "Type scale. Must differ from the minimum.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "outputMin": {
+                                    "title": "Output minimum",
+                                    "type": "number",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "outputMax": {
+                                    "title": "Output maximum",
+                                    "type": "number",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "round": {
+                                    "title": "Decimal places",
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 10,
+                                    "placeholder": "no rounding",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "clamp": {
+                                    "title": "Limit to the input range",
+                                    "type": "boolean",
+                                    "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "expression": {
+                                    "title": "Expression",
+                                    "type": "string",
+                                    "widget": "textarea",
+                                    "description": "Type expression.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"expression\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "script": {
+                                    "title": "Script",
+                                    "type": "string",
+                                    "widget": "textarea",
+                                    "description": "Type script.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"script\"].includes(m?.type);"
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Mapper"
+                              }
+                            },
+                            "inconclusive": {
+                              "type": "object",
+                              "properties": {
+                                "url": {
+                                  "title": "URL",
+                                  "type": "string"
+                                },
+                                "httpMethod": {
+                                  "title": "HTTP method",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "GET",
+                                    "POST",
+                                    "PUT",
+                                    "PATCH",
+                                    "DELETE"
+                                  ],
+                                  "description": "None uses GET."
+                                },
+                                "body": {
+                                  "title": "Body",
+                                  "type": "string",
+                                  "widget": "textarea"
+                                },
+                                "resultOnError": {
+                                  "title": "Result on error",
+                                  "type": "string",
+                                  "description": "Used as the value when the request fails, instead of reporting an error."
+                                },
+                                "bearerToken": {
+                                  "title": "Bearer token",
+                                  "type": "string",
+                                  "widget": "password",
+                                  "x-schema-form": {
+                                    "type": "password"
+                                  },
+                                  "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                                },
+                                "mappers": {
+                                  "title": "Mappers",
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "title": "Type",
+                                        "type": "string",
+                                        "oneOf": [
+                                          {
+                                            "title": "Regular expression",
+                                            "enum": [
+                                              "regex"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Static mapping",
+                                            "enum": [
+                                              "static"
+                                            ]
+                                          },
+                                          {
+                                            "title": "XPath",
+                                            "enum": [
+                                              "xpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "JSONPath",
+                                            "enum": [
+                                              "jpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Scale a number",
+                                            "enum": [
+                                              "scale"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Expression",
+                                            "enum": [
+                                              "expression"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Script (needs allowUnsafeEval)",
+                                            "enum": [
+                                              "script"
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "regexp": {
+                                        "title": "Regular expression",
+                                        "type": "string",
+                                        "description": "Type regex.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "capture": {
+                                        "title": "Capture group",
+                                        "type": "string",
+                                        "placeholder": "1",
+                                        "description": "Type regex.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "xpath": {
+                                        "title": "XPath",
+                                        "type": "string",
+                                        "description": "Type xpath.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"xpath\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "jpath": {
+                                        "title": "JSONPath",
+                                        "type": "string",
+                                        "description": "Type jpath.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"jpath\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "index": {
+                                        "title": "Index",
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "placeholder": "0",
+                                        "description": "Which match to return.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "mapping": {
+                                        "title": "Mapping",
+                                        "type": "array",
+                                        "description": "Type static.",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "from": {
+                                              "title": "From",
+                                              "type": "string"
+                                            },
+                                            "to": {
+                                              "title": "To",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "additionalProperties": false,
+                                          "title": "Pair"
+                                        },
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "inputMin": {
+                                        "title": "Input minimum",
+                                        "type": "number",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "inputMax": {
+                                        "title": "Input maximum",
+                                        "type": "number",
+                                        "description": "Type scale. Must differ from the minimum.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "outputMin": {
+                                        "title": "Output minimum",
+                                        "type": "number",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "outputMax": {
+                                        "title": "Output maximum",
+                                        "type": "number",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "round": {
+                                        "title": "Decimal places",
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 10,
+                                        "placeholder": "no rounding",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "clamp": {
+                                        "title": "Limit to the input range",
+                                        "type": "boolean",
+                                        "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "expression": {
+                                        "title": "Expression",
+                                        "type": "string",
+                                        "widget": "textarea",
+                                        "description": "Type expression.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"expression\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "script": {
+                                        "title": "Script",
+                                        "type": "string",
+                                        "widget": "textarea",
+                                        "description": "Type script.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"script\"].includes(m?.type);"
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "title": "Mapper"
+                                  }
+                                }
+                              },
+                              "additionalProperties": false,
+                              "title": "Fallback action",
+                              "x-schema-form": {
+                                "type": "fieldset",
+                                "expandable": true,
+                                "expanded": false
+                              },
+                              "description": "Used when a mapper returns inconclusive. Add it in the JSON config.",
+                              "condition": {
+                                "functionBody": "return Boolean(model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive);"
+                              }
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Get action"
+                        },
+                        "set": {
+                          "type": "object",
+                          "properties": {
+                            "url": {
+                              "title": "URL",
+                              "type": "string"
+                            },
+                            "httpMethod": {
+                              "title": "HTTP method",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "enum": [
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "PATCH",
+                                "DELETE"
+                              ],
+                              "description": "None uses GET."
+                            },
+                            "body": {
+                              "title": "Body",
+                              "type": "string",
+                              "widget": "textarea"
+                            },
+                            "resultOnError": {
+                              "title": "Result on error",
+                              "type": "string",
+                              "description": "Used as the value when the request fails, instead of reporting an error."
+                            },
+                            "bearerToken": {
+                              "title": "Bearer token",
+                              "type": "string",
+                              "widget": "password",
+                              "x-schema-form": {
+                                "type": "password"
+                              },
+                              "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                            },
+                            "mappers": {
+                              "title": "Mappers",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "title": "Type",
+                                    "type": "string",
+                                    "oneOf": [
+                                      {
+                                        "title": "Regular expression",
+                                        "enum": [
+                                          "regex"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Static mapping",
+                                        "enum": [
+                                          "static"
+                                        ]
+                                      },
+                                      {
+                                        "title": "XPath",
+                                        "enum": [
+                                          "xpath"
+                                        ]
+                                      },
+                                      {
+                                        "title": "JSONPath",
+                                        "enum": [
+                                          "jpath"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Scale a number",
+                                        "enum": [
+                                          "scale"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Expression",
+                                        "enum": [
+                                          "expression"
+                                        ]
+                                      },
+                                      {
+                                        "title": "Script (needs allowUnsafeEval)",
+                                        "enum": [
+                                          "script"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "regexp": {
+                                    "title": "Regular expression",
+                                    "type": "string",
+                                    "description": "Type regex.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "capture": {
+                                    "title": "Capture group",
+                                    "type": "string",
+                                    "placeholder": "1",
+                                    "description": "Type regex.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "xpath": {
+                                    "title": "XPath",
+                                    "type": "string",
+                                    "description": "Type xpath.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"xpath\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "jpath": {
+                                    "title": "JSONPath",
+                                    "type": "string",
+                                    "description": "Type jpath.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"jpath\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "index": {
+                                    "title": "Index",
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "placeholder": "0",
+                                    "description": "Which match to return.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "mapping": {
+                                    "title": "Mapping",
+                                    "type": "array",
+                                    "description": "Type static.",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "from": {
+                                          "title": "From",
+                                          "type": "string"
+                                        },
+                                        "to": {
+                                          "title": "To",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "additionalProperties": false,
+                                      "title": "Pair"
+                                    },
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "inputMin": {
+                                    "title": "Input minimum",
+                                    "type": "number",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "inputMax": {
+                                    "title": "Input maximum",
+                                    "type": "number",
+                                    "description": "Type scale. Must differ from the minimum.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "outputMin": {
+                                    "title": "Output minimum",
+                                    "type": "number",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "outputMax": {
+                                    "title": "Output maximum",
+                                    "type": "number",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "round": {
+                                    "title": "Decimal places",
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 10,
+                                    "placeholder": "no rounding",
+                                    "description": "Type scale.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "clamp": {
+                                    "title": "Limit to the input range",
+                                    "type": "boolean",
+                                    "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "expression": {
+                                    "title": "Expression",
+                                    "type": "string",
+                                    "widget": "textarea",
+                                    "description": "Type expression.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"expression\"].includes(m?.type);"
+                                    }
+                                  },
+                                  "script": {
+                                    "title": "Script",
+                                    "type": "string",
+                                    "widget": "textarea",
+                                    "description": "Type script.",
+                                    "condition": {
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"script\"].includes(m?.type);"
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Mapper"
+                              }
+                            },
+                            "inconclusive": {
+                              "type": "object",
+                              "properties": {
+                                "url": {
+                                  "title": "URL",
+                                  "type": "string"
+                                },
+                                "httpMethod": {
+                                  "title": "HTTP method",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "enum": [
+                                    "GET",
+                                    "POST",
+                                    "PUT",
+                                    "PATCH",
+                                    "DELETE"
+                                  ],
+                                  "description": "None uses GET."
+                                },
+                                "body": {
+                                  "title": "Body",
+                                  "type": "string",
+                                  "widget": "textarea"
+                                },
+                                "resultOnError": {
+                                  "title": "Result on error",
+                                  "type": "string",
+                                  "description": "Used as the value when the request fails, instead of reporting an error."
+                                },
+                                "bearerToken": {
+                                  "title": "Bearer token",
+                                  "type": "string",
+                                  "widget": "password",
+                                  "x-schema-form": {
+                                    "type": "password"
+                                  },
+                                  "description": "Overrides the device token for this action. A literal token, env:NAME for an environment variable, or file:/path/to/token."
+                                },
+                                "mappers": {
+                                  "title": "Mappers",
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "title": "Type",
+                                        "type": "string",
+                                        "oneOf": [
+                                          {
+                                            "title": "Regular expression",
+                                            "enum": [
+                                              "regex"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Static mapping",
+                                            "enum": [
+                                              "static"
+                                            ]
+                                          },
+                                          {
+                                            "title": "XPath",
+                                            "enum": [
+                                              "xpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "JSONPath",
+                                            "enum": [
+                                              "jpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Scale a number",
+                                            "enum": [
+                                              "scale"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Expression",
+                                            "enum": [
+                                              "expression"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Script (needs allowUnsafeEval)",
+                                            "enum": [
+                                              "script"
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "regexp": {
+                                        "title": "Regular expression",
+                                        "type": "string",
+                                        "description": "Type regex.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "capture": {
+                                        "title": "Capture group",
+                                        "type": "string",
+                                        "placeholder": "1",
+                                        "description": "Type regex.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"regex\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "xpath": {
+                                        "title": "XPath",
+                                        "type": "string",
+                                        "description": "Type xpath.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"xpath\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "jpath": {
+                                        "title": "JSONPath",
+                                        "type": "string",
+                                        "description": "Type jpath.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"jpath\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "index": {
+                                        "title": "Index",
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "placeholder": "0",
+                                        "description": "Which match to return.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"xpath\",\"jpath\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "mapping": {
+                                        "title": "Mapping",
+                                        "type": "array",
+                                        "description": "Type static.",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "from": {
+                                              "title": "From",
+                                              "type": "string"
+                                            },
+                                            "to": {
+                                              "title": "To",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "additionalProperties": false,
+                                          "title": "Pair"
+                                        },
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "inputMin": {
+                                        "title": "Input minimum",
+                                        "type": "number",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "inputMax": {
+                                        "title": "Input maximum",
+                                        "type": "number",
+                                        "description": "Type scale. Must differ from the minimum.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "outputMin": {
+                                        "title": "Output minimum",
+                                        "type": "number",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "outputMax": {
+                                        "title": "Output maximum",
+                                        "type": "number",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "round": {
+                                        "title": "Decimal places",
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 10,
+                                        "placeholder": "no rounding",
+                                        "description": "Type scale.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "clamp": {
+                                        "title": "Limit to the input range",
+                                        "type": "boolean",
+                                        "description": "Type scale. Without it, numbers outside the input range extrapolate.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "expression": {
+                                        "title": "Expression",
+                                        "type": "string",
+                                        "widget": "textarea",
+                                        "description": "Type expression.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"expression\"].includes(m?.type);"
+                                        }
+                                      },
+                                      "script": {
+                                        "title": "Script",
+                                        "type": "string",
+                                        "widget": "textarea",
+                                        "description": "Type script.",
+                                        "condition": {
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"script\"].includes(m?.type);"
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false,
+                                    "title": "Mapper"
+                                  }
+                                }
+                              },
+                              "additionalProperties": false,
+                              "title": "Fallback action",
+                              "x-schema-form": {
+                                "type": "fieldset",
+                                "expandable": true,
+                                "expanded": false
+                              },
+                              "description": "Used when a mapper returns inconclusive. Add it in the JSON config.",
+                              "condition": {
+                                "functionBody": "return Boolean(model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive);"
+                              }
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Set action",
+                          "x-schema-form": {
+                            "type": "fieldset",
+                            "expandable": true,
+                            "expanded": false
+                          }
+                        },
+                        "props": {
+                          "type": "object",
+                          "properties": {
+                            "format": {
+                              "title": "Format",
+                              "type": "string",
+                              "oneOf": [
+                                {
+                                  "title": "bool",
+                                  "enum": [
+                                    "bool"
+                                  ]
+                                },
+                                {
+                                  "title": "int",
+                                  "enum": [
+                                    "int"
+                                  ]
+                                },
+                                {
+                                  "title": "float",
+                                  "enum": [
+                                    "float"
+                                  ]
+                                },
+                                {
+                                  "title": "string",
+                                  "enum": [
+                                    "string"
+                                  ]
+                                },
+                                {
+                                  "title": "uint8",
+                                  "enum": [
+                                    "uint8"
+                                  ]
+                                },
+                                {
+                                  "title": "uint16",
+                                  "enum": [
+                                    "uint16"
+                                  ]
+                                },
+                                {
+                                  "title": "uint32",
+                                  "enum": [
+                                    "uint32"
+                                  ]
+                                },
+                                {
+                                  "title": "uint64",
+                                  "enum": [
+                                    "uint64"
+                                  ]
+                                }
+                              ]
+                            },
+                            "unit": {
+                              "title": "Unit",
+                              "type": "string",
+                              "oneOf": [
+                                {
+                                  "title": "celsius",
+                                  "enum": [
+                                    "celsius"
+                                  ]
+                                },
+                                {
+                                  "title": "percentage",
+                                  "enum": [
+                                    "percentage"
+                                  ]
+                                },
+                                {
+                                  "title": "arcdegrees",
+                                  "enum": [
+                                    "arcdegrees"
+                                  ]
+                                },
+                                {
+                                  "title": "lux",
+                                  "enum": [
+                                    "lux"
+                                  ]
+                                },
+                                {
+                                  "title": "seconds",
+                                  "enum": [
+                                    "seconds"
+                                  ]
+                                }
+                              ]
+                            },
+                            "minValue": {
+                              "title": "Minimum value",
+                              "type": "number"
+                            },
+                            "maxValue": {
+                              "title": "Maximum value",
+                              "type": "number"
+                            },
+                            "minStep": {
+                              "title": "Minimum step",
+                              "type": "number"
+                            },
+                            "validValues": {
+                              "title": "Valid values",
+                              "type": "array",
+                              "items": {
+                                "title": "Value",
+                                "type": "number"
+                              }
+                            },
+                            "validValueRanges": {
+                              "title": "Valid value ranges",
+                              "type": "array",
+                              "items": {
+                                "title": "Bound",
+                                "type": "number"
+                              }
+                            },
+                            "perms": {
+                              "title": "Permissions",
+                              "type": "array",
+                              "items": {
+                                "title": "Permission",
+                                "type": "string"
+                              }
+                            },
+                            "maxLen": {
+                              "title": "Maximum length",
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Characteristic properties",
+                          "x-schema-form": {
+                            "type": "fieldset",
+                            "expandable": true,
+                            "expanded": false
+                          }
+                        }
+                      },
+                      "additionalProperties": false,
+                      "title": "Characteristic"
+                    }
+                  },
+                  "optionCharacteristic": {
+                    "title": "Optional characteristics",
+                    "type": "array",
+                    "description": "Optional characteristics of the service to expose, for example BatteryLevel.",
+                    "items": {
+                      "title": "Characteristic",
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Service"
+              }
+            },
             "manufacturer": {
               "title": "Manufacturer",
               "type": "string",

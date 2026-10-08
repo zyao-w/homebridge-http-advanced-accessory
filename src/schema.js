@@ -70,60 +70,70 @@ const MAPPER_TYPES = [
 
 // Fields are shown only where they apply. The form evaluates `condition` with the whole config (`model`) and
 // the indexes of the enclosing arrays, so each condition spells out where its field lives in the model.
-const CHARACTERISTIC = "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]";
+// A characteristic of the device and one of an additional service live at different places, so each gets a scope.
+const PRIMARY_SCOPE = {
+	characteristic: "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
+	mapperIndex: "arrayIndices[2]",
+};
+const SERVICE_SCOPE = {
+	characteristic:
+		"model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]",
+	mapperIndex: "arrayIndices[3]",
+};
 const inModel = (path) =>
 	path
 		.split(".")
 		.map((key) => `?.${key}`)
 		.join("");
 const when = (functionBody) => ({ condition: { functionBody } });
-const mapperTypeIs = (path, types) =>
+const mapperTypeIs = (scope, path, types) =>
 	when(
-		`const m = ${CHARACTERISTIC}${inModel(path)}?.mappers?.[arrayIndices[2]]; return ${JSON.stringify(types)}.includes(m?.type);`
+		`const m = ${scope.characteristic}${inModel(path)}?.mappers?.[${scope.mapperIndex}]; return ${JSON.stringify(types)}.includes(m?.type);`
 	);
 
-function mapper(path) {
+function mapper(scope, path) {
+	const typeIs = (...types) => mapperTypeIs(scope, path, types);
 	return object({
 		type: choice("Type", MAPPER_TYPES),
-		regexp: text("Regular expression", { description: "Type regex.", ...mapperTypeIs(path, ["regex"]) }),
-		capture: text("Capture group", { placeholder: "1", description: "Type regex.", ...mapperTypeIs(path, ["regex"]) }),
-		xpath: text("XPath", { description: "Type xpath.", ...mapperTypeIs(path, ["xpath"]) }),
-		jpath: text("JSONPath", { description: "Type jpath.", ...mapperTypeIs(path, ["jpath"]) }),
+		regexp: text("Regular expression", { description: "Type regex.", ...typeIs("regex") }),
+		capture: text("Capture group", { placeholder: "1", description: "Type regex.", ...typeIs("regex") }),
+		xpath: text("XPath", { description: "Type xpath.", ...typeIs("xpath") }),
+		jpath: text("JSONPath", { description: "Type jpath.", ...typeIs("jpath") }),
 		index: integer("Index", {
 			placeholder: "0",
 			description: "Which match to return.",
-			...mapperTypeIs(path, ["xpath", "jpath"]),
+			...typeIs("xpath", "jpath"),
 		}),
 		mapping: {
 			title: "Mapping",
 			type: "array",
 			description: "Type static.",
 			items: { ...object({ from: text("From"), to: text("To") }), title: "Pair" },
-			...mapperTypeIs(path, ["static"]),
+			...typeIs("static"),
 		},
-		inputMin: signed("Input minimum", { description: "Type scale.", ...mapperTypeIs(path, ["scale"]) }),
+		inputMin: signed("Input minimum", { description: "Type scale.", ...typeIs("scale") }),
 		inputMax: signed("Input maximum", {
 			description: "Type scale. Must differ from the minimum.",
-			...mapperTypeIs(path, ["scale"]),
+			...typeIs("scale"),
 		}),
-		outputMin: signed("Output minimum", { description: "Type scale.", ...mapperTypeIs(path, ["scale"]) }),
-		outputMax: signed("Output maximum", { description: "Type scale.", ...mapperTypeIs(path, ["scale"]) }),
+		outputMin: signed("Output minimum", { description: "Type scale.", ...typeIs("scale") }),
+		outputMax: signed("Output maximum", { description: "Type scale.", ...typeIs("scale") }),
 		round: integer("Decimal places", {
 			maximum: 10,
 			placeholder: "no rounding",
 			description: "Type scale.",
-			...mapperTypeIs(path, ["scale"]),
+			...typeIs("scale"),
 		}),
 		clamp: bool("Limit to the input range", {
 			description: "Type scale. Without it, numbers outside the input range extrapolate.",
-			...mapperTypeIs(path, ["scale"]),
+			...typeIs("scale"),
 		}),
 		expression: text("Expression", {
 			widget: "textarea",
 			description: "Type expression.",
-			...mapperTypeIs(path, ["expression"]),
+			...typeIs("expression"),
 		}),
-		script: text("Script", { widget: "textarea", description: "Type script.", ...mapperTypeIs(path, ["script"]) }),
+		script: text("Script", { widget: "textarea", description: "Type script.", ...typeIs("script") }),
 	});
 }
 
@@ -140,8 +150,11 @@ function httpMethod() {
 	};
 }
 
-/** @param {string} path Where the action lives inside a characteristic: get, set or get.inconclusive */
-function action(path, withInconclusive) {
+/**
+ * @param {{characteristic: string, mapperIndex: string}} scope Where the characteristic lives in the form model
+ * @param {string} path Where the action lives inside a characteristic: get, set or get.inconclusive
+ */
+function action(scope, path, withInconclusive) {
 	const properties = {
 		url: text("URL"),
 		httpMethod: httpMethod(),
@@ -150,17 +163,17 @@ function action(path, withInconclusive) {
 			description: "Used as the value when the request fails, instead of reporting an error.",
 		}),
 		bearerToken: secret("Bearer token", { description: "Overrides the device token for this action. " + TOKEN_HELP }),
-		mappers: { title: "Mappers", type: "array", items: { ...mapper(path), title: "Mapper" } },
+		mappers: { title: "Mappers", type: "array", items: { ...mapper(scope, path), title: "Mapper" } },
 	};
 	if (withInconclusive) {
 		// The form cannot recurse, so one fallback level is described. It is shown only when the config has one:
 		// a form cannot add it without showing a second copy of every action field.
 		properties.inconclusive = {
-			...action(`${path}.inconclusive`, false),
+			...action(scope, `${path}.inconclusive`, false),
 			title: "Fallback action",
 			...collapsed,
 			description: "Used when a mapper returns inconclusive. Add it in the JSON config.",
-			...when(`return Boolean(${CHARACTERISTIC}${inModel(path)}?.inconclusive);`),
+			...when(`return Boolean(${scope.characteristic}${inModel(path)}?.inconclusive);`),
 		};
 	}
 	return object(properties);
@@ -189,15 +202,42 @@ function props() {
 	});
 }
 
-function characteristic() {
+function characteristic(scope) {
 	return object({
 		characteristic: text("Characteristic", {
 			placeholder: "On",
 			description: "Characteristic name, for example On or Brightness.",
 		}),
-		get: { ...action("get", true), title: "Get action" },
-		set: { ...action("set", true), title: "Set action", ...collapsed },
+		get: { ...action(scope, "get", true), title: "Get action" },
+		set: { ...action(scope, "set", true), title: "Set action", ...collapsed },
 		props: { ...props(), title: "Characteristic properties", ...collapsed },
+	});
+}
+
+function additionalService() {
+	return object({
+		id: text("Identifier", {
+			description:
+				"Permanent identifier of the service on this accessory. Changing it makes HomeKit see a different service.",
+		}),
+		name: text("Name", {
+			description: "Name of the service in HomeKit. Defaults to the device name and the identifier.",
+		}),
+		service: text("Service", {
+			placeholder: "HumiditySensor",
+			description: "HomeKit service type, for example HumiditySensor or BatteryService.",
+		}),
+		characteristics: {
+			title: "Characteristics",
+			type: "array",
+			items: { ...characteristic(SERVICE_SCOPE), title: "Characteristic" },
+		},
+		optionCharacteristic: {
+			title: "Optional characteristics",
+			type: "array",
+			description: "Optional characteristics of the service to expose, for example BatteryLevel.",
+			items: { title: "Characteristic", type: "string" },
+		},
 	});
 }
 
@@ -214,13 +254,20 @@ function device() {
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(), title: "Characteristic" },
+			items: { ...characteristic(PRIMARY_SCOPE), title: "Characteristic" },
 		},
 		optionCharacteristic: {
 			title: "Optional characteristics",
 			type: "array",
 			description: "Optional characteristics of the service to expose, for example Brightness.",
 			items: { title: "Characteristic", type: "string" },
+		},
+		additionalServices: {
+			title: "Additional services",
+			type: "array",
+			description:
+				"More services on the same accessory, for example humidity next to a temperature sensor, or a battery.",
+			items: { ...additionalService(), title: "Service" },
 		},
 		...settings(),
 	});
