@@ -361,6 +361,67 @@ describe("actions", () => {
 			expect(characteristics[0].get.auth.error.message).toMatch("HHAA_ACTION_MISSING");
 		});
 	});
+
+	describe("headers", () => {
+		test("are resolved per action and absent without any", () => {
+			process.env.HHAA_ACTION_HEADER = "from-env";
+			try {
+				const { characteristics } = device({
+					characteristic: "On",
+					get: { url: "u", headers: [{ name: "X-Key", value: "env:HHAA_ACTION_HEADER" }] },
+					set: { url: "u", headers: [{}] },
+				});
+				expect(characteristics[0].get.headers).toEqual({ "X-Key": "from-env" });
+				expect(characteristics[0].set).not.toHaveProperty("headers");
+			} finally {
+				delete process.env.HHAA_ACTION_HEADER;
+			}
+		});
+
+		test("report an unreadable source on the action", () => {
+			const { characteristics } = device({
+				characteristic: "On",
+				get: { url: "u", headers: [{ name: "X-Key", value: "env:HHAA_ACTION_HEADER_MISSING" }] },
+			});
+			expect(characteristics[0].get.headersError.message).toMatch("HHAA_ACTION_HEADER_MISSING");
+		});
+
+		test("refuse a wrong name and say where it is", () => {
+			expect(() =>
+				device({ characteristic: "On", get: { url: "u", headers: [{ name: "bad name", value: "x" }] } })
+			).toThrow(/a header needs a name/);
+		});
+	});
+});
+
+describe("device headers", () => {
+	test("are none by default", () => {
+		expect(normalizeDevice(base).http.headers).toEqual({});
+	});
+
+	test("are added to the headers of the defaults and replace them by name", () => {
+		const device = normalizeDevice(
+			{ ...base, headers: [{ name: "x-api-key", value: "device" }] },
+			{
+				headers: [
+					{ name: "X-Api-Key", value: "default" },
+					{ name: "Accept", value: "application/json" },
+				],
+			}
+		);
+		expect(device.http.headers).toEqual({ Accept: "application/json", "x-api-key": "device" });
+	});
+
+	test("fail the requests of the device when a value cannot be read", () => {
+		const device = normalizeDevice({ ...base, headers: [{ name: "X-Key", value: "env:HHAA_DEVICE_HEADER_MISSING" }] });
+		expect(device.authError.message).toMatch("HHAA_DEVICE_HEADER_MISSING");
+	});
+
+	test("refuse a wrong name and name the device", () => {
+		expect(() => normalizeDevice({ ...base, headers: [{ name: "a:b", value: "x" }] })).toThrow(
+			/^Device "[^"]*": a header needs a name/
+		);
+	});
 });
 
 describe("equivalence with the 1.x configuration", () => {

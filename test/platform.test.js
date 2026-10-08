@@ -1052,6 +1052,68 @@ describe("authentication", () => {
 	});
 });
 
+describe("custom headers", () => {
+	const open = (config) => {
+		const { api, log } = launch(config);
+		return { characteristic: serviceOf(registered(api)[0]).characteristics[0], log };
+	};
+
+	test("combines the headers of the defaults, the device and the action", async () => {
+		const device = switchDevice({
+			headers: [
+				{ name: "X-Device", value: "d" },
+				{ name: "x-shared", value: "device" },
+			],
+		});
+		device.characteristics[0].set.headers = [{ name: "Content-Type", value: "application/json" }];
+		const { characteristic } = open({
+			defaults: {
+				headers: [
+					{ name: "X-Default", value: "p" },
+					{ name: "X-Shared", value: "default" },
+				],
+			},
+			devices: [device],
+		});
+		await characteristic.getHandler();
+		await characteristic.setHandler("1");
+		expect(initOf(0).headers).toEqual({ "X-Default": "p", "x-shared": "device", "X-Device": "d" });
+		expect(initOf(1).headers).toEqual({
+			"X-Default": "p",
+			"x-shared": "device",
+			"X-Device": "d",
+			"Content-Type": "application/json",
+		});
+	});
+
+	test("fails requests when a value cannot be read and says why", async () => {
+		const { characteristic, log } = open({
+			devices: [switchDevice({ headers: [{ name: "X-Key", value: "env:HHAA_PLATFORM_HEADER_MISSING" }] })],
+		});
+		await expect(characteristic.getHandler()).rejects.toMatchObject({ status: -70402 });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(log).toHaveBeenCalledWith(expect.stringContaining("HHAA_PLATFORM_HEADER_MISSING"));
+	});
+
+	test("a device with a wrong header name is not added and the others are", () => {
+		const { api, log } = launch({
+			devices: [switchDevice({ name: "Bad", headers: [{ name: "bad name", value: "x" }] }), switchDevice()],
+		});
+		expect(registered(api)).toHaveLength(1);
+		expect(log.error).toHaveBeenCalledWith(expect.stringMatching(/^Device "Bad": .*header/i));
+	});
+
+	test("debug logging never contains header values", async () => {
+		const { characteristic, log } = open({
+			defaults: { debug: true },
+			devices: [switchDevice({ headers: [{ name: "X-Api-Key", value: "super-secret-key" }] })],
+		});
+		await characteristic.getHandler();
+		await characteristic.setHandler("1");
+		expect(JSON.stringify(log.mock.calls)).not.toMatch(/super-secret/);
+	});
+});
+
 describe("platform settings", () => {
 	test("device settings win over defaults and coercion applies to both", async () => {
 		jest.useFakeTimers();
