@@ -1,5 +1,7 @@
 # homebridge http advanced accessory
 
+English | [繁體中文](README.zh-TW.md)
+
 Homebridge plugin that turns virtually any device with an HTTP API into HomeKit accessories. Each device is described in the configuration: which HomeKit service it is, which URLs to call to _read_ and _change_ every characteristic, and how to turn the responses into the values HomeKit expects.
 
 This is a modified fork of the original [homebridge-http-advanced-accessory](https://github.com/staromeste/homebridge-http-advanced-accessory), maintained independently. It adds Bearer Token authentication, request caching and de-duplication, timeouts and retries, and (from 2.0.0) a Dynamic Platform with a Homebridge UI form.
