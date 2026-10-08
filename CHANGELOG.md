@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.0.0 (unreleased)
+## 2.0.0 - 2026-10-08
 
-Pre-releases are published under the `next` tag. **This is a breaking release**: see [MIGRATION.md](MIGRATION.md) to convert a 1.x configuration.
+**This is a breaking release**: see [MIGRATION.md](MIGRATION.md) to convert a 1.x configuration.
 
 ### Added
 
@@ -35,8 +35,18 @@ Pre-releases are published under the `next` tag. **This is a breaking release**:
 
 - The `HttpAdvancedAccessory` accessory and the `urls` configuration of 1.x.
 - `uriCallsDelay`; `maxConcurrent: 1` runs the requests one at a time.
-- `manufacturer` and `model`, which were never applied.
+- `manufacturer`, `model` and `serialNumber`, which 1.1.3 added to the accessory, are not available in the platform yet.
 - Digest authentication (already unavailable since 1.1.0).
+
+## 1.1.3 - 2026-10-08
+
+### Added
+
+- `manufacturer`, `model` and `serialNumber` settings for the accessory information that HomeKit shows. Without them the values stay `Custom Manufacturer`, `HTTP Accessory Model` and `HTTP Accessory Serial Number`. The README example already listed `manufacturer` and `model`, but they were never read.
+
+### Changed
+
+- The `license` in `package.json` is `Apache-2.0`, as in the `LICENSE` file (it said `ISC`), and the package lists its author and contributors.
 
 ## 1.1.2 - 2026-10-07
 
