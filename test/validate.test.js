@@ -230,7 +230,9 @@ describe("validateDevice", () => {
 			characteristics: [{ characteristic: "On", get: { url: "u", mappers: [{ type: "eval" }] } }],
 		});
 		expect(errors).toEqual([
-			expect.stringMatching(/mappers\[0\]\.type must be one of: regex, static, xpath, jpath, expression, script/),
+			expect.stringMatching(
+				/mappers\[0\]\.type must be one of: regex, static, xpath, jpath, scale, expression, script/
+			),
 		]);
 	});
 

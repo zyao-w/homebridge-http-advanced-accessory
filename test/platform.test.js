@@ -449,6 +449,44 @@ describe("writing", () => {
 		expect(urlOf(0)).toBe("http://h/set?v=on");
 	});
 
+	test("scales the value of a set and fails before sending when it is not a number", async () => {
+		const scale = { type: "scale", inputMin: 0, inputMax: 100, outputMin: 0, outputMax: 255, round: 0 };
+		const device = switchDevice({
+			characteristics: [{ characteristic: "On", set: { url: "http://h/level/{value}", mappers: [scale] } }],
+		});
+		const { api, log } = launch({ devices: [device] });
+		const characteristic = characteristicOf(api);
+
+		await characteristic.setHandler(50);
+		expect(urlOf(0)).toBe("http://h/level/128");
+
+		fetchMock.mockClear();
+		await expect(characteristic.setHandler("abc")).rejects.toMatchObject({ status: -70402 });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(log).toHaveBeenCalledWith(
+			"[Pump] SetState function failed: %s",
+			"The mappers could not convert the value abc, nothing was sent"
+		);
+	});
+
+	test("scales a polled value and treats a non-number as an error", async () => {
+		jest.useFakeTimers();
+		responses["http://h/level"] = "255";
+		const scale = { type: "scale", inputMin: 0, inputMax: 255, outputMin: 0, outputMax: 100 };
+		const device = switchDevice({
+			forceRefreshDelay: 5,
+			characteristics: [{ characteristic: "On", get: { url: "http://h/level", mappers: [scale] } }],
+		});
+		const { api } = launch({ devices: [device] });
+		const characteristic = characteristicOf(api);
+		await jest.advanceTimersByTimeAsync(0);
+		expect(await characteristic.getHandler()).toBe(100);
+
+		responses["http://h/level"] = "offline";
+		await jest.advanceTimersByTimeAsync(5000);
+		await expect(characteristic.getHandler()).rejects.toMatchObject({ status: -70402 });
+	});
+
 	test("templates see the value and the state keyed by characteristic name", async () => {
 		const { api } = launch({
 			devices: [
