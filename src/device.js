@@ -1,6 +1,7 @@
 const ActionRunner = require("./runner.js");
 const HttpClient = require("./http/client.js");
 const Poller = require("./poller.js");
+const { INCONCLUSIVE } = require("./mappers/index.js");
 const { renderTemplate } = require("./template.js");
 
 const INTEGER_FORMATS = ["int", "uint16", "uint8", "uint32", "uint64"];
@@ -227,6 +228,9 @@ class DeviceController {
 
 		try {
 			const mappedValue = this.runner.applyMappers(action.mappers, value);
+			if (mappedValue === INCONCLUSIVE) {
+				throw new Error(`The mappers could not convert the value ${value}, nothing was sent`);
+			}
 			const scope = { value, state: this.device.state, mappedValue };
 			const unsafe = this.device.allowUnsafeEval;
 			const url = renderTemplate(action.url, scope, { unsafe });
