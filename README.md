@@ -30,37 +30,37 @@ A platform has an optional list of `defaults` that every device inherits, and a 
 
 ```json
 {
-	"platforms": [
-		{
-			"platform": "HttpAdvancedPlatform",
-			"name": "HTTP Advanced",
-			"defaults": { "forceRefreshDelay": 5, "timeout": 5000, "bearerToken": "env:MY_API_TOKEN" },
-			"devices": [
-				{
-					"name": "Terrace Sensor",
-					"service": "ContactSensor",
-					"characteristics": [
-						{
-							"characteristic": "ContactSensorState",
-							"get": {
-								"url": "http://remoteserver/xml/zones/zonesStatus48IP.xml",
-								"mappers": [
-									{ "type": "xpath", "xpath": "//status[1]/text()" },
-									{
-										"type": "static",
-										"mapping": [
-											{ "from": "ALARM", "to": "1" },
-											{ "from": "NORMAL", "to": "0" }
-										]
-									}
-								]
-							}
-						}
-					]
-				}
-			]
-		}
-	]
+  "platforms": [
+    {
+      "platform": "HttpAdvancedPlatform",
+      "name": "HTTP Advanced",
+      "defaults": { "forceRefreshDelay": 5, "timeout": 5000, "bearerToken": "env:MY_API_TOKEN" },
+      "devices": [
+        {
+          "name": "Terrace Sensor",
+          "service": "ContactSensor",
+          "characteristics": [
+            {
+              "characteristic": "ContactSensorState",
+              "get": {
+                "url": "http://remoteserver/xml/zones/zonesStatus48IP.xml",
+                "mappers": [
+                  { "type": "xpath", "xpath": "//status[1]/text()" },
+                  {
+                    "type": "static",
+                    "mapping": [
+                      { "from": "ALARM", "to": "1" },
+                      { "from": "NORMAL", "to": "0" }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -108,10 +108,10 @@ Read requests with the same method, URL, body and credentials that are in flight
 
 ```json
 {
-	"characteristic": "TargetTemperature",
-	"get": { "url": "http://remoteserver/temperature" },
-	"set": { "url": "http://remoteserver/setTemperature?stemp={value}" },
-	"props": { "minValue": 16, "maxValue": 30, "minStep": 0.5 }
+  "characteristic": "TargetTemperature",
+  "get": { "url": "http://remoteserver/temperature" },
+  "set": { "url": "http://remoteserver/setTemperature?stemp={value}" },
+  "props": { "minValue": 16, "maxValue": 30, "minStep": 0.5 }
 }
 ```
 
@@ -181,10 +181,10 @@ For example, setting `Active` may also have to send the target temperature in Fa
 
 ```json
 {
-	"characteristic": "Active",
-	"set": {
-		"url": "http://remoteserver/setActive?${value}&stemp=${state.TargetTemperature * 9 / 5 + 32}"
-	}
+  "characteristic": "Active",
+  "set": {
+    "url": "http://remoteserver/setActive?${value}&stemp=${state.TargetTemperature * 9 / 5 + 32}"
+  }
 }
 ```
 
@@ -200,11 +200,11 @@ Looks the input up in a table. It is great for turning words such as `ARMED` int
 
 ```json
 {
-	"type": "static",
-	"mapping": [
-		{ "from": "STAY", "to": "0" },
-		{ "from": "AWAY", "to": "1" }
-	]
+  "type": "static",
+  "mapping": [
+    { "from": "STAY", "to": "0" },
+    { "from": "AWAY", "to": "1" }
+  ]
 }
 ```
 
@@ -331,25 +331,25 @@ Leading and trailing whitespace is always trimmed. If the environment variable o
 
 ```json
 {
-	"defaults": { "headers": [{ "name": "X-Api-Key", "value": "env:MY_API_KEY" }] },
-	"devices": [
-		{
-			"name": "Lamp",
-			"service": "Switch",
-			"characteristics": [
-				{
-					"characteristic": "On",
-					"get": { "url": "http://lamp/api/state" },
-					"set": {
-						"url": "http://lamp/api/state",
-						"httpMethod": "POST",
-						"body": "{\"on\": {value}}",
-						"headers": [{ "name": "Content-Type", "value": "application/json" }]
-					}
-				}
-			]
-		}
-	]
+  "defaults": { "headers": [{ "name": "X-Api-Key", "value": "env:MY_API_KEY" }] },
+  "devices": [
+    {
+      "name": "Lamp",
+      "service": "Switch",
+      "characteristics": [
+        {
+          "characteristic": "On",
+          "get": { "url": "http://lamp/api/state" },
+          "set": {
+            "url": "http://lamp/api/state",
+            "httpMethod": "POST",
+            "body": "{\"on\": {value}}",
+            "headers": [{ "name": "Content-Type", "value": "application/json" }]
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -411,23 +411,23 @@ Each example is one entry of the `devices` list.
 
 ```json
 {
-	"name": "CO2 Sensor",
-	"service": "CarbonDioxideSensor",
-	"bearerToken": "YOUR_BEARER_TOKEN",
-	"characteristics": [
-		{
-			"characteristic": "CarbonDioxideLevel",
-			"get": {
-				"url": "https://example.com/api/",
-				"mappers": [
-					{
-						"type": "jpath",
-						"jpath": "$.data.co2"
-					}
-				]
-			}
-		}
-	]
+  "name": "CO2 Sensor",
+  "service": "CarbonDioxideSensor",
+  "bearerToken": "YOUR_BEARER_TOKEN",
+  "characteristics": [
+    {
+      "characteristic": "CarbonDioxideLevel",
+      "get": {
+        "url": "https://example.com/api/",
+        "mappers": [
+          {
+            "type": "jpath",
+            "jpath": "$.data.co2"
+          }
+        ]
+      }
+    }
+  ]
 }
 ```
 
@@ -437,40 +437,40 @@ A `jpath` mapper picks a field out of the JSON response and `expression` mappers
 
 ```json
 {
-	"name": "Air Quality Sensor",
-	"service": "AirQualitySensor",
-	"optionCharacteristic": ["PM2.5Density", "VOCDensity"],
-	"forceRefreshDelay": 30,
-	"bearerToken": "env:AIR_API_TOKEN",
-	"characteristics": [
-		{
-			"characteristic": "AirQuality",
-			"get": {
-				"url": "https://example.com/api/air/",
-				"mappers": [
-					{ "type": "jpath", "jpath": "$.data.pm25" },
-					{
-						"type": "expression",
-						"expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : value <= 150 ? 4 : 5"
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "PM2.5Density",
-			"get": {
-				"url": "https://example.com/api/air/",
-				"mappers": [{ "type": "jpath", "jpath": "$.data.pm25" }, { "type": "number" }]
-			}
-		},
-		{
-			"characteristic": "VOCDensity",
-			"get": {
-				"url": "https://example.com/api/air/",
-				"mappers": [{ "type": "jpath", "jpath": "$.data.tvoc" }, { "type": "number" }]
-			}
-		}
-	]
+  "name": "Air Quality Sensor",
+  "service": "AirQualitySensor",
+  "optionCharacteristic": ["PM2.5Density", "VOCDensity"],
+  "forceRefreshDelay": 30,
+  "bearerToken": "env:AIR_API_TOKEN",
+  "characteristics": [
+    {
+      "characteristic": "AirQuality",
+      "get": {
+        "url": "https://example.com/api/air/",
+        "mappers": [
+          { "type": "jpath", "jpath": "$.data.pm25" },
+          {
+            "type": "expression",
+            "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value <= 12 ? 1 : value <= 35 ? 2 : value <= 55 ? 3 : value <= 150 ? 4 : 5"
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "PM2.5Density",
+      "get": {
+        "url": "https://example.com/api/air/",
+        "mappers": [{ "type": "jpath", "jpath": "$.data.pm25" }, { "type": "number" }]
+      }
+    },
+    {
+      "characteristic": "VOCDensity",
+      "get": {
+        "url": "https://example.com/api/air/",
+        "mappers": [{ "type": "jpath", "jpath": "$.data.tvoc" }, { "type": "number" }]
+      }
+    }
+  ]
 }
 ```
 
@@ -482,85 +482,85 @@ One accessory with four services. Every characteristic reads the same URL, so th
 
 ```json
 {
-	"name": "Living room air",
-	"service": "CarbonDioxideSensor",
-	"optionCharacteristic": ["CarbonDioxideLevel"],
-	"forceRefreshDelay": 30,
-	"bearerToken": "env:AIR_API_TOKEN",
-	"characteristics": [
-		{
-			"characteristic": "CarbonDioxideDetected",
-			"get": {
-				"url": "https://example.com/api/air/",
-				"mappers": [
-					{ "type": "jpath", "jpath": "$.data.co2" },
-					{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value > 1200 ? 1 : 0" }
-				]
-			}
-		},
-		{
-			"characteristic": "CarbonDioxideLevel",
-			"get": {
-				"url": "https://example.com/api/air/",
-				"mappers": [{ "type": "jpath", "jpath": "$.data.co2" }, { "type": "number" }]
-			}
-		}
-	],
-	"additionalServices": [
-		{
-			"id": "temperature",
-			"name": "Temperature",
-			"service": "TemperatureSensor",
-			"characteristics": [
-				{
-					"characteristic": "CurrentTemperature",
-					"get": {
-						"url": "https://example.com/api/air/",
-						"mappers": [{ "type": "jpath", "jpath": "$.data.temperature" }, { "type": "number" }]
-					}
-				}
-			]
-		},
-		{
-			"id": "humidity",
-			"name": "Humidity",
-			"service": "HumiditySensor",
-			"characteristics": [
-				{
-					"characteristic": "CurrentRelativeHumidity",
-					"get": {
-						"url": "https://example.com/api/air/",
-						"mappers": [{ "type": "jpath", "jpath": "$.data.humidity" }, { "type": "number" }]
-					}
-				}
-			]
-		},
-		{
-			"id": "battery",
-			"name": "Battery",
-			"service": "BatteryService",
-			"optionCharacteristic": ["BatteryLevel"],
-			"characteristics": [
-				{
-					"characteristic": "StatusLowBattery",
-					"get": {
-						"url": "https://example.com/api/air/",
-						"mappers": [
-							{ "type": "jpath", "jpath": "$.data.battery" },
-							{ "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value < 20 ? 1 : 0" }
-						]
-					}
-				},
-				{
-					"characteristic": "BatteryLevel",
-					"get": {
-						"url": "https://example.com/api/air/",
-						"mappers": [{ "type": "jpath", "jpath": "$.data.battery" }, { "type": "number" }]
-					}
-				}
-			]
-		}
-	]
+  "name": "Living room air",
+  "service": "CarbonDioxideSensor",
+  "optionCharacteristic": ["CarbonDioxideLevel"],
+  "forceRefreshDelay": 30,
+  "bearerToken": "env:AIR_API_TOKEN",
+  "characteristics": [
+    {
+      "characteristic": "CarbonDioxideDetected",
+      "get": {
+        "url": "https://example.com/api/air/",
+        "mappers": [
+          { "type": "jpath", "jpath": "$.data.co2" },
+          { "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value > 1200 ? 1 : 0" }
+        ]
+      }
+    },
+    {
+      "characteristic": "CarbonDioxideLevel",
+      "get": {
+        "url": "https://example.com/api/air/",
+        "mappers": [{ "type": "jpath", "jpath": "$.data.co2" }, { "type": "number" }]
+      }
+    }
+  ],
+  "additionalServices": [
+    {
+      "id": "temperature",
+      "name": "Temperature",
+      "service": "TemperatureSensor",
+      "characteristics": [
+        {
+          "characteristic": "CurrentTemperature",
+          "get": {
+            "url": "https://example.com/api/air/",
+            "mappers": [{ "type": "jpath", "jpath": "$.data.temperature" }, { "type": "number" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "humidity",
+      "name": "Humidity",
+      "service": "HumiditySensor",
+      "characteristics": [
+        {
+          "characteristic": "CurrentRelativeHumidity",
+          "get": {
+            "url": "https://example.com/api/air/",
+            "mappers": [{ "type": "jpath", "jpath": "$.data.humidity" }, { "type": "number" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "battery",
+      "name": "Battery",
+      "service": "BatteryService",
+      "optionCharacteristic": ["BatteryLevel"],
+      "characteristics": [
+        {
+          "characteristic": "StatusLowBattery",
+          "get": {
+            "url": "https://example.com/api/air/",
+            "mappers": [
+              { "type": "jpath", "jpath": "$.data.battery" },
+              { "type": "expression", "expression": "isNaN(parseFloat(value)) ? \"inconclusive\" : value < 20 ? 1 : 0" }
+            ]
+          }
+        },
+        {
+          "characteristic": "BatteryLevel",
+          "get": {
+            "url": "https://example.com/api/air/",
+            "mappers": [{ "type": "jpath", "jpath": "$.data.battery" }, { "type": "number" }]
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -570,142 +570,142 @@ A Bticino (BT-4200, 4201, 4202) as a HomeKit SecuritySystem. It uses an inconclu
 
 ```json
 {
-	"name": "Btcino Security",
-	"service": "SecuritySystem",
-	"forceRefreshDelay": 5,
-	"username": "admin",
-	"password": "admin",
-	"characteristics": [
-		{
-			"characteristic": "SecuritySystemTargetState",
-			"get": {
-				"url": "http://remoteserver/xml/state/virtualKeypad.xml",
-				"mappers": [
-					{
-						"type": "xpath",
-						"xpath": "//generic/text()"
-					},
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "0",
-								"to": "3"
-							},
-							{
-								"from": "1",
-								"to": "1"
-							},
-							{
-								"from": "2",
-								"to": "2"
-							},
-							{
-								"from": "3",
-								"to": "0"
-							}
-						]
-					}
-				]
-			},
-			"set": {
-				"url": "http://remoteserver/xml/cmd/cmdOk.xml?cmd=setMacro&macroId={value}&redirectPage=/xml/cmd/cmdError.xml",
-				"mappers": [
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "0",
-								"to": "3"
-							},
-							{
-								"from": "1",
-								"to": "1"
-							},
-							{
-								"from": "2",
-								"to": "2"
-							},
-							{
-								"from": "3",
-								"to": "0"
-							}
-						]
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "SecuritySystemCurrentState",
-			"get": {
-				"url": "http://remoteserver/xml/partitions/partitionsStatus48IP.xml",
-				"mappers": [
-					{
-						"type": "regex",
-						"regexp": "(ALARM)",
-						"capture": "1"
-					},
-					{
-						"type": "regex",
-						"regexp": ">(ARMED)",
-						"capture": "1"
-					},
-					{
-						"type": "regex",
-						"regexp": "(DISARMED)",
-						"capture": "1"
-					},
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "ALARM",
-								"to": "4"
-							},
-							{
-								"from": "ARMED",
-								"to": "inconclusive"
-							},
-							{
-								"from": "DISARMED",
-								"to": "3"
-							}
-						]
-					}
-				],
-				"inconclusive": {
-					"url": "http://remoteserver/xml/state/virtualKeypad.xml",
-					"mappers": [
-						{
-							"type": "xpath",
-							"xpath": "//generic/text()"
-						},
-						{
-							"type": "static",
-							"mapping": [
-								{
-									"from": "0",
-									"to": "3"
-								},
-								{
-									"from": "1",
-									"to": "1"
-								},
-								{
-									"from": "2",
-									"to": "2"
-								},
-								{
-									"from": "3",
-									"to": "0"
-								}
-							]
-						}
-					]
-				}
-			}
-		}
-	]
+  "name": "Btcino Security",
+  "service": "SecuritySystem",
+  "forceRefreshDelay": 5,
+  "username": "admin",
+  "password": "admin",
+  "characteristics": [
+    {
+      "characteristic": "SecuritySystemTargetState",
+      "get": {
+        "url": "http://remoteserver/xml/state/virtualKeypad.xml",
+        "mappers": [
+          {
+            "type": "xpath",
+            "xpath": "//generic/text()"
+          },
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "0",
+                "to": "3"
+              },
+              {
+                "from": "1",
+                "to": "1"
+              },
+              {
+                "from": "2",
+                "to": "2"
+              },
+              {
+                "from": "3",
+                "to": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "set": {
+        "url": "http://remoteserver/xml/cmd/cmdOk.xml?cmd=setMacro&macroId={value}&redirectPage=/xml/cmd/cmdError.xml",
+        "mappers": [
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "0",
+                "to": "3"
+              },
+              {
+                "from": "1",
+                "to": "1"
+              },
+              {
+                "from": "2",
+                "to": "2"
+              },
+              {
+                "from": "3",
+                "to": "0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "SecuritySystemCurrentState",
+      "get": {
+        "url": "http://remoteserver/xml/partitions/partitionsStatus48IP.xml",
+        "mappers": [
+          {
+            "type": "regex",
+            "regexp": "(ALARM)",
+            "capture": "1"
+          },
+          {
+            "type": "regex",
+            "regexp": ">(ARMED)",
+            "capture": "1"
+          },
+          {
+            "type": "regex",
+            "regexp": "(DISARMED)",
+            "capture": "1"
+          },
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "ALARM",
+                "to": "4"
+              },
+              {
+                "from": "ARMED",
+                "to": "inconclusive"
+              },
+              {
+                "from": "DISARMED",
+                "to": "3"
+              }
+            ]
+          }
+        ],
+        "inconclusive": {
+          "url": "http://remoteserver/xml/state/virtualKeypad.xml",
+          "mappers": [
+            {
+              "type": "xpath",
+              "xpath": "//generic/text()"
+            },
+            {
+              "type": "static",
+              "mapping": [
+                {
+                  "from": "0",
+                  "to": "3"
+                },
+                {
+                  "from": "1",
+                  "to": "1"
+                },
+                {
+                  "from": "2",
+                  "to": "2"
+                },
+                {
+                  "from": "3",
+                  "to": "0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
 }
 ```
 
@@ -713,38 +713,38 @@ A Bticino (BT-4200, 4201, 4202) as a HomeKit SecuritySystem. It uses an inconclu
 
 ```json
 {
-	"name": "Terrace Sensor",
-	"service": "ContactSensor",
-	"forceRefreshDelay": 5,
-	"username": "admin",
-	"password": "admin",
-	"characteristics": [
-		{
-			"characteristic": "ContactSensorState",
-			"get": {
-				"url": "http://remoteserver/xml/zones/zonesStatus48IP.xml",
-				"mappers": [
-					{
-						"type": "xpath",
-						"xpath": "//status[1]/text()"
-					},
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "ALARM",
-								"to": "1"
-							},
-							{
-								"from": "NORMAL",
-								"to": "0"
-							}
-						]
-					}
-				]
-			}
-		}
-	]
+  "name": "Terrace Sensor",
+  "service": "ContactSensor",
+  "forceRefreshDelay": 5,
+  "username": "admin",
+  "password": "admin",
+  "characteristics": [
+    {
+      "characteristic": "ContactSensorState",
+      "get": {
+        "url": "http://remoteserver/xml/zones/zonesStatus48IP.xml",
+        "mappers": [
+          {
+            "type": "xpath",
+            "xpath": "//status[1]/text()"
+          },
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "ALARM",
+                "to": "1"
+              },
+              {
+                "from": "NORMAL",
+                "to": "0"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
 ```
 
@@ -754,150 +754,150 @@ This is still incomplete, but the unofficial [Daikin documentation](https://gith
 
 ```json
 {
-	"name": "Condizionatore Soggiorno",
-	"service": "HeaterCooler",
-	"forceRefreshDelay": 5,
-	"characteristics": [
-		{
-			"characteristic": "CurrentHeaterCoolerState",
-			"get": {
-				"url": "http://192.168.x.x/aircon/get_control_info",
-				"mappers": [
-					{
-						"type": "regex",
-						"regexp": "(pow=0)",
-						"capture": "1"
-					},
-					{
-						"type": "regex",
-						"regexp": "mode=(\\d)",
-						"capture": "1"
-					},
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "3",
-								"to": "3"
-							},
-							{
-								"from": "4",
-								"to": "2"
-							},
-							{
-								"from": "pow=0",
-								"to": "0"
-							}
-						]
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "TargetHeaterCoolerState",
-			"get": {
-				"url": "http://192.168.x.x/aircon/get_control_info",
-				"mappers": [
-					{
-						"type": "regex",
-						"regexp": "(pow=0)",
-						"capture": "1"
-					},
-					{
-						"type": "regex",
-						"regexp": "mode=(\\d)",
-						"capture": "1"
-					},
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "0",
-								"to": "3"
-							},
-							{
-								"from": "1",
-								"to": "3"
-							},
-							{
-								"from": "2",
-								"to": "3"
-							},
-							{
-								"from": "3",
-								"to": "3"
-							},
-							{
-								"from": "4",
-								"to": "2"
-							},
-							{
-								"from": "7",
-								"to": "3"
-							},
-							{
-								"from": "pow=0",
-								"to": "0"
-							}
-						]
-					}
-				]
-			},
-			"set": {
-				"url": "http://192.168.x.x/aircon/set_control_info/{value}",
-				"mappers": [
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "0",
-								"to": "?mode=0"
-							},
-							{
-								"from": "1",
-								"to": "?mode=4"
-							},
-							{
-								"from": "2",
-								"to": "?mode=3"
-							}
-						]
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "Active",
-			"get": {
-				"url": "http://192.168.x.x/aircon/get_control_info",
-				"mappers": [
-					{
-						"type": "regex",
-						"regexp": "pow=(\\d)",
-						"capture": "1"
-					}
-				]
-			},
-			"set": {
-				"url": "http://192.168.x.x/aircon/set_control_info/{value}",
-				"mappers": [
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "0",
-								"to": "?pow=0"
-							},
-							{
-								"from": "1",
-								"to": "?pow=1"
-							}
-						]
-					}
-				]
-			}
-		}
-	]
+  "name": "Condizionatore Soggiorno",
+  "service": "HeaterCooler",
+  "forceRefreshDelay": 5,
+  "characteristics": [
+    {
+      "characteristic": "CurrentHeaterCoolerState",
+      "get": {
+        "url": "http://192.168.x.x/aircon/get_control_info",
+        "mappers": [
+          {
+            "type": "regex",
+            "regexp": "(pow=0)",
+            "capture": "1"
+          },
+          {
+            "type": "regex",
+            "regexp": "mode=(\\d)",
+            "capture": "1"
+          },
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "3",
+                "to": "3"
+              },
+              {
+                "from": "4",
+                "to": "2"
+              },
+              {
+                "from": "pow=0",
+                "to": "0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "TargetHeaterCoolerState",
+      "get": {
+        "url": "http://192.168.x.x/aircon/get_control_info",
+        "mappers": [
+          {
+            "type": "regex",
+            "regexp": "(pow=0)",
+            "capture": "1"
+          },
+          {
+            "type": "regex",
+            "regexp": "mode=(\\d)",
+            "capture": "1"
+          },
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "0",
+                "to": "3"
+              },
+              {
+                "from": "1",
+                "to": "3"
+              },
+              {
+                "from": "2",
+                "to": "3"
+              },
+              {
+                "from": "3",
+                "to": "3"
+              },
+              {
+                "from": "4",
+                "to": "2"
+              },
+              {
+                "from": "7",
+                "to": "3"
+              },
+              {
+                "from": "pow=0",
+                "to": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "set": {
+        "url": "http://192.168.x.x/aircon/set_control_info/{value}",
+        "mappers": [
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "0",
+                "to": "?mode=0"
+              },
+              {
+                "from": "1",
+                "to": "?mode=4"
+              },
+              {
+                "from": "2",
+                "to": "?mode=3"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "Active",
+      "get": {
+        "url": "http://192.168.x.x/aircon/get_control_info",
+        "mappers": [
+          {
+            "type": "regex",
+            "regexp": "pow=(\\d)",
+            "capture": "1"
+          }
+        ]
+      },
+      "set": {
+        "url": "http://192.168.x.x/aircon/set_control_info/{value}",
+        "mappers": [
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "0",
+                "to": "?pow=0"
+              },
+              {
+                "from": "1",
+                "to": "?pow=1"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
 ```
 
@@ -905,40 +905,40 @@ This is still incomplete, but the unofficial [Daikin documentation](https://gith
 
 ```json
 {
-	"name": "Bedroom speaker",
-	"service": "Switch",
-	"forceRefreshDelay": 5,
-	"characteristics": [
-		{
-			"characteristic": "On",
-			"get": {
-				"url": "http://192.168.x.x/YamahaExtendedControl/v1/main/getStatus",
-				"mappers": [
-					{
-						"type": "jpath",
-						"jpath": "$..power",
-						"index": 0
-					},
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "on",
-								"to": "1"
-							},
-							{
-								"from": "standby",
-								"to": "0"
-							}
-						]
-					}
-				]
-			},
-			"set": {
-				"url": "http://192.168.x.x/YamahaExtendedControl/v1/main/setPower?power=${value==1?\"on\":\"standby\"}"
-			}
-		}
-	]
+  "name": "Bedroom speaker",
+  "service": "Switch",
+  "forceRefreshDelay": 5,
+  "characteristics": [
+    {
+      "characteristic": "On",
+      "get": {
+        "url": "http://192.168.x.x/YamahaExtendedControl/v1/main/getStatus",
+        "mappers": [
+          {
+            "type": "jpath",
+            "jpath": "$..power",
+            "index": 0
+          },
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "on",
+                "to": "1"
+              },
+              {
+                "from": "standby",
+                "to": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "set": {
+        "url": "http://192.168.x.x/YamahaExtendedControl/v1/main/setPower?power=${value==1?\"on\":\"standby\"}"
+      }
+    }
+  ]
 }
 ```
 
@@ -946,111 +946,111 @@ This is still incomplete, but the unofficial [Daikin documentation](https://gith
 
 ```json
 {
-	"name": "Pool Light",
-	"service": "Lightbulb",
-	"manufacturer": "Custom",
-	"model": "Virtual Device",
-	"optionCharacteristic": ["Hue", "Saturation", "Brightness"],
-	"characteristics": [
-		{
-			"characteristic": "On",
-			"set": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22pool%20i%20{value}%22%7D",
-				"mappers": [
-					{
-						"type": "static",
-						"mapping": [
-							{
-								"from": "true",
-								"to": "on"
-							},
-							{
-								"from": "false",
-								"to": "off"
-							}
-						]
-					}
-				]
-			},
-			"get": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22update%20pool-on%22%7D",
-				"mappers": [
-					{
-						"type": "jpath",
-						"jpath": "$.u",
-						"index": 0
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "Hue",
-			"set": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22pool%20hue%20{value}%22%7D",
-				"mappers": []
-			},
-			"get": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22value%20pool-h%22%7D",
-				"mappers": [
-					{
-						"type": "jpath",
-						"jpath": "$.u",
-						"index": 0
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "Saturation",
-			"set": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22pool%20saturation%20{value}%22%7D",
-				"mappers": []
-			},
-			"get": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22value%20pool-s%22%7D",
-				"mappers": [
-					{
-						"type": "jpath",
-						"jpath": "$.u",
-						"index": 0
-					}
-				]
-			}
-		},
-		{
-			"characteristic": "Brightness",
-			"set": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22pool%20brightness%20{value}%22%7D",
-				"mappers": []
-			},
-			"get": {
-				"url": "http://127.0.0.1/control.php",
-				"httpMethod": "POST",
-				"body": "%7B%22c%22%3A%22value%20pool-b%22%7D",
-				"mappers": [
-					{
-						"type": "jpath",
-						"jpath": "$.u",
-						"index": 0
-					}
-				]
-			}
-		}
-	]
+  "name": "Pool Light",
+  "service": "Lightbulb",
+  "manufacturer": "Custom",
+  "model": "Virtual Device",
+  "optionCharacteristic": ["Hue", "Saturation", "Brightness"],
+  "characteristics": [
+    {
+      "characteristic": "On",
+      "set": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22pool%20i%20{value}%22%7D",
+        "mappers": [
+          {
+            "type": "static",
+            "mapping": [
+              {
+                "from": "true",
+                "to": "on"
+              },
+              {
+                "from": "false",
+                "to": "off"
+              }
+            ]
+          }
+        ]
+      },
+      "get": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22update%20pool-on%22%7D",
+        "mappers": [
+          {
+            "type": "jpath",
+            "jpath": "$.u",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "Hue",
+      "set": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22pool%20hue%20{value}%22%7D",
+        "mappers": []
+      },
+      "get": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22value%20pool-h%22%7D",
+        "mappers": [
+          {
+            "type": "jpath",
+            "jpath": "$.u",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "Saturation",
+      "set": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22pool%20saturation%20{value}%22%7D",
+        "mappers": []
+      },
+      "get": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22value%20pool-s%22%7D",
+        "mappers": [
+          {
+            "type": "jpath",
+            "jpath": "$.u",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "characteristic": "Brightness",
+      "set": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22pool%20brightness%20{value}%22%7D",
+        "mappers": []
+      },
+      "get": {
+        "url": "http://127.0.0.1/control.php",
+        "httpMethod": "POST",
+        "body": "%7B%22c%22%3A%22value%20pool-b%22%7D",
+        "mappers": [
+          {
+            "type": "jpath",
+            "jpath": "$.u",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ]
 }
 ```
 
