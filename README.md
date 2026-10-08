@@ -143,6 +143,7 @@ Configuration sample:
 - The **bearerToken** configuration can be used to specify a Bearer Token when the remote webserver requires Bearer Token authentication.
 - A **debug** turns on debug messages. The important bit is that it reports the mapping process so that it's easier to debug.
 - The **optionCharacteristic** is an array of optional Characteristics of the service that you want to expose to HomeKit. The full list of mandatory and optional Characteristics types that HomeKit supports are exposed as a separate subclass in [HomeKitTypes](https://github.com/homebridge/HAP-NodeJS/blob/master/src/lib/gen/HomeKit.ts).
+- The **manufacturer**, **model** and **serialNumber** (OPTIONAL) are shown in the accessory information of HomeKit. They default to `Custom Manufacturer`, `HTTP Accessory Model` and `HTTP Accessory Serial Number`. An empty value is ignored.
 - The **urls section** configures the URLs that are to be called on certain events. It contains a key-value map of actions that can be executed. The key is name of the action and the value is a configuration JSON object for that action. See the [Actions](#actions) section below.
 - The **polling** is a boolean that specifies if the current state should be pulled on regular intervals or not. Defaults to false.
 - **forceRefreshDelay** is a number which defines the poll interval in seconds. Defaults to 0.

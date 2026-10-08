@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.3 - 2026-10-08
+
+### Added
+
+- `manufacturer`, `model` and `serialNumber` settings for the accessory information that HomeKit shows. Without them the values stay `Custom Manufacturer`, `HTTP Accessory Model` and `HTTP Accessory Serial Number`. The README example already listed `manufacturer` and `model`, but they were never read.
+
+### Changed
+
+- The `license` in `package.json` is `Apache-2.0`, as in the `LICENSE` file (it said `ISC`), and the package lists its author and contributors.
+
 ## 1.1.2 - 2026-10-07
 
 ### Fixed
