@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.0 - 2026-10-08
+
+### Added
+
+- `additionalServices`: more HomeKit services on the same accessory, for example temperature and humidity next to a CO2 sensor, or a battery. Each entry has an `id`, a `service`, an optional `name`, and its own `characteristics` and `optionCharacteristic`. The `id` becomes the subtype of the service, so it identifies the service in HomeKit and must not change. The services share the authentication, polling, timeouts and cache of the device, and characteristics that read the same URL share one request.
+- The values of a service are available as `state.<id>.<Characteristic>` in templates and expressions. The characteristics of the device keep `state.<Characteristic>`.
+- The Homebridge UI form can edit additional services, including the mapper fields that depend on the type.
+
+### Changed
+
+- The startup log of a device counts the characteristics of all its services and mentions the additional services.
+- The poll log and failure state name a characteristic of an additional service as `<id>.<Characteristic>`.
+- A service with an unknown type makes the device fail to load before the cached accessory is touched, as for the service of the device.
+
 ## 2.1.0 - 2026-10-08
 
 ### Added
@@ -39,7 +53,7 @@
 - Mappers are written flat (`{ "type": "regex", "regexp": "..." }`), and a static mapping is a list of `{ "from", "to" }` pairs.
 - `state` in templates and expressions is keyed by characteristic name (`state.Brightness`).
 - Characteristic handlers use `onGet` / `onSet`; failed requests are reported to HomeKit as communication errors.
-- In the Homebridge UI form, *Defaults*, *Set action*, *Characteristic properties* and *Fallback action* start collapsed.
+- In the Homebridge UI form, _Defaults_, _Set action_, _Characteristic properties_ and _Fallback action_ start collapsed.
 - Node.js 22 or newer is required. `jsonpath-plus` is updated to 11 and `xpath` to 0.0.35.
 - `${...}` in URL and body templates uses the expression language; full JavaScript there needs `allowUnsafeEval`.
 - The `eval` mapper became the `script` mapper.
