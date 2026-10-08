@@ -63,6 +63,7 @@ const MAPPER_TYPES = [
 	["static", "Static mapping"],
 	["xpath", "XPath"],
 	["jpath", "JSONPath"],
+	["number", "Number"],
 	["scale", "Scale a number"],
 	["expression", "Expression"],
 	["script", "Script (needs allowUnsafeEval)"],
@@ -121,8 +122,8 @@ function mapper(scope, path) {
 		round: integer("Decimal places", {
 			maximum: 10,
 			placeholder: "no rounding",
-			description: "Type scale.",
-			...typeIs("scale"),
+			description: "Type number or scale.",
+			...typeIs("number", "scale"),
 		}),
 		clamp: bool("Limit to the input range", {
 			description: "Type scale. Without it, numbers outside the input range extrapolate.",

@@ -225,6 +225,12 @@
                                   ]
                                 },
                                 {
+                                  "title": "Number",
+                                  "enum": [
+                                    "number"
+                                  ]
+                                },
+                                {
                                   "title": "Scale a number",
                                   "enum": [
                                     "scale"
@@ -348,9 +354,9 @@
                               "minimum": 0,
                               "maximum": 10,
                               "placeholder": "no rounding",
-                              "description": "Type scale.",
+                              "description": "Type number or scale.",
                               "condition": {
-                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                               }
                             },
                             "clamp": {
@@ -457,6 +463,12 @@
                                       "title": "JSONPath",
                                       "enum": [
                                         "jpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Number",
+                                      "enum": [
+                                        "number"
                                       ]
                                     },
                                     {
@@ -583,9 +595,9 @@
                                   "minimum": 0,
                                   "maximum": 10,
                                   "placeholder": "no rounding",
-                                  "description": "Type scale.",
+                                  "description": "Type number or scale.",
                                   "condition": {
-                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                                   }
                                 },
                                 "clamp": {
@@ -712,6 +724,12 @@
                                   ]
                                 },
                                 {
+                                  "title": "Number",
+                                  "enum": [
+                                    "number"
+                                  ]
+                                },
+                                {
                                   "title": "Scale a number",
                                   "enum": [
                                     "scale"
@@ -835,9 +853,9 @@
                               "minimum": 0,
                               "maximum": 10,
                               "placeholder": "no rounding",
-                              "description": "Type scale.",
+                              "description": "Type number or scale.",
                               "condition": {
-                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                               }
                             },
                             "clamp": {
@@ -944,6 +962,12 @@
                                       "title": "JSONPath",
                                       "enum": [
                                         "jpath"
+                                      ]
+                                    },
+                                    {
+                                      "title": "Number",
+                                      "enum": [
+                                        "number"
                                       ]
                                     },
                                     {
@@ -1070,9 +1094,9 @@
                                   "minimum": 0,
                                   "maximum": 10,
                                   "placeholder": "no rounding",
-                                  "description": "Type scale.",
+                                  "description": "Type number or scale.",
                                   "condition": {
-                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"scale\"].includes(m?.type);"
+                                    "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"number\",\"scale\"].includes(m?.type);"
                                   }
                                 },
                                 "clamp": {
@@ -1396,6 +1420,12 @@
                                         ]
                                       },
                                       {
+                                        "title": "Number",
+                                        "enum": [
+                                          "number"
+                                        ]
+                                      },
+                                      {
                                         "title": "Scale a number",
                                         "enum": [
                                           "scale"
@@ -1519,9 +1549,9 @@
                                     "minimum": 0,
                                     "maximum": 10,
                                     "placeholder": "no rounding",
-                                    "description": "Type scale.",
+                                    "description": "Type number or scale.",
                                     "condition": {
-                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                     }
                                   },
                                   "clamp": {
@@ -1628,6 +1658,12 @@
                                             "title": "JSONPath",
                                             "enum": [
                                               "jpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Number",
+                                            "enum": [
+                                              "number"
                                             ]
                                           },
                                           {
@@ -1754,9 +1790,9 @@
                                         "minimum": 0,
                                         "maximum": 10,
                                         "placeholder": "no rounding",
-                                        "description": "Type scale.",
+                                        "description": "Type number or scale.",
                                         "condition": {
-                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                         }
                                       },
                                       "clamp": {
@@ -1883,6 +1919,12 @@
                                         ]
                                       },
                                       {
+                                        "title": "Number",
+                                        "enum": [
+                                          "number"
+                                        ]
+                                      },
+                                      {
                                         "title": "Scale a number",
                                         "enum": [
                                           "scale"
@@ -2006,9 +2048,9 @@
                                     "minimum": 0,
                                     "maximum": 10,
                                     "placeholder": "no rounding",
-                                    "description": "Type scale.",
+                                    "description": "Type number or scale.",
                                     "condition": {
-                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                      "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                     }
                                   },
                                   "clamp": {
@@ -2115,6 +2157,12 @@
                                             "title": "JSONPath",
                                             "enum": [
                                               "jpath"
+                                            ]
+                                          },
+                                          {
+                                            "title": "Number",
+                                            "enum": [
+                                              "number"
                                             ]
                                           },
                                           {
@@ -2241,9 +2289,9 @@
                                         "minimum": 0,
                                         "maximum": 10,
                                         "placeholder": "no rounding",
-                                        "description": "Type scale.",
+                                        "description": "Type number or scale.",
                                         "condition": {
-                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"scale\"].includes(m?.type);"
+                                          "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"number\",\"scale\"].includes(m?.type);"
                                         }
                                       },
                                       "clamp": {
