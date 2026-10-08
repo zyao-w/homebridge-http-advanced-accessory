@@ -55,9 +55,9 @@ class DeviceController {
 		const information =
 			accessory.getService(Service.AccessoryInformation) || accessory.addService(Service.AccessoryInformation);
 		information
-			.setCharacteristic(Characteristic.Manufacturer, "Custom Manufacturer")
-			.setCharacteristic(Characteristic.Model, "HTTP Accessory Model")
-			.setCharacteristic(Characteristic.SerialNumber, "HTTP Accessory Serial Number");
+			.setCharacteristic(Characteristic.Manufacturer, device.information.manufacturer)
+			.setCharacteristic(Characteristic.Model, device.information.model)
+			.setCharacteristic(Characteristic.SerialNumber, device.information.serialNumber);
 
 		// A cached accessory is rebuilt so that its service always matches the current configuration
 		for (const existing of [...accessory.services]) {

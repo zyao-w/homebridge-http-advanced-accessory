@@ -25,6 +25,15 @@ const TOKEN_HELP = "A literal token, env:NAME for an environment variable, or fi
 
 function settings() {
 	return {
+		manufacturer: text("Manufacturer", {
+			placeholder: "Custom Manufacturer",
+			description: "Shown in the accessory information of HomeKit.",
+		}),
+		model: text("Model", { placeholder: "HTTP Accessory Model" }),
+		serialNumber: text("Serial number", {
+			placeholder: "HTTP Accessory Serial Number",
+			description: "Does not change the HomeKit identity of the accessory.",
+		}),
 		forceRefreshDelay: number("Polling interval (seconds)", { placeholder: "0", description: "0 disables polling." }),
 		setterDelay: number("Setter delay (ms)", {
 			placeholder: "0",

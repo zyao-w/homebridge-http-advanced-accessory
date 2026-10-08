@@ -5,6 +5,9 @@ const { compileExpression, compileTemplate } = require("./expression.js");
 const DEVICE_KEYS = [
 	"name",
 	"service",
+	"manufacturer",
+	"model",
+	"serialNumber",
 	"optionCharacteristic",
 	"forceRefreshDelay",
 	"setterDelay",
