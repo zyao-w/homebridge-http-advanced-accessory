@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 - 2026-10-08
+
+### Added
+
+- `manufacturer`, `model` and `serialNumber` for a device (or in `defaults`), shown in the accessory information of HomeKit. The serial number does not change the identity of the accessory. The migration script carries them over from a 1.x accessory (1.1.3 reads them there); before it dropped them.
+- The `scale` mapper converts a number from one range to another (`inputMin`, `inputMax`, `outputMin`, `outputMax`, optional `round` and `clamp`). Input that is not a number is `inconclusive`.
+
+### Changed
+
+- A poll that keeps failing is logged once, with a reminder every five minutes and a message when it recovers, instead of one line per poll. What HomeKit sees does not change.
+- A _set_ whose mappers end in `inconclusive` (for example `scale` with a value that is not a number) fails before a request is sent. Before, the word `inconclusive` was sent as the value.
+- A mapper that cannot be created (for example a `scale` without `inputMax`) is reported with the device, characteristic and action it belongs to.
+
 ## 2.0.0 - 2026-10-08
 
 **This is a breaking release**: see [MIGRATION.md](MIGRATION.md) to convert a 1.x configuration.
