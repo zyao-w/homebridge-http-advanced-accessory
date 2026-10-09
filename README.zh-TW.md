@@ -4,6 +4,14 @@
 
 <p align="center"><a href="README.md">English</a> | 繁體中文</p>
 
+<p align="center">
+  <a href="https://github.com/zyao-w/homebridge-http-advanced-accessory/actions/workflows/ci.yml"><img src="https://github.com/zyao-w/homebridge-http-advanced-accessory/actions/workflows/ci.yml/badge.svg" alt="Tests" /></a>
+  <a href="https://www.npmjs.com/package/homebridge-http-advanced-accessory-zyao"><img src="https://img.shields.io/npm/v/homebridge-http-advanced-accessory-zyao" alt="npm version" /></a>
+  <a href="https://github.com/zyao-w/homebridge-http-advanced-accessory/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/homebridge-http-advanced-accessory-zyao" alt="License" /></a>
+  <a href="https://www.npmjs.com/package/homebridge-http-advanced-accessory-zyao"><img src="https://img.shields.io/npm/d18m/homebridge-http-advanced-accessory-zyao.svg" alt="npm downloads" /></a>
+  <a href="https://github.com/zyao-w/homebridge-http-advanced-accessory/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/Node.js-22%20%7C%2024-339933?logo=nodedotjs&logoColor=white" alt="Tested on Node.js 22 and 24" /></a>
+</p>
+
 這是一個 Homebridge 外掛，可以把幾乎任何提供 HTTP API 的裝置變成 HomeKit 配件。每個裝置都在設定檔中描述：它是哪一種 HomeKit 服務、要呼叫哪些 URL 來「讀取」與「變更」每個特性（characteristic），以及如何把回應轉換成 HomeKit 需要的值。
 
 本專案是 [homebridge-http-advanced-accessory](https://github.com/staromeste/homebridge-http-advanced-accessory) 的修改分支，獨立維護。新增了 Bearer Token 驗證、請求快取與去重、逾時與重試，以及（自 2.0.0 起）Dynamic Platform 與 Homebridge UI 表單。

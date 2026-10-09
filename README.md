@@ -4,6 +4,14 @@
 
 <p align="center">English | <a href="README.zh-TW.md">繁體中文</a></p>
 
+<p align="center">
+  <a href="https://github.com/zyao-w/homebridge-http-advanced-accessory/actions/workflows/ci.yml"><img src="https://github.com/zyao-w/homebridge-http-advanced-accessory/actions/workflows/ci.yml/badge.svg" alt="Tests" /></a>
+  <a href="https://www.npmjs.com/package/homebridge-http-advanced-accessory-zyao"><img src="https://img.shields.io/npm/v/homebridge-http-advanced-accessory-zyao" alt="npm version" /></a>
+  <a href="https://github.com/zyao-w/homebridge-http-advanced-accessory/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/homebridge-http-advanced-accessory-zyao" alt="License" /></a>
+  <a href="https://www.npmjs.com/package/homebridge-http-advanced-accessory-zyao"><img src="https://img.shields.io/npm/d18m/homebridge-http-advanced-accessory-zyao.svg" alt="npm downloads" /></a>
+  <a href="https://github.com/zyao-w/homebridge-http-advanced-accessory/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/Node.js-22%20%7C%2024-339933?logo=nodedotjs&logoColor=white" alt="Tested on Node.js 22 and 24" /></a>
+</p>
+
 Homebridge plugin that turns virtually any device with an HTTP API into HomeKit accessories. Each device is described in the configuration: which HomeKit service it is, which URLs to call to _read_ and _change_ every characteristic, and how to turn the responses into the values HomeKit expects.
 
 This is a modified fork of the original [homebridge-http-advanced-accessory](https://github.com/staromeste/homebridge-http-advanced-accessory), maintained independently. It adds Bearer Token authentication, request caching and de-duplication, timeouts and retries, and (from 2.0.0) a Dynamic Platform with a Homebridge UI form.
