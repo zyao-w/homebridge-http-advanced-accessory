@@ -22,7 +22,7 @@
 
 ## 安裝
 
-1. 安裝 Homebridge（需要 Homebridge 2.4.0 以上與 Node.js 22 以上）：`npm install -g homebridge`
+1. 安裝 Homebridge（需要 Homebridge 1.8.5 以上與 Node.js 22 以上）：`npm install -g homebridge`
 2. 安裝本外掛：`npm install -g homebridge-http-advanced-accessory-zyao`
 3. 在 Homebridge UI（外掛頁面 > 設定）中設定，或把下方的平台區塊加入 `config.json` 最上層的 `platforms` 清單。本專案的 `sample-config.json` 是完整範例。
 
