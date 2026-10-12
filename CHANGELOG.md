@@ -1,10 +1,10 @@
 # Changelog
 
-## 2.3.1-beta.0 - 2026-10-12
+## 2.3.1 - 2026-10-12
 
 ### Changed
 
-- Homebridge 1.8.5 or newer is accepted (`engines.homebridge` is `^1.8.5 || ^2.0.0`). 1.8.5 is the first Homebridge 1.x that supports Node.js 22. This beta is for compatibility testing on Homebridge 1.x.
+- Homebridge 1.8.5 or newer is accepted (`engines.homebridge` is `^1.8.5 || ^2.0.0`), no longer only 2.4.0 or newer. 1.8.5 is the first Homebridge 1.x that supports Node.js 22. Tested on Homebridge 1.8.5 and 2.4.0.
 
 ## 2.3.0 - 2026-10-08
 

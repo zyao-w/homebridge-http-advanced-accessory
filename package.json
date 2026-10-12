@@ -1,7 +1,7 @@
 {
   "displayName": "HTTP Advanced Accessory",
   "name": "homebridge-http-advanced-accessory-zyao",
-  "version": "2.3.1-beta.0",
+  "version": "2.3.1",
   "description": "Homebridge plugin that turns any device with an HTTP API into HomeKit accessories, with Bearer Token authentication, response mappers and polling.",
   "main": "src/index.js",
   "license": "Apache-2.0",
