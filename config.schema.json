@@ -2,6 +2,7 @@
   "pluginAlias": "HttpAdvancedPlatform",
   "pluginType": "platform",
   "singular": true,
+  "customUi": true,
   "headerDisplay": "Turns devices that expose an HTTP API into HomeKit accessories. Settings under *Defaults* apply to every device unless the device sets its own.",
   "schema": {
     "type": "object",

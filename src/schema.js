@@ -99,14 +99,27 @@ const MAPPER_TYPES = [
 // Fields are shown only where they apply. The form evaluates `condition` with the whole config (`model`) and
 // the indexes of the enclosing arrays, so each condition spells out where its field lives in the model.
 // A characteristic of the device and one of an additional service live at different places, so each gets a scope.
-const PRIMARY_SCOPE = {
-	characteristic: "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
-	mapperIndex: "arrayIndices[2]",
+// The form of a single device (the custom UI edits one at a time) has the device itself as its model.
+const PLATFORM_SCOPES = {
+	primary: {
+		characteristic: "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
+		mapperIndex: "arrayIndices[2]",
+	},
+	service: {
+		characteristic:
+			"model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]",
+		mapperIndex: "arrayIndices[3]",
+	},
 };
-const SERVICE_SCOPE = {
-	characteristic:
-		"model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]",
-	mapperIndex: "arrayIndices[3]",
+const DEVICE_SCOPES = {
+	primary: {
+		characteristic: "model?.characteristics?.[arrayIndices[0]]",
+		mapperIndex: "arrayIndices[1]",
+	},
+	service: {
+		characteristic: "model?.additionalServices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
+		mapperIndex: "arrayIndices[2]",
+	},
 };
 const inModel = (path) =>
 	path
@@ -243,7 +256,7 @@ function characteristic(scope) {
 	});
 }
 
-function additionalService() {
+function additionalService(scopes) {
 	return object({
 		id: text("Identifier", {
 			description:
@@ -259,7 +272,7 @@ function additionalService() {
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(SERVICE_SCOPE), title: "Characteristic" },
+			items: { ...characteristic(scopes.service), title: "Characteristic" },
 		},
 		optionCharacteristic: {
 			title: "Optional characteristics",
@@ -270,7 +283,7 @@ function additionalService() {
 	});
 }
 
-function device() {
+function device(scopes) {
 	return object({
 		name: text("Name", { description: "Name shown in HomeKit." }),
 		id: text("Identifier", {
@@ -283,7 +296,7 @@ function device() {
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(PRIMARY_SCOPE), title: "Characteristic" },
+			items: { ...characteristic(scopes.primary), title: "Characteristic" },
 		},
 		optionCharacteristic: {
 			title: "Optional characteristics",
@@ -296,10 +309,26 @@ function device() {
 			type: "array",
 			description:
 				"More services on the same accessory, for example humidity next to a temperature sensor, or a battery.",
-			items: { ...additionalService(), title: "Service" },
+			items: { ...additionalService(scopes), title: "Service" },
 		},
 		...settings(),
 	});
+}
+
+/**
+ * The form of one device, for the custom UI to edit a device on its own. It describes the same settings as the
+ * `devices` of the platform form; only the paths in the conditions differ, since the device is the whole model.
+ */
+function buildDeviceFormSchema() {
+	return { schema: { ...device(DEVICE_SCOPES), title: "Device" }, layout: null, form: null };
+}
+
+/**
+ * The settings that every device inherits, as a form of their own for the custom UI. It is the same list as the
+ * `defaults` of the platform form, but open from the start.
+ */
+function buildDefaultsFormSchema() {
+	return { schema: { ...object(settings()), title: "Defaults" }, layout: null, form: null };
 }
 
 /** The config.schema.json of the HttpAdvancedPlatform. */
@@ -308,6 +337,8 @@ function buildSchema() {
 		pluginAlias: PLATFORM_NAME,
 		pluginType: "platform",
 		singular: true,
+		// Opens homebridge-ui/, which keeps this form available underneath (see homebridge-ui/public/app.js)
+		customUi: true,
 		headerDisplay:
 			"Turns devices that expose an HTTP API into HomeKit accessories. Settings under *Defaults* apply to every device unless the device sets its own.",
 		schema: {
@@ -315,10 +346,10 @@ function buildSchema() {
 			properties: {
 				name: text("Name", { placeholder: "HTTP Advanced" }),
 				defaults: { ...object(settings()), title: "Defaults", ...collapsed },
-				devices: { title: "Devices", type: "array", items: { ...device(), title: "Device" } },
+				devices: { title: "Devices", type: "array", items: { ...device(PLATFORM_SCOPES), title: "Device" } },
 			},
 		},
 	};
 }
 
-module.exports = { buildSchema, HTTP_METHODS };
+module.exports = { buildSchema, buildDeviceFormSchema, buildDefaultsFormSchema, HTTP_METHODS };
