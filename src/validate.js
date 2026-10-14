@@ -16,11 +16,13 @@ const platformSchema = withMethodEnum(structuredClone(buildSchema().schema));
 const ajv = new Ajv({ allErrors: true, coerceTypes: true, strict: false, verbose: true });
 
 const checkDevice = ajv.compile(platformSchema.properties.devices.items);
+// The settings that Homebridge adds to the block of a platform itself, for example the child bridge settings (_bridge)
 const checkRoot = ajv.compile({
 	type: "object",
 	properties: {
 		platform: { type: "string" },
 		name: platformSchema.properties.name,
+		_bridge: { type: "object" },
 		defaults: platformSchema.properties.defaults,
 		devices: { type: "array" },
 	},

@@ -377,4 +377,14 @@ describe("validatePlatform", () => {
 		]);
 		expect(validatePlatform({ defaults: { timeouts: 1 } })).toEqual(['defaults has an unknown setting "timeouts"']);
 	});
+
+	test("accepts the child bridge settings that Homebridge adds to the block", () => {
+		const block = {
+			platform: "HttpAdvancedPlatform",
+			name: "x",
+			_bridge: { username: "0E:12:34:56:78:9A", port: 35000 },
+		};
+		expect(validatePlatform(block)).toEqual([]);
+		expect(validatePlatform({ ...block, _bridge: "no" })).toEqual(["_bridge must be object"]);
+	});
 });
