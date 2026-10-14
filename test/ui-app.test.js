@@ -175,11 +175,28 @@ describe("first run", () => {
 		expect(ui.text()).toContain("Set up a device");
 	});
 
-	test("opens the manager, with the standard form below it, when there are devices", async () => {
+	test("opens the manager as cards, with the standard form one button away", async () => {
 		const ui = await start({ config: [platform([sensor()])] });
 		expect(ui.text()).not.toContain("Set up a device");
 		expect(ui.text()).toContain("Air");
-		expect(ui.log.schema).toEqual(["show"]);
+		expect(ui.$("[data-device].col .card .card-title").textContent).toBe("Air");
+		expect(ui.text()).toContain("CarbonDioxideSensor · 1 characteristic(s)");
+		expect(ui.log.schema).toEqual([]);
+		expect(ui.text()).toContain("Show standard form");
+	});
+
+	test("shows the standard form when the wizard is skipped, since there is nothing else to edit with", async () => {
+		const ui = await start();
+		await ui.click('[data-action="wizard-cancel"]');
+		expect(ui.log.schema.at(-1)).toBe("show");
+		expect(ui.text()).toContain("Hide standard form");
+	});
+
+	test("a card takes the whole width while its details are open", async () => {
+		const ui = await start({ config: [platform([sensor("A"), sensor("B")])] });
+		expect(ui.root.querySelectorAll("[data-device].col-12")).toHaveLength(0);
+		await ui.click('[data-action="toggle"][data-index="0"]');
+		expect([...ui.root.querySelectorAll("[data-device].col-12")].map((card) => card.dataset.device)).toEqual(["0"]);
 	});
 
 	test("the standard form is shown even if the page fails to start", async () => {
@@ -259,7 +276,9 @@ describe("the wizard", () => {
 			},
 		]);
 		expect(ui.log.toasts).toEqual([["success", "Device added. Press Save to keep it."]]);
-		expect(ui.log.schema.at(-1)).toBe("show");
+		// The first device ends the first run: the standard form is no longer shown by itself
+		expect(ui.log.schema).not.toContain("show");
+		expect(ui.text()).toContain("Show standard form");
 	});
 
 	test("sets up a light that can be switched, with a preview of what is sent", async () => {
@@ -353,7 +372,7 @@ describe("the manager", () => {
 		const ui = await start({ config: [platform([sensor(), sensor("Broken", { service: "" })])] });
 		await ui.waitForText("OK");
 		await ui.waitForText("1 error(s)");
-		expect(ui.root.querySelectorAll("tbody tr")).toHaveLength(2);
+		expect(ui.root.querySelectorAll("[data-device]")).toHaveLength(2);
 	});
 
 	test("copies, moves and deletes devices, asking before it deletes", async () => {
@@ -379,10 +398,17 @@ describe("the manager", () => {
 		expect(names(ui)).toEqual(["A copy", "A"]);
 	});
 
-	test("rebuilds the standard form after a change made here", async () => {
+	test("rebuilds the standard form after a change made here, when it is shown", async () => {
 		const ui = await start({ config: [platform([sensor()])] });
+		await ui.click('[data-action="toggle-schema"]');
 		await ui.click('[data-action="copy"][data-index="0"]');
 		expect(ui.log.schema.slice(-2)).toEqual(["hide", "show"]);
+	});
+
+	test("leaves the standard form alone after a change made here, when it is hidden", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await ui.click('[data-action="copy"][data-index="0"]');
+		expect(ui.log.schema).toEqual([]);
 	});
 
 	test("tells a device without an identifier that renaming makes a new accessory, and can pin one", async () => {
@@ -399,11 +425,12 @@ describe("the manager", () => {
 
 	test("hides and shows the standard form on request", async () => {
 		const ui = await start({ config: [platform([sensor()])] });
-		await ui.click('[data-action="toggle-schema"]');
-		expect(ui.log.schema.at(-1)).toBe("hide");
 		expect(ui.text()).toContain("Show standard form");
 		await ui.click('[data-action="toggle-schema"]');
 		expect(ui.log.schema.at(-1)).toBe("show");
+		expect(ui.text()).toContain("Hide standard form");
+		await ui.click('[data-action="toggle-schema"]');
+		expect(ui.log.schema.at(-1)).toBe("hide");
 	});
 
 	test("tests a read and shows every step of the mappers", async () => {
@@ -466,6 +493,44 @@ describe("the manager", () => {
 		expect(ui.log.updates).toEqual([]);
 	});
 
+	test("a change event that is not a configuration does not empty the list", async () => {
+		const ui = await start({ config: [platform([sensor("A")])] });
+		for (const data of [{}, [], [{}], null, "x", { name: "no devices" }]) {
+			ui.homebridge.dispatchEvent(new ui.window.MessageEvent("configChanged", { data }));
+			await settle();
+			await new Promise((resolve) => setTimeout(resolve, 350));
+			expect(ui.root.querySelectorAll("[data-device] .card-title")[0].textContent).toBe("A");
+		}
+		expect(ui.log.updates).toEqual([]);
+	});
+
+	test("takes a block without its platform key, as the form of a singular platform may send", async () => {
+		const ui = await start({ config: [platform([sensor("A")])] });
+		ui.homebridge.dispatchEvent(
+			new ui.window.MessageEvent("configChanged", {
+				data: { name: "HTTP Advanced", devices: [sensor("A"), sensor("B")] },
+			})
+		);
+		await waitFor(() => ui.root.querySelectorAll("[data-device]").length === 2, "the second device");
+		expect(ui.root.querySelectorAll("[data-device]")).toHaveLength(2);
+	});
+
+	test("asks the Homebridge UI when the event says nothing usable", async () => {
+		const ui = await start({ config: [platform([sensor("A")])] });
+		ui.homebridge.getPluginConfig = async () => [platform([sensor("A"), sensor("From host")])];
+		ui.homebridge.dispatchEvent(new ui.window.MessageEvent("configChanged", { data: {} }));
+		await ui.waitForText("From host");
+	});
+
+	test("does not complain about the child bridge settings of the platform", async () => {
+		const ui = await start({
+			config: [platform([sensor()], { _bridge: { username: "0E:12:34:56:78:9A", port: 35000 } })],
+		});
+		await ui.waitForText("OK");
+		expect(ui.text()).not.toContain("Problems with the platform settings");
+		expect(ui.text()).not.toContain("_bridge");
+	});
+
 	test("shows cached accessories that are no longer configured", async () => {
 		const pump = handlers.hapUuid("HttpAdvancedPlatform:Air");
 		const ui = await start({
@@ -498,7 +563,7 @@ describe("editing", () => {
 		await waitFor(() => ui.log.updates.length === 1, "the update");
 		expect(ui.config()[0].devices.map((device) => device.name)).toEqual(["A", "B renamed"]);
 		expect(form.ended).toBe(true);
-		expect(ui.log.schema.at(-1)).toBe("show");
+		expect(ui.log.schema).not.toContain("show");
 		expect(ui.text()).toContain("B renamed");
 	});
 
@@ -523,6 +588,39 @@ describe("editing", () => {
 		expect(ui.config()[0].devices[0].name).toBe("Wrapped");
 	});
 
+	test("the way back is at the top of every view, not only at the bottom", async () => {
+		const ui = await start({ config: [platform([sensor("A")])] });
+
+		await ui.click('[data-action="wizard"]');
+		const bar = ui.root.firstElementChild;
+		expect(bar.querySelector('[data-action="wizard-cancel"]')).not.toBeNull();
+		expect(bar.textContent).toContain("Back to devices");
+		expect(bar.textContent).toContain("Set up a device");
+		await ui.click('[data-action="wizard-cancel"]');
+		expect(ui.text()).toContain("Add blank device");
+
+		await ui.click('[data-action="import"]');
+		expect(ui.root.firstElementChild.querySelector('[data-action="import-cancel"]')).not.toBeNull();
+		await ui.click('[data-action="import-cancel"]');
+
+		await ui.click('[data-action="edit"][data-index="0"]');
+		await waitFor(() => ui.log.forms.length === 1, "the editor");
+		expect(ui.root.firstElementChild.textContent).toContain("Editing A");
+		await ui.click('[data-action="edit-cancel"]');
+		expect(ui.log.forms[0].ended).toBe(true);
+		expect(ui.text()).toContain("Add blank device");
+		expect(ui.log.updates).toEqual([]);
+		expect(ui.log.schema).not.toContain("show");
+	});
+
+	test("shows how far the wizard is", async () => {
+		const ui = await start();
+		await ui.click('[data-action="wizard-kind"][data-kind="temperature"]');
+		const bar = ui.$('[role="progressbar"]');
+		expect(bar.getAttribute("aria-valuenow")).toBe("33");
+		expect(ui.text()).toContain("Step 2 of 6");
+	});
+
 	test("cancelling changes nothing", async () => {
 		const ui = await start({ config: [platform([sensor("A")])] });
 		await ui.click('[data-action="edit"][data-index="0"]');
@@ -531,7 +629,18 @@ describe("editing", () => {
 		await settle();
 		expect(ui.log.updates).toEqual([]);
 		expect(ui.log.forms[0].ended).toBe(true);
-		expect(ui.$("tbody td strong").textContent).toBe("A");
+		expect(ui.$("[data-device] .card-title").textContent).toBe("A");
+		expect(ui.log.schema).not.toContain("show");
+	});
+
+	test("brings the standard form back after editing when it was shown before", async () => {
+		const ui = await start({ config: [platform([sensor("A")])] });
+		await ui.click('[data-action="toggle-schema"]');
+		await ui.click('[data-action="edit"][data-index="0"]');
+		await waitFor(() => ui.log.forms.length === 1, "the editor");
+		expect(ui.log.schema.at(-1)).toBe("hide");
+		ui.log.forms[0].cancelled();
+		await settle();
 		expect(ui.log.schema.at(-1)).toBe("show");
 	});
 
@@ -572,7 +681,7 @@ describe("editing", () => {
 		await settle();
 		expect(ui.log.toasts.at(-1)[0]).toBe("error");
 		expect(ui.text()).toContain("Air");
-		expect(ui.log.schema.at(-1)).toBe("show");
+		expect(ui.log.schema).not.toContain("show");
 	});
 });
 
@@ -610,7 +719,7 @@ describe("importing 1.x settings", () => {
 		await ui.click('[data-action="import-cancel"]');
 		expect(ui.text()).toContain("Air");
 		expect(ui.log.updates).toEqual([]);
-		expect(ui.log.schema.at(-1)).toBe("show");
+		expect(ui.log.schema).not.toContain("show");
 	});
 });
 

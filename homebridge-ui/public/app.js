@@ -72,7 +72,8 @@
 		const [validation, cached] = await Promise.all([call("/validate", { config: state.blocks }), loadCached()]);
 		if (!validation.failed) state.validation = validation;
 		state.cached = cached;
-		render();
+		// The other views show nothing of this, and drawing them again would take the focus from what is being typed
+		if (state.view === "home") render();
 	}
 
 	async function loadCached() {
@@ -106,8 +107,40 @@
 
 	function render() {
 		const views = { home: renderHome, wizard: renderWizard, edit: renderEdit, import: renderImport };
-		root.innerHTML = views[state.view]();
+		let html;
+		try {
+			html = (state.view === "home" ? "" : renderTopBar()) + views[state.view]();
+		} catch (error) {
+			// Whatever went wrong, the form of the plugin must remain usable
+			console.error(error);
+			html = notice("danger", esc(String((error && error.message) || error)));
+			try {
+				hb.showSchemaForm();
+			} catch (ignored) {
+				// nothing more to do
+			}
+		}
+		root.innerHTML = html;
 		if (typeof hb.fixScrollHeight === "function") hb.fixScrollHeight();
+	}
+
+	/** The way back and the title are at the top of every view but the list, so they are never far down the page. */
+	function renderTopBar() {
+		let back = { action: "wizard-cancel", label: t("backToDevices"), title: t("wizardTitle") };
+		if (state.view === "wizard" && state.wizard.first) back.label = t("skipWizard");
+		if (state.view === "import") back = { action: "import-cancel", label: t("backToDevices"), title: t("importTitle") };
+		if (state.view === "edit") {
+			const editing = state.editing;
+			const device = editing.kind === "defaults" ? null : devices()[editing.index] || {};
+			back = {
+				action: "edit-cancel",
+				label: t("backToDevices"),
+				title: t("editing", { name: device ? device.name || t("unnamed") : t("defaults") }),
+			};
+		}
+		return `<div class="d-flex flex-wrap align-items-center gap-3 mb-3 pb-2 border-bottom">
+			${button(back.action, `← ${esc(back.label)}`, { small: true })}
+			<h2 class="h5 mb-0">${esc(back.title)}</h2></div>`;
 	}
 
 	const button = (action, label, extra = {}) => {
@@ -141,15 +174,11 @@
 		if (items.length === 0) {
 			html += notice("info", `<strong>${esc(t("noDevices"))}</strong><br>${esc(t("noDevicesHelp"))}`);
 		} else {
-			html += `<div class="table-responsive"><table class="table table-sm align-middle">
-				<caption class="visually-hidden">${esc(t("devices"))}</caption>
-				<thead><tr><th scope="col">${esc(t("name"))}</th><th scope="col">${esc(t("service"))}</th>
-				<th scope="col">${esc(t("characteristics"))}</th><th scope="col">${esc(t("status"))}</th>
-				<th scope="col">${esc(t("actions"))}</th></tr></thead><tbody>`;
+			html += `<h2 class="visually-hidden">${esc(t("devices"))}</h2><div class="row row-cols-1 row-cols-lg-2 g-3">`;
 			items.forEach((device, index) => {
-				html += renderDeviceRow(device, index, checks[index]);
+				html += renderDeviceCard(device, index, checks[index]);
 			});
-			html += "</tbody></table></div>";
+			html += "</div>";
 		}
 
 		return html + renderCached();
@@ -166,37 +195,53 @@
 		return `<span class="badge bg-success text-bg-success">${esc(t("ok"))}</span>`;
 	}
 
-	function renderDeviceRow(device, index, check) {
+	/** One device as a card; it takes the whole width while its details or its export are open. */
+	function renderDeviceCard(device, index, check) {
 		const summary = Config.summarize(device);
 		const open = state.open.has(index);
+		const wide = open || Boolean(state.exported[index]);
 		const data = { index };
 		const confirming = state.confirmDelete === index;
-		const extras = summary.additionalServices
-			? ` <small class="text-muted">+${esc(t("extraServices", { count: summary.additionalServices }))}</small>`
-			: "";
+		const faulty = Boolean(check && check.errors.length);
+		const facts = [
+			esc(summary.service || "—"),
+			esc(t("characteristicCount", { count: summary.characteristics })),
+			...(summary.additionalServices ? [esc(t("extraServices", { count: summary.additionalServices }))] : []),
+		].join(" · ");
 
-		let html = `<tr>
-			<td><strong>${esc(summary.name || t("unnamed"))}</strong>${summary.id ? `<br><small class="text-muted">id: ${esc(summary.id)}</small>` : ""}</td>
-			<td>${esc(summary.service)}${extras}</td>
-			<td>${summary.characteristics}</td>
-			<td>${renderStatus(check)}</td>
-			<td><div class="d-flex flex-wrap gap-1">
-				${button("toggle", esc(open ? t("hideDetails") : t("details")), { small: true, data })}
-				${button("edit", esc(t("edit")), { small: true, cls: "btn-outline-primary", data })}
-				${button("copy", esc(t("copy")), { small: true, data })}
-				${button("up", "↑", { small: true, data, title: t("moveUp"), disabled: index === 0 })}
-				${button("down", "↓", { small: true, data, title: t("moveDown"), disabled: index === devices().length - 1 })}
-				${button("export", esc(t("export")), { small: true, data })}
-				${
-					confirming
-						? button("delete-confirm", esc(t("confirmDelete")), { small: true, cls: "btn-danger", data }) +
-							button("delete-cancel", esc(t("cancel")), { small: true, data })
-						: button("delete", esc(t("delete")), { small: true, cls: "btn-outline-danger", data })
-				}
-			</div></td></tr>`;
-
-		if (open || state.exported[index]) html += `<tr><td colspan="5">${renderDetails(device, index, check)}</td></tr>`;
-		return html;
+		return `<div class="col${wide ? " col-12" : ""}" data-device="${index}">
+			<div class="card h-100${faulty ? " border-danger" : ""}">
+				<div class="card-body">
+					<div class="d-flex justify-content-between align-items-start gap-2">
+						<div class="min-w-0">
+							<h3 class="h6 card-title mb-1">${esc(summary.name || t("unnamed"))}</h3>
+							<div class="text-muted small">${facts}</div>
+							${summary.id ? `<div class="text-muted small">id: ${esc(summary.id)}</div>` : ""}
+						</div>
+						<div>${renderStatus(check)}</div>
+					</div>
+					${wide ? `<div class="mt-3">${renderDetails(device, index, check)}</div>` : ""}
+				</div>
+				<div class="card-footer bg-transparent d-flex flex-wrap justify-content-between gap-2">
+					<div class="d-flex flex-wrap gap-1">
+						${button("edit", esc(t("edit")), { small: true, cls: "btn-primary", data })}
+						${button("toggle", esc(open ? t("hideDetails") : t("details")), { small: true, data })}
+					</div>
+					<div class="d-flex flex-wrap gap-1">
+						${button("copy", esc(t("copy")), { small: true, data })}
+						${button("up", "↑", { small: true, data, title: t("moveUp"), disabled: index === 0 })}
+						${button("down", "↓", { small: true, data, title: t("moveDown"), disabled: index === devices().length - 1 })}
+						${button("export", esc(t("export")), { small: true, data })}
+						${
+							confirming
+								? button("delete-confirm", esc(t("confirmDelete")), { small: true, cls: "btn-danger", data }) +
+									button("delete-cancel", esc(t("cancel")), { small: true, data })
+								: button("delete", esc(t("delete")), { small: true, cls: "btn-outline-danger", data })
+						}
+					</div>
+				</div>
+			</div>
+		</div>`;
 	}
 
 	function renderDetails(device, index, check) {
@@ -315,7 +360,7 @@
 
 	function renderImport() {
 		const imported = state.importing;
-		let html = `<h2 class="h5">${esc(t("importTitle"))}</h2><p>${esc(t("importHelp"))}</p>
+		let html = `<p>${esc(t("importHelp"))}</p>
 			<label class="form-label" for="import-text">${esc(t("importLabel"))}</label>
 			<textarea id="import-text" class="form-control font-monospace mb-2" rows="10">${esc(imported.text)}</textarea>
 			<div class="d-flex gap-2 mb-3">${button("import-convert", esc(t("convert")), { cls: "btn-primary" })}${button("import-cancel", esc(t("cancel")))}</div>`;
@@ -336,8 +381,7 @@
 	function renderEdit() {
 		const editing = state.editing;
 		const device = editing.kind === "defaults" ? null : devices()[editing.index] || {};
-		const what = device ? device.name || t("unnamed") : t("defaults");
-		let html = `<h2 class="h5">${esc(t("editing", { name: what }))}</h2><p class="text-muted">${esc(t("editingHelp"))}</p>`;
+		let html = `<p class="text-muted">${esc(t("editingHelp"))}</p>`;
 		if (device && !(typeof device.id === "string" && device.id)) html += notice("info", esc(t("noIdHint")));
 		return html;
 	}
@@ -378,6 +422,7 @@
 			closeEditor();
 			return;
 		}
+		state.editing.form = form;
 
 		let latest = initial;
 		form.onChange((change) => {
@@ -653,8 +698,10 @@
 
 		const progress =
 			steps.length > 1 ? t("stepOf", { step: wizard.step + 1, count: steps.length }) : t("step", { step: 1 });
-		let html = `<h2 class="h5">${esc(t("wizardTitle"))}</h2>
-			<p class="text-muted mb-2">${esc(progress)} — <strong>${esc(t(`step.${step}`))}</strong></p>`;
+		const percent = steps.length > 1 ? Math.round(((wizard.step + 1) / steps.length) * 100) : 0;
+		let html = `<div class="progress mb-2" style="height: 0.4rem" role="progressbar" aria-label="${esc(progress)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}">
+				<div class="progress-bar" style="width: ${percent}%"></div></div>
+			<p class="text-muted mb-3">${esc(progress)} — <strong>${esc(t(`step.${step}`))}</strong></p>`;
 		if (wizard.first) html += `<p>${esc(t("wizardWelcome"))}</p>`;
 		html += `<div class="mb-3">${renderWizardStep(step)}</div><div class="d-flex flex-wrap gap-2">`;
 		if (wizard.step > 0) html += button("wizard-back", esc(t("back")));
@@ -667,7 +714,6 @@
 		} else if (step !== "kind") {
 			html += button("wizard-next", esc(t("next")), { cls: "btn-primary" });
 		}
-		html += button("wizard-cancel", esc(wizard.first ? t("skipWizard") : t("cancel")));
 		return html + "</div>";
 	}
 
@@ -766,6 +812,8 @@
 		const wizard = state.wizard;
 		const blocks = Config.addDevice(state.blocks, wizard.summary.device);
 		const index = Config.devicesOf(blocks).length - 1;
+		// The first device ends the first run: from now on the standard form is shown only on request
+		if (devices().length === 0) state.schemaVisible = false;
 		state.wizard = null;
 		state.view = "home";
 		await commit(blocks);
@@ -860,6 +908,11 @@
 			});
 			render();
 		},
+		"edit-cancel": () => {
+			const form = state.editing && state.editing.form;
+			if (form) form.end();
+			closeEditor();
+		},
 		"import-cancel": () => {
 			state.importing = null;
 			state.view = "home";
@@ -923,6 +976,10 @@
 	});
 
 	function bind(event) {
+		if (event.target.id === "import-text" && state.importing) {
+			state.importing.text = event.target.value;
+			return;
+		}
 		const target = event.target.closest("[data-bind]");
 		if (!target || !state.wizard) return;
 		const value = target.type === "checkbox" ? target.checked : target.value;
@@ -948,13 +1005,19 @@
 		const info = await call("/info");
 		if (!info.failed) state.info = info;
 
-		// The form of the plugin stays under this page. A change made in it shows here too.
-		window.homebridge.addEventListener("configChanged", (event) => {
-			const blocks = Array.isArray(event.data)
-				? event.data
-				: event.data && typeof event.data === "object"
-					? [event.data]
-					: null;
+		// The form of the plugin stays under this page. A change made in it shows here too. What the event carries is
+		// used only when it is the configuration of this plugin; anything else (an empty form, for example) is
+		// ignored, and the Homebridge UI is asked instead, so that the list never turns empty by mistake.
+		window.homebridge.addEventListener("configChanged", async (event) => {
+			if (state.view !== "home") return;
+			let blocks = Config.blocksFrom(event.data);
+			if (!blocks) {
+				try {
+					blocks = Config.blocksFrom(await hb.getPluginConfig());
+				} catch (ignored) {
+					// keep what is shown
+				}
+			}
 			if (!blocks || state.view !== "home") return;
 			state.blocks = blocks;
 			scheduleChecks();
@@ -963,7 +1026,9 @@
 		if (devices().length === 0) {
 			startWizard(true);
 		} else {
-			hb.showSchemaForm();
+			// With devices, this page has what is needed and the standard form is one button away; with none, the
+			// standard form is the alternative to the wizard and is shown when the wizard is skipped
+			state.schemaVisible = false;
 			render();
 		}
 		scheduleChecks();
