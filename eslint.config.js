@@ -19,4 +19,9 @@ module.exports = [
 		files: ["**/*.test.js"],
 		languageOptions: { globals: { ...globals.jest } },
 	},
+	{
+		// The pages of the custom UI run in the browser; the pure modules also run in Node for the tests
+		files: ["homebridge-ui/public/**/*.js"],
+		languageOptions: { sourceType: "script", globals: { ...globals.browser, module: "readonly" } },
+	},
 ];
