@@ -179,7 +179,7 @@ describe("first run", () => {
 		const ui = await start({ config: [platform([sensor()])] });
 		expect(ui.text()).not.toContain("Set up a device");
 		expect(ui.text()).toContain("Air");
-		expect(ui.$("[data-device].col .card .card-title").textContent).toBe("Air");
+		expect(ui.$(".device-grid > [data-device] .card .card-title").textContent).toBe("Air");
 		expect(ui.text()).toContain("CarbonDioxideSensor · 1 characteristic(s)");
 		expect(ui.log.schema).toEqual([]);
 		expect(ui.text()).toContain("Show standard form");
@@ -194,9 +194,9 @@ describe("first run", () => {
 
 	test("a card takes the whole width while its details are open", async () => {
 		const ui = await start({ config: [platform([sensor("A"), sensor("B")])] });
-		expect(ui.root.querySelectorAll("[data-device].col-12")).toHaveLength(0);
+		expect(ui.root.querySelectorAll("[data-device].wide")).toHaveLength(0);
 		await ui.click('[data-action="toggle"][data-index="0"]');
-		expect([...ui.root.querySelectorAll("[data-device].col-12")].map((card) => card.dataset.device)).toEqual(["0"]);
+		expect([...ui.root.querySelectorAll("[data-device].wide")].map((card) => card.dataset.device)).toEqual(["0"]);
 	});
 
 	test("the standard form is shown even if the page fails to start", async () => {
@@ -542,6 +542,27 @@ describe("the manager", () => {
 		});
 		await ui.waitForText("Accessories in HomeKit (2)");
 		expect(ui.text()).toContain("not configured");
+		expect(ui.text()).not.toContain("cached 2 times");
+	});
+
+	test("lists an accessory once when the cache of more than one bridge has it", async () => {
+		const co2 = handlers.hapUuid("HttpAdvancedPlatform:CO2 Sensor");
+		const air = handlers.hapUuid("HttpAdvancedPlatform:Air Quality Sensor");
+		const entry = (UUID, displayName) => ({ UUID, displayName });
+		const ui = await start({
+			config: [platform([sensor("CO2 Sensor"), sensor("Air Quality Sensor")])],
+			cached: [
+				entry(co2, "CO2 Sensor"),
+				entry(air, "Air Quality Sensor"),
+				entry(co2, "CO2 Sensor"),
+				entry(air, "Air Quality Sensor"),
+			],
+		});
+		await ui.waitForText("Accessories in HomeKit (2)");
+		expect(ui.root.querySelectorAll("details li")).toHaveLength(2);
+		expect(ui.text()).toContain("CO2 Sensor cached 2 times");
+		expect(ui.text()).toContain("stored by more than one bridge");
+		expect(ui.text()).not.toContain("not configured");
 	});
 });
 

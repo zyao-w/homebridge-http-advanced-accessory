@@ -71,6 +71,23 @@ describe("the files of the custom UI", () => {
 		expect(html).not.toMatch(/<(html|head|body)\b/i);
 	});
 
+	test("nothing in the page sticks out of the frame, which the Homebridge UI sizes to the content", () => {
+		const source = read("app.js");
+		// The negative margins of a Bootstrap row, and of its columns' gutters, make a horizontal scrollbar; a scrollbar
+		// changes the height of the content, and the frame then jumps up and down
+		expect(source).not.toMatch(/class="[^"]*\b(row|row-cols-\w+|g-\d|gx-\d)\b/);
+		expect(source).not.toMatch(/class="[^"]*\bcol(-\w+)*\b/);
+
+		const html = read("index.html");
+		expect(html).toContain(".device-grid");
+		expect(html).toContain(".choice-grid");
+		expect(html).toMatch(/overflow-wrap:\s*anywhere/);
+		// The library already follows the height of the page; asking for it on every drawing adds to the jumping
+		expect(source).not.toMatch(/fixScrollHeight/);
+		// A wide table scrolls inside its own box
+		expect(source.match(/<table/g).length).toBe(source.match(/table-responsive/g).length);
+	});
+
 	test("the plugin tells Homebridge to use it, and keeps its form available", () => {
 		const schema = buildSchema();
 		expect(schema.customUi).toBe(true);

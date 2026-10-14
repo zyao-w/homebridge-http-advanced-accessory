@@ -121,7 +121,6 @@
 			}
 		}
 		root.innerHTML = html;
-		if (typeof hb.fixScrollHeight === "function") hb.fixScrollHeight();
 	}
 
 	/** The way back and the title are at the top of every view but the list, so they are never far down the page. */
@@ -174,7 +173,7 @@
 		if (items.length === 0) {
 			html += notice("info", `<strong>${esc(t("noDevices"))}</strong><br>${esc(t("noDevicesHelp"))}`);
 		} else {
-			html += `<h2 class="visually-hidden">${esc(t("devices"))}</h2><div class="row row-cols-1 row-cols-lg-2 g-3">`;
+			html += `<h2 class="visually-hidden">${esc(t("devices"))}</h2><div class="device-grid">`;
 			items.forEach((device, index) => {
 				html += renderDeviceCard(device, index, checks[index]);
 			});
@@ -209,7 +208,7 @@
 			...(summary.additionalServices ? [esc(t("extraServices", { count: summary.additionalServices }))] : []),
 		].join(" · ");
 
-		return `<div class="col${wide ? " col-12" : ""}" data-device="${index}">
+		return `<div class="${wide ? "wide" : ""}" data-device="${index}">
 			<div class="card h-100${faulty ? " border-danger" : ""}">
 				<div class="card-body">
 					<div class="d-flex justify-content-between align-items-start gap-2">
@@ -265,7 +264,7 @@
 		const actions = Config.actionsOf(device);
 		if (actions.length === 0) return html + `<p class="text-muted">${esc(t("noActions"))}</p>`;
 
-		html += `<table class="table table-sm"><thead><tr><th scope="col">${esc(t("characteristic"))}</th><th scope="col">${esc(t("tests"))}</th></tr></thead><tbody>`;
+		html += `<div class="table-responsive"><table class="table table-sm"><thead><tr><th scope="col">${esc(t("characteristic"))}</th><th scope="col">${esc(t("tests"))}</th></tr></thead><tbody>`;
 		for (const action of actions) {
 			const key = `${index}:${action.service}:${action.characteristic}`;
 			const label = action.service ? `${action.service}: ${action.characteristic}` : action.characteristic;
@@ -285,12 +284,12 @@
 			}
 			html += "</td></tr>";
 		}
-		return html + "</tbody></table>";
+		return html + "</tbody></table></div>";
 	}
 
 	function renderSteps(steps) {
 		if (!steps || steps.length === 0) return "";
-		return `<table class="table table-sm table-bordered mb-2"><thead><tr><th scope="col">${esc(t("mapper"))}</th>
+		return `<div class="table-responsive"><table class="table table-sm table-bordered mb-2"><thead><tr><th scope="col">${esc(t("mapper"))}</th>
 			<th scope="col">${esc(t("input"))}</th><th scope="col">${esc(t("output"))}</th></tr></thead><tbody>${steps
 				.map(
 					(step) =>
@@ -298,7 +297,7 @@
 							step.error ? `<span class="text-danger">${esc(step.error)}</span>` : `<code>${esc(step.output)}</code>`
 						}</td></tr>`
 				)
-				.join("")}</tbody></table>`;
+				.join("")}</tbody></table></div>`;
 	}
 
 	function renderRead(result) {
@@ -343,14 +342,16 @@
 		const cached = state.cached;
 		if (!cached || (cached.accessories.length === 0 && cached.pending.length === 0)) return "";
 		const orphans = cached.accessories.filter((accessory) => !accessory.configured);
+		const repeated = cached.accessories.filter((accessory) => accessory.copies > 1);
 		let html = `<details class="mt-3"><summary>${esc(t("cachedTitle", { count: cached.accessories.length }))}</summary><div class="mt-2">`;
 		html += `<ul>${cached.accessories
 			.map(
 				(accessory) =>
-					`<li>${esc(accessory.displayName)}${accessory.configured ? "" : ` <span class="badge bg-warning text-dark text-bg-warning">${esc(t("notConfigured"))}</span>`}</li>`
+					`<li>${esc(accessory.displayName)}${accessory.configured ? "" : ` <span class="badge bg-warning text-dark text-bg-warning">${esc(t("notConfigured"))}</span>`}${accessory.copies > 1 ? ` <span class="badge bg-secondary text-bg-secondary">${esc(t("cachedCopies", { count: accessory.copies }))}</span>` : ""}</li>`
 			)
 			.join("")}</ul>`;
 		if (orphans.length) html += `<p class="text-muted">${esc(t("orphanHelp"))}</p>`;
+		if (repeated.length) html += `<p class="text-muted">${esc(t("repeatedHelp"))}</p>`;
 		if (cached.pending.length)
 			html += `<p class="text-muted">${esc(t("pendingHelp", { names: cached.pending.join(", ") }))}</p>`;
 		return html + "</div></details>";
@@ -550,13 +551,13 @@
 		let html = "";
 
 		if (step === "kind") {
-			html += `<p>${esc(t("wizardKindHelp"))}</p><div class="row g-2">`;
+			html += `<p>${esc(t("wizardKindHelp"))}</p><div class="choice-grid">`;
 			for (const [kind, kindInfo] of Object.entries(Wizard.KINDS)) {
-				html += `<div class="col-sm-6 col-lg-4"><button type="button" class="btn ${answers.kind === kind ? "btn-primary" : "btn-outline-primary"} w-100 text-start" data-action="wizard-kind" data-kind="${kind}">
-					<strong>${esc(t(`kind.${kind}`))}</strong><br><small>${esc(kindInfo.service)}</small></button></div>`;
+				html += `<button type="button" class="btn ${answers.kind === kind ? "btn-primary" : "btn-outline-primary"} w-100 text-start" data-action="wizard-kind" data-kind="${kind}">
+					<strong>${esc(t(`kind.${kind}`))}</strong><br><small>${esc(kindInfo.service)}</small></button>`;
 			}
-			html += `<div class="col-sm-6 col-lg-4"><button type="button" class="btn btn-outline-secondary w-100 text-start" data-action="wizard-other">
-				<strong>${esc(t("kind.other"))}</strong><br><small>${esc(t("kind.otherHelp"))}</small></button></div></div>`;
+			html += `<button type="button" class="btn btn-outline-secondary w-100 text-start" data-action="wizard-other">
+				<strong>${esc(t("kind.other"))}</strong><br><small>${esc(t("kind.otherHelp"))}</small></button></div>`;
 			return html;
 		}
 

@@ -58,6 +58,9 @@
 		sending: "Sending…",
 		cachedTitle: "Accessories in HomeKit ({count})",
 		notConfigured: "not configured",
+		cachedCopies: "cached {count} times",
+		repeatedHelp:
+			"An accessory that is cached more than once is stored by more than one bridge, for example by the main bridge from before the plugin moved to a child bridge. The extra copy is stale and can be removed in the Homebridge UI (Settings, Remove Single Cached Accessory).",
 		orphanHelp: "Accessories that are no longer configured are removed from HomeKit when Homebridge restarts.",
 		pendingHelp: "Not in HomeKit yet, created at the next start: {names}.",
 		// editing
@@ -226,6 +229,9 @@
 		sending: "傳送中…",
 		cachedTitle: "HomeKit 中的配件（{count}）",
 		notConfigured: "未設定",
+		cachedCopies: "快取了 {count} 份",
+		repeatedHelp:
+			"同一個配件被快取多次，代表有不只一個橋接器存有它，例如外掛改用子橋接器之前，主橋接器留下的舊資料。多出來的那份已經過時，可以在 Homebridge UI 的「設定」中用「移除單一快取配件」清除。",
 		orphanHelp: "已不在設定中的配件，會在 Homebridge 重新啟動時從 HomeKit 移除。",
 		pendingHelp: "尚未出現在 HomeKit，下次啟動時建立：{names}。",
 		editing: "編輯 {name}",

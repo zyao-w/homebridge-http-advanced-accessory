@@ -1,5 +1,38 @@
 <!-- The settings page of HTTP Advanced Accessory. The standard form of the plugin is shown below this page. -->
-<div id="app" aria-live="polite"></div>
+<style>
+	/* The Homebridge UI sizes this frame to its content, so nothing here may be wider than the frame: a horizontal
+	   scrollbar takes height, which changes the height of the content, which makes the page jump. */
+	#app {
+		max-width: 100%;
+		overflow-wrap: anywhere;
+	}
+	#app .min-w-0 {
+		min-width: 0;
+	}
+	/* A grid, not a Bootstrap row: the negative margins of a row stick out of the frame */
+	#app .device-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+		gap: 1rem;
+	}
+	#app .device-grid > .wide {
+		grid-column: 1 / -1;
+	}
+	#app .choice-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+		gap: 0.5rem;
+	}
+	#app .device-grid > * {
+		min-width: 0;
+	}
+	#app pre,
+	#app textarea,
+	#app .table-responsive {
+		max-width: 100%;
+	}
+</style>
+<div id="app"></div>
 <script src="i18n.js"></script>
 <script src="config-model.js"></script>
 <script src="wizard.js"></script>
