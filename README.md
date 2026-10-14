@@ -49,7 +49,7 @@ If you find this plugin useful, consider supporting its development.
 
 ## Homebridge UI: manager and setup wizard
 
-The settings of the plugin in the Homebridge UI open on a page of their own, above the standard form. **The standard form stays**: it is shown right below, every setting can still be edited there, and a change in one place shows in the other. The page can be hidden with _Hide standard form_. English and Traditional Chinese are available; the page follows the language of the Homebridge UI.
+The settings of the plugin in the Homebridge UI open on a page of their own, above the standard form. **The standard form stays**: it is one button away (_Show standard form_), every setting can still be edited there, and a change in one place shows in the other. Once there are devices it starts hidden, so the page stays short; while no device is set up it is shown when the wizard is skipped. English and Traditional Chinese are available; the page follows the language of the Homebridge UI.
 
 Nothing is written to `config.json` until you press **Save** in the settings window, as with the standard form. After saving, restart Homebridge for new or changed devices to take effect.
 
@@ -66,7 +66,7 @@ The wizard writes the same settings as the form, checked by the same validation 
 
 ### Manager
 
-The page lists the devices with their status (the errors and warnings that the log would show at startup) and can:
+The page lists the devices as cards with their status (the errors and warnings that the log would show at startup) and can:
 
 - add a device with the wizard or as a blank device, copy, delete (after a confirmation) and reorder devices
 - edit one device with all its settings (characteristics, mappers, additional services, headers, authentication) or the platform _Defaults_ in a form of their own
