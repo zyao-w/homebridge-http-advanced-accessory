@@ -36,6 +36,16 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 - One shared request for characteristics that read the same URL, a short response cache, request timeouts, read retries and a cap on concurrent requests
 - Accessories keep their identity in HomeKit when the configuration is edited
 
+## Support
+
+If you find this plugin useful, consider supporting its development.
+
+<p>
+  <a href="https://ko-fi.com/zyaow"><img src="https://raw.githubusercontent.com/zyao-w/homebridge-http-advanced-accessory/master/branding/kofi-link.svg" width="171" height="25" alt="Support me on Ko-fi" /></a>
+  <br />
+  <a href="https://paypal.me/zyaow"><img src="https://raw.githubusercontent.com/zyao-w/homebridge-http-advanced-accessory/master/branding/paypal-link.svg" width="185" height="25" alt="Support me via PayPal" /></a>
+</p>
+
 ## Configuration
 
 A platform has an optional list of `defaults` that every device inherits, and a list of `devices`:

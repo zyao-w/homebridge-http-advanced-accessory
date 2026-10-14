@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="185" height="25" viewBox="0 0 185 25" role="img" aria-label="Support me via PayPal">
   <style>
-    .label { fill: #1f2328; font: 600 14px 'Segoe UI', Arial, Helvetica, sans-serif; text-decoration: underline; }
+    .label { fill: #1f2328; font: 600 14px 'Segoe UI', Arial, Helvetica, sans-serif; }
     .arrow { fill: none; stroke: #1f2328; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .dots { stroke: #1f2328; stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 0.1 2; }
     @media (prefers-color-scheme: dark) {
       .label { fill: #ffffff; }
-      .arrow { stroke: #ffffff; }
+      .arrow, .dots { stroke: #ffffff; }
     }
   </style>
   <g transform="scale(0.78125)">
@@ -14,5 +15,6 @@
   </g>
   </g>
   <text class="label" x="32" y="17.5" textLength="138" lengthAdjust="spacing">Support me via PayPal</text>
+  <line class="dots" x1="32" y1="21.5" x2="170" y2="21.5"/>
   <path class="arrow" d="M175 17 L184 8 M177 8 H184 V15"/>
 </svg>
