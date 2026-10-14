@@ -157,12 +157,11 @@
 	function renderHome() {
 		const items = devices();
 		const checks = state.validation.devices;
+		// What is done often is at the top; what is needed rarely (the standard form, the import) is in the footer
 		let html = `<div class="d-flex flex-wrap gap-2 mb-3">
 			${button("wizard", esc(t("addWizard")), { cls: "btn-primary" })}
 			${button("add-blank", esc(t("addBlank")))}
 			${button("edit-defaults", esc(t("editDefaults")))}
-			${button("import", esc(t("importLegacy")))}
-			${button("toggle-schema", esc(state.schemaVisible ? t("hideStandard") : t("showStandard")))}
 		</div>`;
 
 		if (state.info.testsDisabled) html += notice("warning", esc(t("testsDisabled")));
@@ -180,7 +179,16 @@
 			html += "</div>";
 		}
 
-		return html + renderCached();
+		return html + renderCached() + renderFooter();
+	}
+
+	/** Quiet links for what is rarely needed, below everything else. */
+	function renderFooter() {
+		const link = (action, label) => button(action, esc(label), { small: true, cls: "btn-link text-muted px-0" });
+		return `<div class="d-flex flex-wrap justify-content-end gap-3 mt-4 pt-2 border-top">
+			${link("import", t("importLegacy"))}
+			${link("toggle-schema", state.schemaVisible ? t("hideStandard") : t("showStandard"))}
+		</div>`;
 	}
 
 	function renderStatus(check) {

@@ -192,6 +192,21 @@ describe("first run", () => {
 		expect(ui.text()).toContain("Hide standard form");
 	});
 
+	test("the rarely needed actions are quiet links in the footer, not buttons at the top", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		const top = ui.root.firstElementChild;
+		expect(top.querySelector('[data-action="wizard"]')).not.toBeNull();
+		expect(top.querySelector('[data-action="import"]')).toBeNull();
+		expect(top.querySelector('[data-action="toggle-schema"]')).toBeNull();
+
+		const footer = ui.root.lastElementChild;
+		expect(footer.querySelector('[data-action="import"]')).not.toBeNull();
+		expect(footer.querySelector('[data-action="toggle-schema"]').className).toContain("btn-link");
+
+		await ui.click('[data-action="toggle-schema"]');
+		expect(ui.root.lastElementChild.textContent).toContain("Hide standard form");
+	});
+
 	test("a card takes the whole width while its details are open", async () => {
 		const ui = await start({ config: [platform([sensor("A"), sensor("B")])] });
 		expect(ui.root.querySelectorAll("[data-device].wide")).toHaveLength(0);
