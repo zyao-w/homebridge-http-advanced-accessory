@@ -26,6 +26,32 @@ describe("reading the configuration", () => {
 });
 
 describe("changing the configuration", () => {
+	test("takes the configuration of this plugin out of what the Homebridge UI sends", () => {
+		const blocks = [{ platform: "Other" }, platform([lamp()])];
+		expect(Config.blocksFrom(blocks)).toBe(blocks);
+		expect(Config.blocksFrom(platform([]))).toEqual([platform([])]);
+		expect(Config.blocksFrom({ name: "HTTP Advanced", devices: [lamp()] })).toEqual([
+			{ platform: "HttpAdvancedPlatform", name: "HTTP Advanced", devices: [lamp()] },
+		]);
+	});
+
+	test("does not take for a configuration what is not one", () => {
+		for (const data of [
+			undefined,
+			null,
+			"x",
+			3,
+			{},
+			[],
+			[{}],
+			[{ platform: "Other" }],
+			{ name: "x" },
+			{ devices: "no" },
+		]) {
+			expect(Config.blocksFrom(data)).toBeNull();
+		}
+	});
+
 	test("never modifies what it is given", () => {
 		const blocks = Object.freeze([Object.freeze(platform(Object.freeze([lamp()])))]);
 		const snapshot = JSON.stringify(blocks);

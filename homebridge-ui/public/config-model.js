@@ -20,6 +20,19 @@
 		return (Array.isArray(blocks) ? blocks : []).find(isPlatform);
 	}
 
+	/**
+	 * The list of config blocks in what the Homebridge UI hands out, or null when it is not the configuration of
+	 * this plugin. A list needs a platform block of this plugin; a single block is accepted with or without its
+	 * `platform` key. An empty list, an empty object or anything else is not taken for a configuration, so a form
+	 * that has not loaded yet cannot empty the page.
+	 */
+	function blocksFrom(data) {
+		if (Array.isArray(data)) return data.some(isPlatform) ? data : null;
+		if (!data || typeof data !== "object") return null;
+		if (isPlatform(data)) return [data];
+		return Array.isArray(data.devices) ? [{ platform: PLATFORM, ...data }] : null;
+	}
+
 	function devicesOf(blocks) {
 		const platform = findPlatform(blocks);
 		return platform && Array.isArray(platform.devices) ? platform.devices : [];
@@ -203,6 +216,7 @@
 	return {
 		PLATFORM,
 		findPlatform,
+		blocksFrom,
 		devicesOf,
 		defaultsOf,
 		addDevice,
