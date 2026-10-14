@@ -314,11 +314,19 @@ function cachedStatus({ config, cached } = {}) {
 	const list = Array.isArray(cached) ? cached : [];
 	const known = new Set(list.map((accessory) => accessory.UUID || accessory.uuid));
 
+	// The Homebridge UI reads the cache of the main bridge and of every child bridge, so an accessory that was cached
+	// before the plugin moved to a child bridge shows up twice. It is one accessory with `copies` entries.
+	const accessories = new Map();
+	for (const accessory of list) {
+		const uuid = accessory.UUID || accessory.uuid;
+		const entry = accessories.get(uuid);
+		if (entry) entry.copies += 1;
+		else
+			accessories.set(uuid, { uuid, displayName: accessory.displayName, configured: configured.has(uuid), copies: 1 });
+	}
+
 	return {
-		accessories: list.map((accessory) => {
-			const uuid = accessory.UUID || accessory.uuid;
-			return { uuid, displayName: accessory.displayName, configured: configured.has(uuid) };
-		}),
+		accessories: [...accessories.values()],
 		// Devices that HomeKit has not seen yet; they are created at the next start
 		pending: devices
 			.filter((device) => device && typeof device.name === "string" && device.name)

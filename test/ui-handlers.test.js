@@ -377,10 +377,30 @@ describe("cachedStatus", () => {
 			],
 		});
 		expect(result.accessories).toEqual([
-			{ uuid: pump, displayName: "Pump", configured: true },
-			{ uuid: "00000000-0000-4000-8000-000000000000", displayName: "Gone", configured: false },
+			{ uuid: pump, displayName: "Pump", configured: true, copies: 1 },
+			{ uuid: "00000000-0000-4000-8000-000000000000", displayName: "Gone", configured: false, copies: 1 },
 		]);
 		expect(result.pending).toEqual(["Fan"]);
+	});
+
+	test("counts an accessory once when more than one bridge has it cached", () => {
+		const co2 = handlers.hapUuid("HttpAdvancedPlatform:CO2 Sensor");
+		const air = handlers.hapUuid("HttpAdvancedPlatform:Air Quality Sensor");
+		const result = handlers.cachedStatus({
+			config: platform([{ name: "CO2 Sensor" }, { name: "Air Quality Sensor" }]),
+			// The main bridge from before the move to a child bridge, then the child bridge
+			cached: [
+				{ UUID: co2, displayName: "CO2 Sensor" },
+				{ UUID: air, displayName: "Air Quality Sensor" },
+				{ UUID: co2, displayName: "CO2 Sensor" },
+				{ UUID: air, displayName: "Air Quality Sensor" },
+			],
+		});
+		expect(result.accessories).toEqual([
+			{ uuid: co2, displayName: "CO2 Sensor", configured: true, copies: 2 },
+			{ uuid: air, displayName: "Air Quality Sensor", configured: true, copies: 2 },
+		]);
+		expect(result.pending).toEqual([]);
 	});
 
 	test("identifies a device by its id when it has one", () => {
