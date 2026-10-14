@@ -35,6 +35,7 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 - Optional Status Fault, so the Home app shows an accessory as faulty while its reads fail
 - One shared request for characteristics that read the same URL, a short response cache, request timeouts, read retries and a cap on concurrent requests
 - Accessories keep their identity in HomeKit when the configuration is edited
+- A manager page and a setup wizard in the Homebridge UI, next to the standard form
 
 ## Support
 
@@ -45,6 +46,42 @@ If you find this plugin useful, consider supporting its development.
   <br />
   <a href="https://paypal.me/zyaow"><img src="https://raw.githubusercontent.com/zyao-w/homebridge-http-advanced-accessory/master/branding/paypal-link.svg" width="185" height="25" alt="Support me via PayPal" /></a>
 </p>
+
+## Homebridge UI: manager and setup wizard
+
+The settings of the plugin in the Homebridge UI open on a page of their own, above the standard form. **The standard form stays**: it is shown right below, every setting can still be edited there, and a change in one place shows in the other. The page can be hidden with _Hide standard form_. English and Traditional Chinese are available; the page follows the language of the Homebridge UI.
+
+Nothing is written to `config.json` until you press **Save** in the settings window, as with the standard form. After saving, restart Homebridge for new or changed devices to take effect.
+
+### Setup wizard
+
+When no device is configured yet, the settings open the wizard. It can be skipped at any time (_Skip, use the standard form_) and it is available later from _Add device (wizard)_. The first version sets up:
+
+- sensors that are only read: temperature, humidity, motion, contact, leak, smoke and occupancy
+- a switch or a light, which can also be switched on and off, and a light can read and set its brightness
+
+The steps are: what the device is, the connection (name, URL, method, authentication), reading a value, understanding the value, controlling it (switch and light), options (polling, Status Fault, `id`) and a summary. In _Read a value_ the plugin sends the request, shows what the device answers and lists the values it found (JSON as JSONPath, XML as XPath); clicking one fills in the path and shows what HomeKit would get. For anything else, _Something else_ adds a blank device and opens it for editing.
+
+The wizard writes the same settings as the form, checked by the same validation that runs when Homebridge starts, so the summary tells you if the plugin would refuse the device.
+
+### Manager
+
+The page lists the devices with their status (the errors and warnings that the log would show at startup) and can:
+
+- add a device with the wizard or as a blank device, copy, delete (after a confirmation) and reorder devices
+- edit one device with all its settings (characteristics, mappers, additional services, headers, authentication) or the platform _Defaults_ in a form of their own
+- _Test read_ a `get` action and show the HTTP status, the response and the result of every mapper, following the fallback action; and _Preview set_, which shows the URL and body that a value would produce without sending anything
+- export a device as JSON for an issue; passwords, tokens and header values are hidden, `env:` and `file:` references are kept
+- import the accessories of a 1.x `config.json` (the same conversion as `scripts/migrate-config.js`), with the points to review
+- show the accessories that HomeKit has cached for the plugin, and which of them are no longer configured
+
+A device can be renamed without becoming a new accessory only when it has an `id`; the page says so when you edit it.
+
+### Test requests and security
+
+_Test read_ and the wizard send the request from the Homebridge host, with the authentication and headers of the device, exactly as the plugin does. A `bearerToken` or a header given as `env:` or `file:` is read on the server and never sent to the browser. The response is shown to you as the device sent it (cut after 4000 characters), so it can contain whatever the device returns.
+
+When the Homebridge UI is set to **no login** (`"auth": "none"` for the `config` platform), anybody on the network can open its settings, so the plugin does not send test requests at all and the page says so. Everything else works. Only `http` and `https` URLs are tested.
 
 ## Configuration
 
@@ -1086,6 +1123,8 @@ homebridge --debug --user-storage-path .homebridge-dev --plugin-path ./
 
 The tests run with `npm test`; `npm run lint` and `npm run format:check` are checked in CI. `config.schema.json` is generated from `src/schema.js` by `npm run build:schema`.
 
+The Homebridge UI page is in `homebridge-ui/`: `public/` holds the page (plain JavaScript, no build step; the modules that are not about the DOM also run in Node, which is how the tests reach them), and `server.js` answers its requests with the functions of `src/ui-handlers.js`. The tests run the page in jsdom against a stand-in for the `homebridge` object of the Homebridge UI, and run `server.js` as a child process the way the Homebridge UI does.
+
 ## License and credits
 
 This plugin is licensed under the [Apache License 2.0](LICENSE).
@@ -1099,3 +1138,5 @@ Main changes in this fork, as required by section 4 of the license. [CHANGELOG.m
 
 - 1.1.x: refactoring into modules, an HTTP layer on the built-in `fetch` with request sharing, caching, timeouts and retries, Bearer Token authentication, and dependency updates.
 - 2.0.0: the `HttpAdvancedPlatform` Dynamic Platform and Homebridge UI form, validated configuration, the restricted expression language and `script` mapper, HTTP errors, and the removal of the 1.x accessory (see [MIGRATION.md](MIGRATION.md)).
+- 2.1.0 to 2.3.1: device information, the `scale` and `number` mappers, additional services, custom headers and Status Fault.
+- 2.4.0: a manager page and a setup wizard for the Homebridge UI, next to the standard form.

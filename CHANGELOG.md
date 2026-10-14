@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.4.0 - Unreleased
+
+### Added
+
+- A page of its own for the settings in the Homebridge UI (`customUi`): a **manager** and a **setup wizard**. **The standard form is not replaced.** It stays under the page, edits made in either place show in the other, and it is shown again whenever the page cannot start. Nothing is written to `config.json` before the Save button of the settings window is pressed.
+- The wizard opens when no device is configured, can be skipped, and is available from the manager later. The first version sets up the sensors that are only read (temperature, humidity, motion, contact, leak, smoke, occupancy) and a switch or a light that can also be controlled (a light can read and set its brightness). It sends the request, shows the response, lists the values found in it (JSONPath for JSON, XPath for XML), previews what HomeKit would get and checks the device with the validation that runs at startup.
+- The manager lists the devices with the errors and warnings that the log would show at startup, and can add (wizard or blank), copy, delete after a confirmation, reorder and edit them, with all settings in a form of their own, and edit the platform `defaults`. A device can be tested (_Test read_ shows the HTTP status, the response and every mapper step, following the fallback action; _Preview set_ shows the URL and body without sending anything), exported as JSON with secrets masked, and the accessories of a 1.x `config.json` can be imported. The accessories that HomeKit has cached are shown, with those that are no longer configured.
+- English and Traditional Chinese, following the language of the Homebridge UI.
+- `@homebridge/plugin-ui-utils` as a dependency, used by `homebridge-ui/server.js` only.
+
+### Security
+
+- Test requests come from the Homebridge host with the authentication and headers of the device. Tokens and header values given as `env:` or `file:` are read on the server and never reach the browser. When the Homebridge UI is set to no login (`"auth": "none"`), test requests are switched off. Only `http` and `https` URLs are tested.
+
+### Changed
+
+- The code that validates and builds a device from the settings is shared between the platform and the settings page (`src/prepare-device.js`), so the page reports what the plugin does. The behaviour of the plugin does not change.
+
+
 ## 2.3.1 - 2026-10-12
 
 ### Changed
