@@ -9,6 +9,8 @@ const { suggestPaths } = require("./suggest.js");
 const { renderTemplate } = require("./template.js");
 const { validatePlatform } = require("./validate.js");
 const { buildDeviceFormSchema, buildDefaultsFormSchema } = require("./schema.js");
+const { SERVICES } = require("./hap-names.js");
+const { currentServiceName } = require("./service-aliases.js");
 const { PLATFORM_NAME } = require("./constants.js");
 
 // The custom UI of the Homebridge settings page calls these through homebridge-ui/server.js. They are plain functions
@@ -335,7 +337,56 @@ function cachedStatus({ config, cached } = {}) {
 	};
 }
 
-const deviceSchema = () => buildDeviceFormSchema();
+const names = (entries) =>
+	(Array.isArray(entries) ? entries : []).filter((name) => typeof name === "string" && name !== "");
+const sorted = (set) => [...new Set(set)].sort((a, b) => a.localeCompare(b, "en"));
+
+/**
+ * The characteristics that a service can have, or null when its type is not one that HomeKit has (a name that is
+ * typed in, or a service that is not chosen yet), in which case every name stays on offer.
+ * @returns {{all: string[], optional: string[]}|null}
+ */
+function characteristicsOf(serviceType) {
+	const service = Object.prototype.hasOwnProperty.call(SERVICES, currentServiceName(serviceType))
+		? SERVICES[currentServiceName(serviceType)]
+		: null;
+	return service ? { all: [...service.required, ...service.optional], optional: service.optional } : null;
+}
+
+/**
+ * The names to offer in the form of one device: the characteristics of its service, and those of its additional
+ * services. A name that the device already uses is kept in its list, so that what is set never disappears from the
+ * form, and a service that is not known leaves every name on offer.
+ */
+function namesForDevice(device) {
+	const own = device && typeof device === "object" ? device : {};
+	const extras = (Array.isArray(own.additionalServices) ? own.additionalServices : []).filter(
+		(extra) => extra && typeof extra === "object"
+	);
+	const used = (service) => names((service.characteristics || []).map((entry) => entry && entry.characteristic));
+
+	const lists = {};
+	const main = characteristicsOf(own.service);
+	if (main) {
+		lists.characteristic = sorted([...main.all, ...used(own)]);
+		lists.option = sorted([...main.optional, ...names(own.optionCharacteristic)]);
+	}
+
+	// All additional services share one list, since the form describes them with one set of fields. It is the names
+	// of all their services together, and every name stays on offer while one of them has no known service.
+	const known = extras.map((extra) => characteristicsOf(extra.service));
+	if (extras.length > 0 && known.every(Boolean)) {
+		lists.extraCharacteristic = sorted([...known.flatMap((one) => one.all), ...extras.flatMap(used)]);
+		lists.extraOption = sorted([
+			...known.flatMap((one) => one.optional),
+			...extras.flatMap((extra) => names(extra.optionCharacteristic)),
+		]);
+	}
+	return lists;
+}
+
+/** The form of one device, with the characteristics that fit the service that the device has now. */
+const deviceSchema = (payload) => buildDeviceFormSchema(namesForDevice(payload && payload.device));
 const defaultsSchema = () => buildDefaultsFormSchema();
 
 module.exports = {

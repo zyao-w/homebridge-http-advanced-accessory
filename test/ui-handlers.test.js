@@ -449,3 +449,129 @@ describe("isUiAuthDisabled", () => {
 		expect(handlers.isUiAuthDisabled(undefined)).toBe(false);
 	});
 });
+
+describe("deviceSchema", () => {
+	const { CHARACTERISTICS, SERVICES } = require("../src/hap-names.js");
+	const form = (device) => handlers.deviceSchema({ device }).schema.properties;
+	const names = (device) => form(device).characteristics.items.properties.characteristic.enum;
+	const options = (device) => form(device).optionCharacteristic;
+	const extraNames = (device) =>
+		form(device).additionalServices.items.properties.characteristics.items.properties.characteristic.enum;
+	const extraOptions = (device) => form(device).additionalServices.items.properties.optionCharacteristic;
+	const own = (service) => [...SERVICES[service].required, ...SERVICES[service].optional].sort();
+
+	test("offers every name while there is no device or its service is not known", () => {
+		for (const device of [undefined, {}, { service: "" }, { service: "SomethingNew" }, { service: "constructor" }]) {
+			expect(names(device)).toBe(CHARACTERISTICS);
+			expect(options(device).items.enum).toBe(CHARACTERISTICS);
+		}
+		expect(handlers.deviceSchema().schema.properties.characteristics).toBeDefined();
+		expect(handlers.deviceSchema(null).schema.properties.characteristics).toBeDefined();
+	});
+
+	test("offers the characteristics of the service of the device, and only the optional ones as optional", () => {
+		expect(names({ service: "Lightbulb" })).toEqual(own("Lightbulb"));
+		expect(names({ service: "Lightbulb" })).toEqual(expect.arrayContaining(["On", "Brightness", "Hue"]));
+		expect(names({ service: "Lightbulb" })).not.toContain("CurrentTemperature");
+
+		expect(options({ service: "Lightbulb" }).items.enum).toEqual(SERVICES.Lightbulb.optional);
+		expect(options({ service: "Lightbulb" }).items.enum).toContain("Brightness");
+		expect(options({ service: "Lightbulb" }).items.enum).not.toContain("On");
+		expect(options({ service: "Lightbulb" })).not.toHaveProperty("maxItems");
+	});
+
+	test("lists each name once, in order", () => {
+		for (const service of Object.keys(SERVICES)) {
+			const list = names({ service });
+			expect({ service, list }).toEqual({ service, list: [...new Set(list)].sort((a, b) => a.localeCompare(b, "en")) });
+		}
+	});
+
+	test("offers nothing to add as optional when the service has no optional characteristics", () => {
+		expect(SERVICES.Switch.optional).toEqual([]);
+		const optional = options({ service: "Switch" });
+		expect(optional.maxItems).toBe(0);
+		// A form cannot offer a choice among nothing, so there is no empty list
+		expect(optional.items.enum).toBeUndefined();
+		expect(names({ service: "Switch" })).toEqual(["Name", "On"]);
+	});
+
+	test("understands a service by its old name", () => {
+		expect(names({ service: "BatteryService" })).toEqual(names({ service: "Battery" }));
+		expect(names({ service: "BatteryService" })).toContain("BatteryLevel");
+	});
+
+	test("keeps the names that the device already uses, so that nothing it has disappears from the form", () => {
+		const device = {
+			service: "Switch",
+			optionCharacteristic: ["Custom option"],
+			characteristics: [{ characteristic: "SomethingNew" }, { characteristic: "On" }, null, { characteristic: 3 }, {}],
+		};
+		expect(names(device)).toEqual(["Name", "On", "SomethingNew"]);
+		expect(options(device).items.enum).toEqual(["Custom option"]);
+		expect(options(device)).not.toHaveProperty("maxItems");
+	});
+
+	test("offers the characteristics of all additional services together", () => {
+		const device = {
+			service: "CarbonDioxideSensor",
+			additionalServices: [
+				{ id: "temp", service: "TemperatureSensor" },
+				{ id: "battery", service: "BatteryService" },
+			],
+		};
+		const list = extraNames(device);
+		expect(list).toEqual(
+			[...new Set([...own("TemperatureSensor"), ...own("Battery")])].sort((a, b) => a.localeCompare(b, "en"))
+		);
+		expect(list).toEqual(expect.arrayContaining(["CurrentTemperature", "BatteryLevel", "StatusLowBattery"]));
+		expect(list).not.toContain("CurrentRelativeHumidity");
+		expect(extraOptions(device).items.enum).toContain("BatteryLevel");
+		// The characteristics of the device itself are those of its own service
+		expect(names(device)).toEqual(own("CarbonDioxideSensor"));
+	});
+
+	test("offers every name for additional services while one of them has no known service yet", () => {
+		const unknown = [{ id: "a", service: "TemperatureSensor" }, { id: "b" }];
+		expect(extraNames({ service: "Switch", additionalServices: unknown })).toBe(CHARACTERISTICS);
+		expect(extraNames({ service: "Switch", additionalServices: [] })).toBe(CHARACTERISTICS);
+		expect(extraNames({ service: "Switch" })).toBe(CHARACTERISTICS);
+		expect(names({ service: "Switch", additionalServices: unknown })).toEqual(["Name", "On"]);
+	});
+
+	test("keeps the names that the additional services already use", () => {
+		const device = {
+			service: "Switch",
+			additionalServices: [
+				{
+					id: "a",
+					service: "Battery",
+					characteristics: [{ characteristic: "SomethingNew" }],
+					optionCharacteristic: ["Custom option"],
+				},
+			],
+		};
+		expect(extraNames(device)).toContain("SomethingNew");
+		expect(extraOptions(device).items.enum).toContain("Custom option");
+	});
+
+	test("is the same form as the one without lists, apart from the names", () => {
+		const strip = (node) => {
+			if (Array.isArray(node)) return node.map(strip);
+			if (!node || typeof node !== "object") return node;
+			return Object.fromEntries(
+				Object.entries(node)
+					.filter(([key]) => !["enum", "maxItems", "description"].includes(key))
+					.map(([key, value]) => [key, strip(value)])
+			);
+		};
+		expect(strip(handlers.deviceSchema({ device: { service: "Lightbulb" } }))).toEqual(
+			strip(handlers.deviceSchema({ device: undefined }))
+		);
+	});
+
+	test("is something that the Homebridge UI can send back and forth", () => {
+		const schema = handlers.deviceSchema({ device: { service: "Lightbulb" } });
+		expect(JSON.parse(JSON.stringify(schema))).toEqual(schema);
+	});
+});

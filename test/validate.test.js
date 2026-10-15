@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { buildSchema } = require("../src/schema.js");
+const { buildSchema, buildDeviceFormSchema } = require("../src/schema.js");
 const { validateDevice, validatePlatform } = require("../src/validate.js");
 const { normalizeDevice } = require("../src/device-config.js");
 const { migrateAccessory, migrateConfig } = require("../src/migrate.js");
@@ -353,6 +353,127 @@ describe("validateDevice", () => {
 			],
 		});
 		expect(errors).toEqual([expect.stringMatching(/get\.inconclusive has an unknown setting "inconclusive"/)]);
+	});
+});
+
+describe("the list of characteristic names in the form", () => {
+	const { CHARACTERISTICS } = require("../src/hap-names.js");
+	const collect = (node, found = { single: [], options: [] }) => {
+		if (!node || typeof node !== "object") return found;
+		if (node.properties && node.properties.characteristic) found.single.push(node.properties.characteristic);
+		if (node.properties && node.properties.optionCharacteristic)
+			found.options.push(node.properties.optionCharacteristic.items);
+		Object.values(node).forEach((value) => collect(value, found));
+		return found;
+	};
+
+	test("is a fixed list wherever a characteristic is named, in the form of the plugin and of one device", () => {
+		for (const schema of [buildSchema().schema, buildDeviceFormSchema().schema]) {
+			const { single, options } = collect(schema);
+			// The characteristics and the optional characteristics, of the device and of an additional service
+			expect(single).toHaveLength(2);
+			expect(options).toHaveLength(2);
+			for (const node of [...single, ...options]) {
+				expect(node.enum).toBe(CHARACTERISTICS);
+				expect(node.type).toBe("string");
+			}
+		}
+	});
+
+	test("has each name once, in order, with nothing that the plugin could not match", () => {
+		expect(new Set(CHARACTERISTICS).size).toBe(CHARACTERISTICS.length);
+		expect(CHARACTERISTICS).toEqual([...CHARACTERISTICS].sort((a, b) => a.localeCompare(b, "en")));
+		expect(CHARACTERISTICS.filter((name) => /[\s-]/.test(name) || name === "")).toEqual([]);
+		expect(CHARACTERISTICS.length).toBeGreaterThan(200);
+		// The names of the services that the wizard sets up
+		expect(CHARACTERISTICS).toEqual(
+			expect.arrayContaining(["On", "Brightness", "CurrentHeaterCoolerState", "PM2.5Density"])
+		);
+	});
+
+	test("the wizard only uses names from it", () => {
+		const Wizard = require("../homebridge-ui/public/wizard.js");
+		const used = [...Object.values(Wizard.KINDS).map((kind) => kind.characteristic), "Brightness"];
+		expect(used.filter((name) => !CHARACTERISTICS.includes(name))).toEqual([]);
+	});
+
+	test("the wizard sets up real services, with characteristics that they have", () => {
+		const { SERVICES } = require("../src/hap-names.js");
+		const Wizard = require("../homebridge-ui/public/wizard.js");
+		const wrong = [];
+		const check = (service, characteristic) => {
+			const has = SERVICES[service] && [...SERVICES[service].required, ...SERVICES[service].optional];
+			if (!has || !has.includes(characteristic)) wrong.push(`${service} ${characteristic}`);
+		};
+		for (const kind of Object.values(Wizard.KINDS)) check(kind.service, kind.characteristic);
+		// A light also reads and sets the brightness
+		check("Lightbulb", "Brightness");
+		expect(wrong).toEqual([]);
+	});
+
+	test("is not a limit: a name that is not in it still validates and loads", () => {
+		const device = {
+			name: "Custom",
+			service: "Switch",
+			optionCharacteristic: ["SomethingNew"],
+			characteristics: [{ characteristic: "SomethingNew", get: { url: "http://x" } }],
+		};
+		expect(validateDevice(device).errors).toEqual([]);
+		expect(() => normalizeDevice(device)).not.toThrow();
+		// The form schema itself does hold the list
+		expect(
+			buildSchema().schema.properties.devices.items.properties.characteristics.items.properties.characteristic.enum
+		).toContain("On");
+	});
+});
+
+describe("the list of services in the form", () => {
+	const { SERVICES } = require("../src/hap-names.js");
+	const { SERVICE_NAMES } = require("../src/schema.js");
+
+	const servicesIn = (node, found = []) => {
+		if (!node || typeof node !== "object") return found;
+		if (node.properties && node.properties.service) found.push(node.properties.service);
+		Object.values(node).forEach((value) => servicesIn(value, found));
+		return found;
+	};
+
+	test("is a fixed list for the service of a device and of an additional service, in both forms", () => {
+		for (const schema of [buildSchema().schema, buildDeviceFormSchema().schema]) {
+			const found = servicesIn(schema);
+			expect(found).toHaveLength(2);
+			for (const node of found) {
+				expect(node.enum).toBe(SERVICE_NAMES);
+				expect(node.type).toBe("string");
+			}
+		}
+	});
+
+	test("has the services that HomeKit has, in order, without the one that the plugin adds itself", () => {
+		expect(SERVICE_NAMES).toEqual([...SERVICE_NAMES].sort((a, b) => a.localeCompare(b, "en")));
+		expect(SERVICE_NAMES).toEqual(expect.arrayContaining(["Switch", "Lightbulb", "TemperatureSensor", "Battery"]));
+		expect(SERVICE_NAMES).not.toContain("AccessoryInformation");
+		// The old name of a renamed service is not offered next to the new one
+		expect(SERVICE_NAMES).not.toContain("BatteryService");
+		expect(SERVICE_NAMES.length).toBeGreaterThan(60);
+		expect(SERVICE_NAMES).toEqual(Object.keys(SERVICES).sort((a, b) => a.localeCompare(b, "en")));
+	});
+
+	test("every service has the characteristics it always has, none twice", () => {
+		for (const [name, service] of Object.entries(SERVICES)) {
+			expect({ name, required: service.required.length > 0 }).toEqual({ name, required: true });
+			expect({ name, overlap: service.optional.filter((one) => service.required.includes(one)) }).toEqual({
+				name,
+				overlap: [],
+			});
+		}
+	});
+
+	test("is not a limit: a service that is not in it still validates", () => {
+		const device = { name: "Custom", service: "SomethingNew", characteristics: [] };
+		expect(validateDevice(device).errors).toEqual([]);
+		// The device reports it when it loads, as before
+		expect(buildSchema().schema.properties.devices.items.properties.service.enum).toContain("Switch");
 	});
 });
 

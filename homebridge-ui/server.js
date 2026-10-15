@@ -25,7 +25,7 @@ async function main() {
 			this.onRequest("/preview-set", (payload) => handlers.previewSet(payload));
 			this.onRequest("/import-1x", (payload) => handlers.importLegacy(payload));
 			this.onRequest("/cached", (payload) => handlers.cachedStatus(payload));
-			this.onRequest("/device-schema", () => handlers.deviceSchema());
+			this.onRequest("/device-schema", (payload) => handlers.deviceSchema(payload));
 			this.onRequest("/defaults-schema", () => handlers.defaultsSchema());
 
 			// this must be called to tell the Homebridge UI that requests can be sent

@@ -1,15 +1,20 @@
 const Ajv = require("ajv");
 const { buildSchema, HTTP_METHODS } = require("./schema.js");
 
-// The form schema cannot contain null (see schema.js), so the validation copy accepts it for an unset method.
-function withMethodEnum(node) {
+// The validation uses a copy of the form schema that differs in two places. The form schema cannot contain null (see
+// schema.js), so the copy accepts it for an unset method; and the fixed lists of the form are left out.
+function forValidation(node) {
 	if (!node || typeof node !== "object") return node;
 	if (node.properties && node.properties.httpMethod) node.properties.httpMethod.enum = [null, ...HTTP_METHODS];
-	for (const value of Object.values(node)) withMethodEnum(value);
+	// The lists of names are for the form; a name that is not in them is checked when the device loads
+	if (node.properties && node.properties.characteristic) delete node.properties.characteristic.enum;
+	if (node.properties && node.properties.optionCharacteristic) delete node.properties.optionCharacteristic.items.enum;
+	if (node.properties && node.properties.service) delete node.properties.service.enum;
+	for (const value of Object.values(node)) forValidation(value);
 	return node;
 }
 
-const platformSchema = withMethodEnum(structuredClone(buildSchema().schema));
+const platformSchema = forValidation(structuredClone(buildSchema().schema));
 
 // strict is off because the schema carries form keywords (title, widget, placeholder) that Ajv does not know;
 // coerceTypes accepts what the UI and hand-edited JSON produce, such as "0" for a number.

@@ -674,6 +674,118 @@ describe("editing", () => {
 		expect(ui.text()).toContain("Step 2 of 6");
 	});
 
+	const characteristicsOffered = (form) =>
+		form.schema.schema.properties.characteristics.items.properties.characteristic.enum;
+	const openLamp = async (extra = {}) => {
+		const lamp = { name: "Lamp", service: "Switch", characteristics: [], ...extra };
+		const ui = await start({ config: [platform([lamp])] });
+		await ui.click('[data-action="edit"][data-index="0"]');
+		await waitFor(() => ui.log.forms.length === 1, "the editor");
+		return ui;
+	};
+
+	test("offers the characteristics of the service of the device", async () => {
+		const ui = await openLamp();
+		expect(characteristicsOffered(ui.log.forms[0])).toEqual(["Name", "On"]);
+	});
+
+	test("shows the form again with the characteristics of the new service when the service changes", async () => {
+		const ui = await openLamp();
+		const first = ui.log.forms[0];
+
+		first.change({ ...first.data, service: "Lightbulb" });
+		await waitFor(() => ui.log.forms.length === 2, "the form for the new service");
+
+		const second = ui.log.forms[1];
+		expect(first.ended).toBe(true);
+		expect(characteristicsOffered(second)).toContain("Brightness");
+		expect(second.data).toMatchObject({ name: "Lamp", service: "Lightbulb" });
+		expect(ui.text()).toContain("Editing Lamp");
+		expect(ui.log.updates).toEqual([]);
+
+		// What the new form sends is what is kept
+		await second.submitted({ ...second.data, name: "Lamp 2" });
+		await waitFor(() => ui.log.updates.length === 1, "the update");
+		expect(ui.config()[0].devices[0]).toMatchObject({ name: "Lamp 2", service: "Lightbulb" });
+	});
+
+	test("keeps what was typed in the form when it is shown again", async () => {
+		const ui = await openLamp();
+		const first = ui.log.forms[0];
+		first.change({ ...first.data, name: "Typed name", url: "x", service: "Fan" });
+		await waitFor(() => ui.log.forms.length === 2, "the form for the new service");
+		expect(ui.log.forms[1].data).toMatchObject({ name: "Typed name", url: "x", service: "Fan" });
+	});
+
+	test("the form that was replaced no longer acts", async () => {
+		const ui = await openLamp();
+		const first = ui.log.forms[0];
+		first.change({ ...first.data, service: "Lightbulb" });
+		await waitFor(() => ui.log.forms.length === 2, "the form for the new service");
+
+		await first.submitted({ ...first.data, name: "From the old form" });
+		first.cancelled();
+		first.change({ ...first.data, service: "Fan" });
+		await settle();
+		expect(ui.log.updates).toEqual([]);
+		expect(ui.log.forms).toHaveLength(2);
+		expect(ui.text()).toContain("Editing Lamp");
+	});
+
+	test("does not show the form again when the offered names stay the same", async () => {
+		const ui = await openLamp();
+		const first = ui.log.forms[0];
+
+		// An empty additional service changes nothing about the names on offer
+		first.change({ ...first.data, additionalServices: [{}] });
+		await settle();
+		first.change({ ...first.data, name: "Renamed" });
+		await settle();
+		expect(ui.log.forms).toHaveLength(1);
+		expect(first.ended).toBe(false);
+	});
+
+	test("shows the form again when an additional service gets its service", async () => {
+		const ui = await openLamp();
+		const first = ui.log.forms[0];
+		first.change({ ...first.data, additionalServices: [{ id: "b", service: "Battery" }] });
+		await waitFor(() => ui.log.forms.length === 2, "the form for the additional service");
+		const list =
+			ui.log.forms[1].schema.schema.properties.additionalServices.items.properties.characteristics.items.properties
+				.characteristic.enum;
+		expect(list).toContain("BatteryLevel");
+		expect(list).not.toContain("On");
+	});
+
+	test("keeps the form as it is when the new schema cannot be had", async () => {
+		const ui = await openLamp();
+		const first = ui.log.forms[0];
+		const request = ui.homebridge.request;
+		ui.homebridge.request = async (route, payload) => {
+			if (route === "/device-schema") throw new Error("server stopped");
+			return request(route, payload);
+		};
+		first.change({ ...first.data, service: "Lightbulb" });
+		await settle();
+		expect(ui.log.forms).toHaveLength(1);
+		expect(first.ended).toBe(false);
+
+		// It can still be applied
+		await first.submitted({ ...first.data, service: "Lightbulb" });
+		await waitFor(() => ui.log.updates.length === 1, "the update");
+		expect(ui.config()[0].devices[0].service).toBe("Lightbulb");
+	});
+
+	test("does not ask for another schema when the defaults are edited", async () => {
+		const ui = await start({ config: [platform([sensor()], { defaults: { timeout: 5000 } })] });
+		await ui.click('[data-action="edit-defaults"]');
+		await waitFor(() => ui.log.forms.length === 1, "the editor");
+		ui.log.forms[0].change({ timeout: 6000, service: "Fan" });
+		await settle();
+		expect(ui.log.forms).toHaveLength(1);
+		expect(ui.log.requests.filter((route) => route === "/device-schema")).toEqual([]);
+	});
+
 	test("cancelling changes nothing", async () => {
 		const ui = await start({ config: [platform([sensor("A")])] });
 		await ui.click('[data-action="edit"][data-index="0"]');

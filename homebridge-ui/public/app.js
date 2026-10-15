@@ -417,44 +417,82 @@
 		render();
 	}
 
+	/** What decides the characteristics on offer in the form of a device: its service and those of its additional ones. */
+	const shapeOf = (data) =>
+		JSON.stringify([
+			data.service,
+			(Array.isArray(data.additionalServices) ? data.additionalServices : []).map((s) => s && s.service),
+		]);
+
+	const fetchSchema = (kind, data) =>
+		kind === "defaults" ? call("/defaults-schema") : call("/device-schema", { device: data });
+
 	async function openEditor(kind, index) {
-		const schema = await call(kind === "defaults" ? "/defaults-schema" : "/device-schema");
+		const data = clone(kind === "defaults" ? Config.defaultsOf(state.blocks) : devices()[index]);
+		const schema = await fetchSchema(kind, data);
 		if (schema.failed) {
 			hb.toast.error(t("editorFailed"));
 			return;
 		}
-		const initial = clone(kind === "defaults" ? Config.defaultsOf(state.blocks) : devices()[index]);
 
-		let form;
 		hb.hideSchemaForm();
 		state.view = "edit";
 		state.editing = { kind, index };
 		render();
+		mountForm(kind, index, schema, data);
+	}
+
+	/**
+	 * Shows the form of a device (or of the defaults) in the page. The form of a device offers the characteristics of
+	 * its service, and a schema cannot change while it is shown, so when the service changes the form is shown again
+	 * with a schema made for the new one, and with the data as it is now.
+	 */
+	function mountForm(kind, index, schema, data) {
+		let form;
 		try {
-			form = hb.createForm(schema, initial, t("save"), t("cancel"));
+			form = hb.createForm(schema, data, t("save"), t("cancel"));
 		} catch (error) {
 			hb.toast.error(t("editorFailed"));
 			closeEditor();
 			return;
 		}
-		state.editing.form = form;
+		const session = state.editing;
+		session.form = form;
+		// A form that was replaced, or closed, must not act on what it still sends
+		const current = () => state.editing === session && session.form === form;
 
-		let latest = initial;
-		form.onChange((change) => {
-			const data = formData(change);
-			if (data) latest = data;
+		let latest = data;
+		let shape = shapeOf(data);
+		let shown = JSON.stringify(schema);
+		form.onChange(async (change) => {
+			if (!current()) return;
+			const next = formData(change);
+			if (!next) return;
+			latest = next;
+			if (kind !== "device" || shapeOf(next) === shape) return;
+
+			shape = shapeOf(next);
+			const fresh = await fetchSchema(kind, next);
+			// Only when the lists changed: adding an empty additional service does not need a new form
+			if (fresh.failed || !current() || JSON.stringify(fresh) === shown) return;
+			form.end();
+			mountForm(kind, index, fresh, latest);
 		});
 		form.onSubmit(async (payload) => {
-			const data = formData(payload) || latest;
+			if (!current()) return;
+			const result = formData(payload) || latest;
 			form.end();
 			const next =
-				kind === "defaults" ? Config.setDefaults(state.blocks, data) : Config.replaceDevice(state.blocks, index, data);
+				kind === "defaults"
+					? Config.setDefaults(state.blocks, result)
+					: Config.replaceDevice(state.blocks, index, result);
 			state.view = "home";
 			state.editing = null;
 			await commit(next);
 			if (state.schemaVisible) hb.showSchemaForm();
 		});
 		form.onCancel(() => {
+			if (!current()) return;
 			form.end();
 			closeEditor();
 		});

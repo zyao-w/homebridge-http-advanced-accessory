@@ -174,7 +174,7 @@ Read requests with the same method, URL, body and credentials that are in flight
 }
 ```
 
-- `characteristic` is the name of the HomeKit characteristic. Names are matched without spaces, so `On`, `CurrentTemperature` and `Current Temperature` are the same. The full list is in [HAP-NodeJS](https://github.com/homebridge/HAP-NodeJS).
+- `characteristic` is the name of the HomeKit characteristic. Names are matched by their letters and digits only, so `On`, `CurrentTemperature` and `Current Temperature` are the same, and so are `CurrentHeaterCoolerState` and `CurrentHeater-CoolerState`. The form of the Homebridge UI offers the names of HAP-NodeJS as fixed lists; a name that is not in them can still be written in the JSON config. In the editor of the settings page, the characteristics on offer are those of the service of the device. The full list is in [HAP-NodeJS](https://github.com/homebridge/HAP-NodeJS).
 - `get` is the action that reads the value (see [Actions](#actions)). Without it the characteristic is not polled and answers with its last known value.
 - `set` is the action that writes the value. Without it a value set from HomeKit is accepted, but nothing is sent.
 - `props` overrides properties of the characteristic: `format`, `unit`, `minValue`, `maxValue`, `minStep`, `validValues`, `validValueRanges`, `perms` and `maxLen`.
@@ -186,7 +186,7 @@ One accessory can carry more than one HomeKit service, for example a CO2 sensor 
 | Setting                | Description                                                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `id`                   | Permanent identifier of the service on this accessory. Required and unique within the device.                            |
-| `service`              | The HomeKit service, for example `HumiditySensor` or `BatteryService`. Required.                                         |
+| `service`              | The HomeKit service, for example `HumiditySensor` or `Battery`. Required.                                         |
 | `name`                 | Name of the service in HomeKit. Defaults to the name of the device followed by the `id`.                                 |
 | `optionCharacteristic` | Optional characteristics of this service to expose, for example `["BatteryLevel"]`.                                      |
 | `characteristics`      | What to read and write in this service, with the same settings as [the characteristics of the device](#characteristics). |
@@ -420,47 +420,83 @@ Leading and trailing whitespace is always trimmed. If the environment variable o
 
 ## Supported services
 
-AccessoryInformation
+The form of the Homebridge UI offers these services, which Homebridge 1.8.5 and Homebridge 2.x both have:
+
+```text
+AccessCode
+AccessControl
+AccessoryMetrics
+AccessoryRuntimeInformation
+AirPurifier
 AirQualitySensor
-BatteryService
-BridgeConfiguration
-BridgingState
-CameraControl
+AssetUpdate
+Assistant
+AudioStreamManagement
+Battery
+CameraOperatingMode
+CameraRecordingManagement
 CameraRTPStreamManagement
 CarbonDioxideSensor
 CarbonMonoxideSensor
+CloudRelay
 ContactSensor
+DataStreamTransportManagement
+Diagnostics
 Door
 Doorbell
 Fan
+Fanv2
+Faucet
+FilterMaintenance
+FirmwareUpdate
 GarageDoorOpener
+HeaterCooler
+HumidifierDehumidifier
 HumiditySensor
+InputSource
+IrrigationSystem
 LeakSensor
-LightSensor
 Lightbulb
+LightSensor
 LockManagement
 LockMechanism
 Microphone
 MotionSensor
+NFCAccess
 OccupancySensor
 Outlet
 Pairing
+PowerManagement
 ProtocolInformation
-Relay
 SecuritySystem
+ServiceLabel
+Siri
+SiriEndpoint
+Slats
+SmartSpeaker
 SmokeSensor
-Speaker
 StatefulProgrammableSwitch
 StatelessProgrammableSwitch
 Switch
+TapManagement
+TargetControl
+TargetControlManagement
+Television
+TelevisionSpeaker
 TemperatureSensor
 Thermostat
-TimeInformation
-TunneledBTLEAccessoryService
+ThreadTransport
+TransferTransportManagement
+Tunnel
+Valve
+WiFiRouter
+WiFiSatellite
+WiFiTransport
 Window
 WindowCovering
+```
 
-Any service that HAP-NodeJS defines can be used by its name.
+Any other service that your HAP-NodeJS defines can be used by its name in the JSON config. HAP-NodeJS renamed a few services, and the old names keep working: `BatteryService` (now `Battery`), `CameraEventRecordingManagement` (now `CameraRecordingManagement`), `Relay` (now `CloudRelay`), `Slat` (now `Slats`), `TunneledBTLEAccessoryService` (now `Tunnel`).
 
 ## Configuration Examples
 
@@ -597,7 +633,7 @@ One accessory with four services. Every characteristic reads the same URL, so th
     {
       "id": "battery",
       "name": "Battery",
-      "service": "BatteryService",
+      "service": "Battery",
       "optionCharacteristic": ["BatteryLevel"],
       "characteristics": [
         {

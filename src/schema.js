@@ -1,5 +1,6 @@
 const { PLATFORM_NAME } = require("./constants.js");
 const { HEADER_NAME } = require("./http/headers.js");
+const { CHARACTERISTICS, SERVICES } = require("./hap-names.js");
 
 // The Homebridge UI form generator cannot render objects with user-defined keys and drops what the schema
 // does not describe when the form is saved, so everything below is an object with fixed properties or an array.
@@ -10,6 +11,32 @@ const number = (title, extra = {}) => ({ title, type: "number", minimum: 0, ...e
 const integer = (title, extra = {}) => ({ title, type: "integer", minimum: 0, ...extra });
 const signed = (title, extra = {}) => ({ title, type: "number", ...extra });
 const bool = (title, extra = {}) => ({ title, type: "boolean", ...extra });
+// Fixed lists in the form. They are only for the form: the validation does not use them (see validate.js), so a name
+// that a list lacks still works when it is written in the JSON config. The form of the plugin offers every name; the
+// custom UI passes a shorter list of characteristics, for the service of the device that it edits.
+const SERVICE_NAMES = Object.keys(SERVICES).sort((a, b) => a.localeCompare(b, "en"));
+const characteristicName = (title, extra = {}, names = CHARACTERISTICS) => ({
+	title,
+	type: "string",
+	enum: names,
+	...extra,
+});
+const serviceName = (title, extra = {}) => ({ title, type: "string", enum: SERVICE_NAMES, ...extra });
+
+/**
+ * The list of the optional characteristics to expose. A service that has none gets a list that cannot be added to,
+ * because a form cannot offer a choice among nothing.
+ */
+function optionCharacteristics(description, names) {
+	const none = Array.isArray(names) && names.length === 0;
+	return {
+		title: "Optional characteristics",
+		type: "array",
+		description: none ? "This service has no optional characteristics." : description,
+		...(none ? { maxItems: 0 } : {}),
+		items: none ? { title: "Characteristic", type: "string" } : characteristicName("Characteristic", {}, names),
+	};
+}
 const secret = (title, extra = {}) =>
 	text(title, { widget: "password", "x-schema-form": { type: "password" }, ...extra });
 const choice = (title, values, extra = {}) => ({
@@ -244,19 +271,21 @@ function props() {
 	});
 }
 
-function characteristic(scope) {
+function characteristic(scope, names) {
 	return object({
-		characteristic: text("Characteristic", {
-			placeholder: "On",
-			description: "Characteristic name, for example On or Brightness.",
-		}),
+		characteristic: characteristicName(
+			"Characteristic",
+			{ description: "The characteristic to read or set, for example On or Brightness." },
+			names
+		),
 		get: { ...action(scope, "get", true), title: "Get action" },
 		set: { ...action(scope, "set", true), title: "Set action", ...collapsed },
 		props: { ...props(), title: "Characteristic properties", ...collapsed },
 	});
 }
 
-function additionalService(scopes) {
+/** @param {{extraCharacteristic?: string[], extraOption?: string[]}} lists */
+function additionalService(scopes, lists) {
 	return object({
 		id: text("Identifier", {
 			description:
@@ -265,51 +294,44 @@ function additionalService(scopes) {
 		name: text("Name", {
 			description: "Name of the service in HomeKit. Defaults to the device name and the identifier.",
 		}),
-		service: text("Service", {
-			placeholder: "HumiditySensor",
-			description: "HomeKit service type, for example HumiditySensor or BatteryService.",
-		}),
+		service: serviceName("Service", { description: "HomeKit service type, for example HumiditySensor or Battery." }),
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(scopes.service), title: "Characteristic" },
+			items: { ...characteristic(scopes.service, lists.extraCharacteristic), title: "Characteristic" },
 		},
-		optionCharacteristic: {
-			title: "Optional characteristics",
-			type: "array",
-			description: "Optional characteristics of the service to expose, for example BatteryLevel.",
-			items: { title: "Characteristic", type: "string" },
-		},
+		optionCharacteristic: optionCharacteristics(
+			"Optional characteristics of the service to expose, for example BatteryLevel.",
+			lists.extraOption
+		),
 	});
 }
 
-function device(scopes) {
+/** @param {{characteristic?: string[], option?: string[], extraCharacteristic?: string[], extraOption?: string[]}} [lists] */
+function device(scopes, lists = {}) {
 	return object({
 		name: text("Name", { description: "Name shown in HomeKit." }),
 		id: text("Identifier", {
 			description: "Keeps the accessory in HomeKit when the device is renamed. Defaults to the name.",
 		}),
-		service: text("Service", {
-			placeholder: "Switch",
+		service: serviceName("Service", {
 			description: "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor.",
 		}),
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(scopes.primary), title: "Characteristic" },
+			items: { ...characteristic(scopes.primary, lists.characteristic), title: "Characteristic" },
 		},
-		optionCharacteristic: {
-			title: "Optional characteristics",
-			type: "array",
-			description: "Optional characteristics of the service to expose, for example Brightness.",
-			items: { title: "Characteristic", type: "string" },
-		},
+		optionCharacteristic: optionCharacteristics(
+			"Optional characteristics of the service to expose, for example Brightness.",
+			lists.option
+		),
 		additionalServices: {
 			title: "Additional services",
 			type: "array",
 			description:
 				"More services on the same accessory, for example humidity next to a temperature sensor, or a battery.",
-			items: { ...additionalService(scopes), title: "Service" },
+			items: { ...additionalService(scopes, lists), title: "Service" },
 		},
 		...settings(),
 	});
@@ -318,9 +340,13 @@ function device(scopes) {
 /**
  * The form of one device, for the custom UI to edit a device on its own. It describes the same settings as the
  * `devices` of the platform form; only the paths in the conditions differ, since the device is the whole model.
+ *
+ * @param {{characteristic?: string[], option?: string[], extraCharacteristic?: string[], extraOption?: string[]}} [lists]
+ *   The names to offer for the characteristics and the optional characteristics, of the device and of its additional
+ *   services. Without them every name is offered.
  */
-function buildDeviceFormSchema() {
-	return { schema: { ...device(DEVICE_SCOPES), title: "Device" }, layout: null, form: null };
+function buildDeviceFormSchema(lists) {
+	return { schema: { ...device(DEVICE_SCOPES, lists), title: "Device" }, layout: null, form: null };
 }
 
 /**
@@ -352,4 +378,4 @@ function buildSchema() {
 	};
 }
 
-module.exports = { buildSchema, buildDeviceFormSchema, buildDefaultsFormSchema, HTTP_METHODS };
+module.exports = { buildSchema, buildDeviceFormSchema, buildDefaultsFormSchema, HTTP_METHODS, SERVICE_NAMES };
