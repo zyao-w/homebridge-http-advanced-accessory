@@ -207,6 +207,23 @@ describe("first run", () => {
 		expect(ui.root.lastElementChild.textContent).toContain("Hide standard form");
 	});
 
+	test("the footer points to the GitHub repository for help, in a tab of its own", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		const footer = ui.root.lastElementChild;
+		const link = footer.querySelector("a");
+		expect(footer.firstElementChild.textContent).toBe("For help please visit the GitHub repository.");
+		expect(link.href).toBe("https://github.com/zyao-w/homebridge-http-advanced-accessory");
+		expect(link.textContent).toBe("GitHub repository");
+		expect(link.target).toBe("_blank");
+		expect(link.rel).toContain("noopener");
+		expect(link.rel).toContain("noreferrer");
+	});
+
+	test("the footer help is in Traditional Chinese too", async () => {
+		const ui = await start({ config: [platform([sensor()])], lang: "zh-TW" });
+		expect(ui.root.lastElementChild.firstElementChild.textContent).toBe("需要協助請前往 GitHub 儲存庫。");
+	});
+
 	test("a card takes the whole width while its details are open", async () => {
 		const ui = await start({ config: [platform([sensor("A"), sensor("B")])] });
 		expect(ui.root.querySelectorAll("[data-device].wide")).toHaveLength(0);

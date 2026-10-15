@@ -9,6 +9,7 @@
 	const I18n = window.HttpAdvancedI18n;
 	const hb = window.homebridge;
 	const root = document.getElementById("app");
+	const REPOSITORY_URL = "https://github.com/zyao-w/homebridge-http-advanced-accessory";
 
 	const state = {
 		t: (key) => key,
@@ -182,12 +183,17 @@
 		return html + renderCached() + renderFooter();
 	}
 
-	/** Quiet links for what is rarely needed, below everything else. */
+	/** Quiet links for what is rarely needed, below everything else. Help is on the left, the actions on the right. */
 	function renderFooter() {
 		const link = (action, label) => button(action, esc(label), { small: true, cls: "btn-link text-muted px-0" });
-		return `<div class="d-flex flex-wrap justify-content-end gap-3 mt-4 pt-2 border-top">
-			${link("import", t("importLegacy"))}
-			${link("toggle-schema", state.schemaVisible ? t("hideStandard") : t("showStandard"))}
+		// The page is in a frame of the Homebridge UI, so the link opens a tab of its own and keeps no reference to it
+		const help = `${esc(t("helpPrefix"))}<a href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">${esc(t("helpLink"))}</a>${esc(t("helpSuffix"))}`;
+		return `<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 pt-2 border-top">
+			<small class="text-muted">${help}</small>
+			<div class="d-flex flex-wrap gap-3">
+				${link("import", t("importLegacy"))}
+				${link("toggle-schema", state.schemaVisible ? t("hideStandard") : t("showStandard"))}
+			</div>
 		</div>`;
 	}
 
