@@ -185,11 +185,12 @@
 
 	/** Quiet links for what is rarely needed, below everything else. Help is on the left, the actions on the right. */
 	function renderFooter() {
-		const link = (action, label) => button(action, esc(label), { small: true, cls: "btn-link text-muted px-0" });
+		const link = (action, label) => button(action, esc(label), { small: true, cls: "btn-link muted px-0" });
 		// The page is in a frame of the Homebridge UI, so the link opens a tab of its own and keeps no reference to it
-		const help = `${esc(t("helpPrefix"))}<a href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">${esc(t("helpLink"))}</a>${esc(t("helpSuffix"))}`;
+		// The text is dimmed, the link is not: it keeps the color of a link
+		const help = `<span class="muted">${esc(t("helpPrefix"))}</span><a href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">${esc(t("helpLink"))}</a><span class="muted">${esc(t("helpSuffix"))}</span>`;
 		return `<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 pt-2 border-top">
-			<small class="text-muted">${help}</small>
+			<small>${help}</small>
 			<div class="d-flex flex-wrap gap-3">
 				${link("import", t("importLegacy"))}
 				${link("toggle-schema", state.schemaVisible ? t("hideStandard") : t("showStandard"))}
@@ -228,8 +229,8 @@
 					<div class="d-flex justify-content-between align-items-start gap-2">
 						<div class="min-w-0">
 							<h3 class="h6 card-title mb-1">${esc(summary.name || t("unnamed"))}</h3>
-							<div class="text-muted small">${facts}</div>
-							${summary.id ? `<div class="text-muted small">id: ${esc(summary.id)}</div>` : ""}
+							<div class="muted small">${facts}</div>
+							${summary.id ? `<div class="muted small">id: ${esc(summary.id)}</div>` : ""}
 						</div>
 						<div>${renderStatus(check)}</div>
 					</div>
@@ -276,7 +277,7 @@
 		if (!state.open.has(index)) return html;
 
 		const actions = Config.actionsOf(device);
-		if (actions.length === 0) return html + `<p class="text-muted">${esc(t("noActions"))}</p>`;
+		if (actions.length === 0) return html + `<p class="muted">${esc(t("noActions"))}</p>`;
 
 		html += `<div class="table-responsive"><table class="table table-sm"><thead><tr><th scope="col">${esc(t("characteristic"))}</th><th scope="col">${esc(t("tests"))}</th></tr></thead><tbody>`;
 		for (const action of actions) {
@@ -364,10 +365,10 @@
 					`<li>${esc(accessory.displayName)}${accessory.configured ? "" : ` <span class="badge bg-warning text-dark text-bg-warning">${esc(t("notConfigured"))}</span>`}${accessory.copies > 1 ? ` <span class="badge bg-secondary text-bg-secondary">${esc(t("cachedCopies", { count: accessory.copies }))}</span>` : ""}</li>`
 			)
 			.join("")}</ul>`;
-		if (orphans.length) html += `<p class="text-muted">${esc(t("orphanHelp"))}</p>`;
-		if (repeated.length) html += `<p class="text-muted">${esc(t("repeatedHelp"))}</p>`;
+		if (orphans.length) html += `<p class="muted">${esc(t("orphanHelp"))}</p>`;
+		if (repeated.length) html += `<p class="muted">${esc(t("repeatedHelp"))}</p>`;
 		if (cached.pending.length)
-			html += `<p class="text-muted">${esc(t("pendingHelp", { names: cached.pending.join(", ") }))}</p>`;
+			html += `<p class="muted">${esc(t("pendingHelp", { names: cached.pending.join(", ") }))}</p>`;
 		return html + "</div></details>";
 	}
 
@@ -396,7 +397,7 @@
 	function renderEdit() {
 		const editing = state.editing;
 		const device = editing.kind === "defaults" ? null : devices()[editing.index] || {};
-		let html = `<p class="text-muted">${esc(t("editingHelp"))}</p>`;
+		let html = `<p class="muted">${esc(t("editingHelp"))}</p>`;
 		if (device && !(typeof device.id === "string" && device.id)) html += notice("info", esc(t("noIdHint")));
 		return html;
 	}
@@ -591,7 +592,7 @@
 			.map(
 				(suggestion, index) =>
 					`<button type="button" class="list-group-item list-group-item-action" data-action="wizard-suggest" data-target="${target}" data-i="${index}">
-						<code>${esc(suggestion.path)}</code> <span class="text-muted">→ ${esc(suggestion.sample)}</span></button>`
+						<code>${esc(suggestion.path)}</code> <span class="muted">→ ${esc(suggestion.sample)}</span></button>`
 			)
 			.join("")}</div>`;
 	}
@@ -732,7 +733,7 @@
 			html += notice("warning", list(summary.check.warnings));
 		if (summary && summary.check && !summary.check.errors.length) html += notice("success", esc(t("summaryOk")));
 		html += `<pre class="border rounded p-2" style="max-height: 20rem; overflow: auto">${esc(summary ? summary.json : "")}</pre>`;
-		html += `<p class="text-muted">${esc(t("summarySave"))}</p>`;
+		html += `<p class="muted">${esc(t("summarySave"))}</p>`;
 		return html;
 	}
 
@@ -754,7 +755,7 @@
 		const percent = steps.length > 1 ? Math.round(((wizard.step + 1) / steps.length) * 100) : 0;
 		let html = `<div class="progress mb-2" style="height: 0.4rem" role="progressbar" aria-label="${esc(progress)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}">
 				<div class="progress-bar" style="width: ${percent}%"></div></div>
-			<p class="text-muted mb-3">${esc(progress)} — <strong>${esc(t(`step.${step}`))}</strong></p>`;
+			<p class="muted mb-3">${esc(progress)} — <strong>${esc(t(`step.${step}`))}</strong></p>`;
 		if (wizard.first) html += `<p>${esc(t("wizardWelcome"))}</p>`;
 		html += `<div class="mb-3">${renderWizardStep(step)}</div><div class="d-flex flex-wrap gap-2">`;
 		if (wizard.step > 0) html += button("wizard-back", esc(t("back")));

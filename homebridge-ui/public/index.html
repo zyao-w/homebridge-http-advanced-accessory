@@ -31,6 +31,29 @@
 	#app .table-responsive {
 		max-width: 100%;
 	}
+
+	/* The Homebridge UI can be dark, and it themes this page through its own styles. Bootstrap's own colors for muted
+	   text, tables, cards and list items are those of its light theme, which are dark text on a dark page there. These
+	   take the color of the text around them instead, and leave the background to the page. */
+	#app .muted {
+		color: inherit !important;
+		opacity: 0.7;
+	}
+	#app .table > :not(caption) > * > * {
+		color: inherit;
+		background-color: transparent;
+		box-shadow: none;
+	}
+	#app .card,
+	#app .list-group-item {
+		color: inherit;
+		background-color: transparent;
+	}
+	#app .card,
+	#app .card-footer,
+	#app .list-group-item {
+		border-color: rgba(128, 128, 128, 0.35);
+	}
 </style>
 <div id="app"></div>
 <script src="i18n.js"></script>
