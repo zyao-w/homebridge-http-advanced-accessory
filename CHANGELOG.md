@@ -9,6 +9,14 @@
 - The manager lists the devices as cards with the errors and warnings that the log would show at startup, and can add (wizard or blank), copy, delete after a confirmation, reorder and edit them, with all settings in a form of their own, and edit the platform `defaults`. A device can be tested (_Test read_ shows the HTTP status, the response and every mapper step, following the fallback action; _Preview set_ shows the URL and body without sending anything), exported as JSON with secrets masked, and the accessories of a 1.x `config.json` can be imported. The accessories that HomeKit has cached are shown, with those that are no longer configured.
 - English and Traditional Chinese, following the language of the Homebridge UI.
 - `@homebridge/plugin-ui-utils` as a dependency, used by `homebridge-ui/server.js` only.
+- The characteristic names in the form (the characteristic of an entry, and the optional characteristics) and the service of a device are fixed lists of the names that HomeKit has, so they are chosen and not typed. The lists are made from the HAP-NodeJS of Homebridge 1.8.5 (hap-nodejs 0.12.3) and of Homebridge 2.4.0 (@homebridge/hap-nodejs 2.2.2): a service has to be in both, because an unknown service keeps the device from loading, while a characteristic that one of them lacks only logs a warning. `Accessory Information` is not offered, since the plugin adds it itself. The lists are only for the form: a name that they lack still validates and works when it is written in the JSON config. `scripts/build-hap-names.js` regenerates them.
+- In the editor of the settings page, the characteristics on offer are those of the service of the device (and, for the additional services, of their services), and the optional ones are only the optional characteristics of the service. When the service is changed the form is shown again with the characteristics of the new one, keeping what was entered. A name that the device already uses stays on offer, and the standard form of the Homebridge UI keeps offering every name, since its schema cannot depend on the service.
+
+### Fixed
+
+- A characteristic that HomeKit names with a hyphen (`Current Heater-Cooler State`, `Target Heater-Cooler State`, `Current Humidifier-Dehumidifier State`, `Target Humidifier-Dehumidifier State`, `Wi-Fi ...`) could not be bound under the name without the hyphen, which is the name that the README and the 1.x conversion use (`CurrentHeaterCoolerState`): the device logged that the service had no such characteristic. Names are now matched by their letters and digits, so both spellings work, and `state.<name>` uses the spelling of the configuration. Checked with the HAP-NodeJS of Homebridge 1.8.5 and of Homebridge 2.4.0, which both had the problem.
+- HAP-NodeJS renamed a few services (`BatteryService` is now `Battery`, `Relay` is `CloudRelay`, `Slat` is `Slats`, `CameraEventRecordingManagement` is `CameraRecordingManagement`, `TunneledBTLEAccessoryService` is `Tunnel`). Homebridge 2.x has only the new names, so a device with `"service": "BatteryService"`, as in the README example and in what the 1.x conversion writes, was reported as having an unknown service and did not load. The old names are now understood on every Homebridge version, and the README uses the new ones.
+- `_bridge`, which Homebridge adds to the platform block of a child bridge, was reported as an unknown setting.
 
 ### Security
 
@@ -16,7 +24,7 @@
 
 ### Changed
 
-- The code that validates and builds a device from the settings is shared between the platform and the settings page (`src/prepare-device.js`), so the page reports what the plugin does. The behaviour of the plugin does not change.
+- The code that validates and builds a device from the settings is shared between the platform and the settings page (`src/prepare-device.js`), so the page reports what the plugin does.
 
 
 ## 2.3.1 - 2026-10-12

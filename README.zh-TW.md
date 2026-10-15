@@ -154,7 +154,7 @@ Homebridge 啟動時會驗證設定；有錯誤的裝置會在日誌中指出設
 }
 ```
 
-- `characteristic`：HomeKit 特性名稱（比對時忽略空白）。
+- `characteristic`：HomeKit 特性名稱，比對時只看字母與數字（所以 `On`、`CurrentTemperature` 與 `Current Temperature` 相同，`CurrentHeaterCoolerState` 與 `CurrentHeater-CoolerState` 也相同）。Homebridge UI 的表單以固定選單提供 HAP-NodeJS 的特性名稱；不在選單中的名稱仍可直接寫在 JSON 設定裡。管理頁的編輯器則只列出該裝置服務所擁有的特性。
 - `get`：讀取數值的動作；沒有時，特性不會輪詢，只回傳最後已知的值。
 - `set`：寫入數值的動作；沒有時，HomeKit 設定的值會被接受，但不會送出任何請求。
 - `props`：覆寫特性屬性，例如 `minValue`、`maxValue`、`minStep`、`validValues`。
