@@ -396,7 +396,7 @@ describe("the list of characteristic names in the form", () => {
 				expect(list.type).toBe("array");
 				expect(list.uniqueItems).toBe(true);
 				// The form turns an array of names from a list into checkboxes, unless the widget is named
-				expect(list["x-schema-form"]).toEqual({ type: "array" });
+				expect(list["x-schema-form"]).toEqual({ type: "array", listItems: 0 });
 				// Each row is a dropdown of the names
 				expect(list.items.type).toBe("string");
 				expect(Array.isArray(list.items.enum)).toBe(true);
@@ -508,6 +508,58 @@ describe("the list of services in the form", () => {
 		expect(validateDevice(device).errors).toEqual([]);
 		// The device reports it when it loads, as before
 		expect(buildSchema().schema.properties.devices.items.properties.service.enum).toContain("Switch");
+	});
+});
+
+describe("lists in the form", () => {
+	const { buildDefaultsFormSchema } = require("../src/schema.js");
+	const handlers = require("../src/ui-handlers.js");
+
+	const lists = (node, path = "", found = []) => {
+		if (!node || typeof node !== "object") return found;
+		if (node.type === "array" && node.items) found.push({ path, node });
+		for (const [key, value] of Object.entries(node)) if (key !== "enum") lists(value, `${path}/${key}`, found);
+		return found;
+	};
+
+	test("show no empty row for a list without entries: the form adds one row to every list by default", () => {
+		const schemas = {
+			platform: buildSchema().schema,
+			device: buildDeviceFormSchema().schema,
+			deviceOfService: handlers.deviceSchema({ device: { service: "Lightbulb" } }).schema,
+			defaults: buildDefaultsFormSchema().schema,
+		};
+		for (const [name, schema] of Object.entries(schemas)) {
+			const found = lists(schema);
+			expect(found.length).toBeGreaterThan(0);
+			const blank = found.filter(({ node }) => !(node["x-schema-form"] && node["x-schema-form"].listItems === 0));
+			expect({ name, blank: blank.map(({ path }) => path) }).toEqual({ name, blank: [] });
+		}
+	});
+
+	test("include the headers, the additional services and the devices that were seen as empty rows", () => {
+		const device = buildSchema().schema.properties.devices.items.properties;
+		expect(device.headers["x-schema-form"]).toEqual({ listItems: 0 });
+		expect(device.additionalServices["x-schema-form"]).toEqual({ listItems: 0 });
+		expect(device.characteristics["x-schema-form"]).toEqual({ listItems: 0 });
+		expect(buildSchema().schema.properties.devices["x-schema-form"]).toEqual({ listItems: 0 });
+	});
+
+	test("keep the settings that other parts of the schema put on a list", () => {
+		const options = buildSchema().schema.properties.devices.items.properties.optionCharacteristic;
+		expect(options["x-schema-form"]).toEqual({ type: "array", listItems: 0 });
+	});
+
+	test("do not change what the lists hold", () => {
+		const strip = (node) => JSON.parse(JSON.stringify(node, (key, value) => (key === "listItems" ? undefined : value)));
+		const withRows = strip(buildSchema().schema);
+		expect(JSON.stringify(withRows)).not.toContain('"listItems"');
+		// Only x-schema-form objects were touched, and they are the same shape as before for what was there
+		expect(buildSchema().schema.properties.defaults["x-schema-form"]).toEqual({
+			type: "fieldset",
+			expandable: true,
+			expanded: false,
+		});
 	});
 });
 
