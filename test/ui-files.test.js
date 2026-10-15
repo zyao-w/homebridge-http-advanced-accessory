@@ -71,6 +71,28 @@ describe("the files of the custom UI", () => {
 		expect(html).not.toMatch(/<(html|head|body)\b/i);
 	});
 
+	test("takes its colors from the page around it, so that it reads in a dark Homebridge UI too", () => {
+		const source = read("app.js");
+		const html = read("index.html");
+
+		// Bootstrap's muted text is a dark gray of its light theme; on a dark page it cannot be read
+		expect(source).not.toMatch(/\btext-(muted|secondary|body|dark|black|light)\b(?!.*text-bg)/);
+		expect(source).toMatch(/class="muted"/);
+		const rule = (selector) =>
+			html.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\s*{([^}]*)}`));
+		expect(rule("#app .muted")[1]).toMatch(/color:\s*inherit/);
+		expect(rule("#app .muted")[1]).toMatch(/opacity/);
+
+		// Tables, cards and list items would be a light box or black text on a dark page
+		expect(html).toMatch(/#app \.table > :not\(caption\) > \* > \*\s*{[^}]*color:\s*inherit/);
+		expect(html).toMatch(/#app \.card,\s*#app \.list-group-item\s*{[^}]*background-color:\s*transparent/);
+
+		// The one color that is not inherited belongs to the link of the footer
+		const footer = source.slice(source.indexOf("function renderFooter"), source.indexOf("function renderStatus"));
+		expect(footer).toContain('<a href="${REPOSITORY_URL}"');
+		expect(footer).not.toMatch(/<a [^>]*muted/);
+	});
+
 	test("nothing in the page sticks out of the frame, which the Homebridge UI sizes to the content", () => {
 		const source = read("app.js");
 		// The negative margins of a Bootstrap row, and of its columns' gutters, make a horizontal scrollbar; a scrollbar
