@@ -461,9 +461,11 @@ describe("deviceSchema", () => {
 	const own = (service) => [...SERVICES[service].required, ...SERVICES[service].optional].sort();
 
 	test("offers every name while there is no device or its service is not known", () => {
+		const { OPTIONAL_CHARACTERISTICS } = require("../src/schema.js");
 		for (const device of [undefined, {}, { service: "" }, { service: "SomethingNew" }, { service: "constructor" }]) {
 			expect(names(device)).toBe(CHARACTERISTICS);
-			expect(options(device).items.enum).toBe(CHARACTERISTICS);
+			// As optional, those that can be optional on some service
+			expect(options(device).items.enum).toBe(OPTIONAL_CHARACTERISTICS);
 		}
 		expect(handlers.deviceSchema().schema.properties.characteristics).toBeDefined();
 		expect(handlers.deviceSchema(null).schema.properties.characteristics).toBeDefined();

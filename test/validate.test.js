@@ -358,26 +358,60 @@ describe("validateDevice", () => {
 
 describe("the list of characteristic names in the form", () => {
 	const { CHARACTERISTICS } = require("../src/hap-names.js");
-	const collect = (node, found = { single: [], options: [] }) => {
+	const collect = (node, found = { single: [], options: [], optionLists: [] }) => {
 		if (!node || typeof node !== "object") return found;
 		if (node.properties && node.properties.characteristic) found.single.push(node.properties.characteristic);
-		if (node.properties && node.properties.optionCharacteristic)
+		if (node.properties && node.properties.optionCharacteristic) {
+			found.optionLists.push(node.properties.optionCharacteristic);
 			found.options.push(node.properties.optionCharacteristic.items);
+		}
 		Object.values(node).forEach((value) => collect(value, found));
 		return found;
 	};
 
 	test("is a fixed list wherever a characteristic is named, in the form of the plugin and of one device", () => {
+		const { OPTIONAL_CHARACTERISTICS } = require("../src/schema.js");
 		for (const schema of [buildSchema().schema, buildDeviceFormSchema().schema]) {
 			const { single, options } = collect(schema);
 			// The characteristics and the optional characteristics, of the device and of an additional service
 			expect(single).toHaveLength(2);
 			expect(options).toHaveLength(2);
-			for (const node of [...single, ...options]) {
+			for (const node of single) {
 				expect(node.enum).toBe(CHARACTERISTICS);
 				expect(node.type).toBe("string");
 			}
+			// Only what can be optional on some service is offered as optional
+			for (const node of options) {
+				expect(node.enum).toBe(OPTIONAL_CHARACTERISTICS);
+				expect(node.type).toBe("string");
+			}
 		}
+	});
+
+	test("shows the optional characteristics as rows with a dropdown, and not as one checkbox for each name", () => {
+		for (const schema of [buildSchema().schema, buildDeviceFormSchema().schema]) {
+			const { optionLists } = collect(schema);
+			expect(optionLists).toHaveLength(2);
+			for (const list of optionLists) {
+				expect(list.type).toBe("array");
+				expect(list.uniqueItems).toBe(true);
+				// The form turns an array of names from a list into checkboxes, unless the widget is named
+				expect(list["x-schema-form"]).toEqual({ type: "array" });
+				// Each row is a dropdown of the names
+				expect(list.items.type).toBe("string");
+				expect(Array.isArray(list.items.enum)).toBe(true);
+			}
+		}
+	});
+
+	test("offers as optional only what is optional on some service", () => {
+		const { SERVICES } = require("../src/hap-names.js");
+		const { OPTIONAL_CHARACTERISTICS } = require("../src/schema.js");
+		const optional = new Set(Object.values(SERVICES).flatMap((service) => service.optional));
+		expect(new Set(OPTIONAL_CHARACTERISTICS)).toEqual(optional);
+		expect(OPTIONAL_CHARACTERISTICS.length).toBeLessThan(CHARACTERISTICS.length);
+		expect(OPTIONAL_CHARACTERISTICS).toEqual(expect.arrayContaining(["Brightness", "BatteryLevel", "PM2.5Density"]));
+		expect(OPTIONAL_CHARACTERISTICS).not.toContain("On");
 	});
 
 	test("has each name once, in order, with nothing that the plugin could not match", () => {

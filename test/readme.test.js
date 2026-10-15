@@ -25,16 +25,21 @@ describe("README examples", () => {
 
 	test("every characteristic in the README examples is one that the form offers", () => {
 		const { CHARACTERISTICS } = require("../src/hap-names.js");
+		const { OPTIONAL_CHARACTERISTICS } = require("../src/schema.js");
 		const names = new Set();
+		const options = new Set();
 		for (const device of blocks.flatMap(devicesOf)) {
 			const services = [device, ...(device.additionalServices || [])];
 			for (const service of services) {
 				(service.characteristics || []).forEach((entry) => names.add(entry.characteristic));
-				(service.optionCharacteristic || []).forEach((name) => names.add(name));
+				(service.optionCharacteristic || []).forEach((name) => options.add(name));
 			}
 		}
 		expect(names.size).toBeGreaterThan(5);
-		expect([...names].filter((name) => !CHARACTERISTICS.includes(name))).toEqual([]);
+		expect(options.size).toBeGreaterThan(0);
+		expect([...names, ...options].filter((name) => !CHARACTERISTICS.includes(name))).toEqual([]);
+		// An optional characteristic is chosen among those that can be optional
+		expect([...options].filter((name) => !OPTIONAL_CHARACTERISTICS.includes(name))).toEqual([]);
 	});
 
 	test("every service in the README examples is one that the form offers", () => {

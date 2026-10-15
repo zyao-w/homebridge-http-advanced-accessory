@@ -15,6 +15,10 @@ const bool = (title, extra = {}) => ({ title, type: "boolean", ...extra });
 // that a list lacks still works when it is written in the JSON config. The form of the plugin offers every name; the
 // custom UI passes a shorter list of characteristics, for the service of the device that it edits.
 const SERVICE_NAMES = Object.keys(SERVICES).sort((a, b) => a.localeCompare(b, "en"));
+// What can be listed as an optional characteristic of some service; the others are always there or not offered at all
+const OPTIONAL_CHARACTERISTICS = [...new Set(Object.values(SERVICES).flatMap((service) => service.optional))].sort(
+	(a, b) => a.localeCompare(b, "en")
+);
 const characteristicName = (title, extra = {}, names = CHARACTERISTICS) => ({
 	title,
 	type: "string",
@@ -24,16 +28,20 @@ const characteristicName = (title, extra = {}, names = CHARACTERISTICS) => ({
 const serviceName = (title, extra = {}) => ({ title, type: "string", enum: SERVICE_NAMES, ...extra });
 
 /**
- * The list of the optional characteristics to expose. A service that has none gets a list that cannot be added to,
- * because a form cannot offer a choice among nothing.
+ * The list of the optional characteristics to expose, as rows with a dropdown each and a button that adds a row, so
+ * that only the ones that were chosen take room. The form would show an array of names from a list as a group of
+ * checkboxes, one for each name on offer, unless the array is said to be an array; it has no dropdown for several
+ * choices. A service that has no optional characteristics gets a list that cannot be added to, because a form cannot
+ * offer a choice among nothing.
  */
-function optionCharacteristics(description, names) {
-	const none = Array.isArray(names) && names.length === 0;
+function optionCharacteristics(description, names = OPTIONAL_CHARACTERISTICS) {
+	const none = names.length === 0;
 	return {
 		title: "Optional characteristics",
 		type: "array",
 		description: none ? "This service has no optional characteristics." : description,
-		...(none ? { maxItems: 0 } : {}),
+		uniqueItems: true,
+		...(none ? { maxItems: 0 } : { "x-schema-form": { type: "array" } }),
 		items: none ? { title: "Characteristic", type: "string" } : characteristicName("Characteristic", {}, names),
 	};
 }
@@ -378,4 +386,11 @@ function buildSchema() {
 	};
 }
 
-module.exports = { buildSchema, buildDeviceFormSchema, buildDefaultsFormSchema, HTTP_METHODS, SERVICE_NAMES };
+module.exports = {
+	buildSchema,
+	buildDeviceFormSchema,
+	buildDefaultsFormSchema,
+	HTTP_METHODS,
+	SERVICE_NAMES,
+	OPTIONAL_CHARACTERISTICS,
+};
