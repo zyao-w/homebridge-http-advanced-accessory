@@ -346,6 +346,20 @@ function device(scopes, lists = {}) {
 }
 
 /**
+ * The form shows one empty row for every list that has no entries, because that is how many rows it adds to a list
+ * with no value (`listItems`, 1 by default). That is an empty header, an empty service and so on, for every list that
+ * was never used. With 0 a list shows only its add button.
+ */
+function withoutBlankRows(node) {
+	if (!node || typeof node !== "object") return node;
+	if (node.type === "array" && node.items && node.maxItems !== 0) {
+		node["x-schema-form"] = { ...node["x-schema-form"], listItems: 0 };
+	}
+	for (const value of Object.values(node)) withoutBlankRows(value);
+	return node;
+}
+
+/**
  * The form of one device, for the custom UI to edit a device on its own. It describes the same settings as the
  * `devices` of the platform form; only the paths in the conditions differ, since the device is the whole model.
  *
@@ -354,7 +368,11 @@ function device(scopes, lists = {}) {
  *   services. Without them every name is offered.
  */
 function buildDeviceFormSchema(lists) {
-	return { schema: { ...device(DEVICE_SCOPES, lists), title: "Device" }, layout: null, form: null };
+	return {
+		schema: withoutBlankRows({ ...device(DEVICE_SCOPES, lists), title: "Device" }),
+		layout: null,
+		form: null,
+	};
 }
 
 /**
@@ -362,7 +380,7 @@ function buildDeviceFormSchema(lists) {
  * `defaults` of the platform form, but open from the start.
  */
 function buildDefaultsFormSchema() {
-	return { schema: { ...object(settings()), title: "Defaults" }, layout: null, form: null };
+	return { schema: withoutBlankRows({ ...object(settings()), title: "Defaults" }), layout: null, form: null };
 }
 
 /** The config.schema.json of the HttpAdvancedPlatform. */
@@ -375,14 +393,14 @@ function buildSchema() {
 		customUi: true,
 		headerDisplay:
 			"Turns devices that expose an HTTP API into HomeKit accessories. Settings under *Defaults* apply to every device unless the device sets its own.",
-		schema: {
+		schema: withoutBlankRows({
 			type: "object",
 			properties: {
 				name: text("Name", { placeholder: "HTTP Advanced" }),
 				defaults: { ...object(settings()), title: "Defaults", ...collapsed },
 				devices: { title: "Devices", type: "array", items: { ...device(PLATFORM_SCOPES), title: "Device" } },
 			},
-		},
+		}),
 	};
 }
 
