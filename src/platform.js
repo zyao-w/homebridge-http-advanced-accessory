@@ -1,7 +1,7 @@
 const DeviceController = require("./device.js");
-const { normalizeDevice } = require("./device-config.js");
+const { prepareDevice } = require("./prepare-device.js");
 const { PLUGIN_NAME, PLATFORM_NAME } = require("./constants.js");
-const { validateDevice, validatePlatform } = require("./validate.js");
+const { validatePlatform } = require("./validate.js");
 
 /** Dynamic platform: one accessory per entry of `devices`, restored from the Homebridge cache. */
 class HttpAdvancedPlatform {
@@ -84,24 +84,16 @@ class HttpAdvancedPlatform {
 			return null;
 		}
 
-		const merged = { ...defaults, ...raw };
-		// A device adds to the headers of the defaults instead of replacing them; a wrong type is left for the validation
-		if (Array.isArray(defaults.headers) && Array.isArray(raw.headers)) {
-			merged.headers = [...defaults.headers, ...raw.headers];
-		}
-		const { device: coerced, errors } = validateDevice(merged);
-		if (errors.length) {
-			for (const error of errors) this.log.error(`${label}: ${error}`);
+		const prepared = prepareDevice(raw, defaults, { warn: (message) => this.log("WARNING: " + message) });
+		if (prepared.validationErrors.length) {
+			for (const error of prepared.validationErrors) this.log.error(`${label}: ${error}`);
 			return null;
 		}
-
-		let device;
-		try {
-			device = normalizeDevice(coerced, {}, { warn: (message) => this.log("WARNING: " + message) });
-		} catch (error) {
-			this.log.error(error.message);
+		if (prepared.error) {
+			this.log.error(prepared.error.message);
 			return null;
 		}
+		const device = prepared.device;
 
 		const uuid = this._uuid(device);
 		if (loaded.has(uuid)) {

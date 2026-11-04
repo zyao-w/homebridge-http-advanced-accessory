@@ -2,6 +2,7 @@
   "pluginAlias": "HttpAdvancedPlatform",
   "pluginType": "platform",
   "singular": true,
+  "customUi": true,
   "headerDisplay": "Turns devices that expose an HTTP API into HomeKit accessories. Settings under *Defaults* apply to every device unless the device sets its own.",
   "schema": {
     "type": "object",
@@ -39,6 +40,9 @@
               },
               "additionalProperties": false,
               "title": "Header"
+            },
+            "x-schema-form": {
+              "listItems": 0
             }
           },
           "manufacturer": {
@@ -166,7 +170,79 @@
             "service": {
               "title": "Service",
               "type": "string",
-              "placeholder": "Switch",
+              "enum": [
+                "AccessCode",
+                "AccessControl",
+                "AccessoryMetrics",
+                "AccessoryRuntimeInformation",
+                "AirPurifier",
+                "AirQualitySensor",
+                "AssetUpdate",
+                "Assistant",
+                "AudioStreamManagement",
+                "Battery",
+                "CameraOperatingMode",
+                "CameraRecordingManagement",
+                "CameraRTPStreamManagement",
+                "CarbonDioxideSensor",
+                "CarbonMonoxideSensor",
+                "CloudRelay",
+                "ContactSensor",
+                "DataStreamTransportManagement",
+                "Diagnostics",
+                "Door",
+                "Doorbell",
+                "Fan",
+                "Fanv2",
+                "Faucet",
+                "FilterMaintenance",
+                "FirmwareUpdate",
+                "GarageDoorOpener",
+                "HeaterCooler",
+                "HumidifierDehumidifier",
+                "HumiditySensor",
+                "InputSource",
+                "IrrigationSystem",
+                "LeakSensor",
+                "Lightbulb",
+                "LightSensor",
+                "LockManagement",
+                "LockMechanism",
+                "Microphone",
+                "MotionSensor",
+                "NFCAccess",
+                "OccupancySensor",
+                "Outlet",
+                "Pairing",
+                "PowerManagement",
+                "ProtocolInformation",
+                "SecuritySystem",
+                "ServiceLabel",
+                "Siri",
+                "SiriEndpoint",
+                "Slats",
+                "SmartSpeaker",
+                "SmokeSensor",
+                "StatefulProgrammableSwitch",
+                "StatelessProgrammableSwitch",
+                "Switch",
+                "TapManagement",
+                "TargetControl",
+                "TargetControlManagement",
+                "Television",
+                "TelevisionSpeaker",
+                "TemperatureSensor",
+                "Thermostat",
+                "ThreadTransport",
+                "TransferTransportManagement",
+                "Tunnel",
+                "Valve",
+                "WiFiRouter",
+                "WiFiSatellite",
+                "WiFiTransport",
+                "Window",
+                "WindowCovering"
+              ],
               "description": "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor."
             },
             "characteristics": {
@@ -178,8 +254,273 @@
                   "characteristic": {
                     "title": "Characteristic",
                     "type": "string",
-                    "placeholder": "On",
-                    "description": "Characteristic name, for example On or Brightness."
+                    "enum": [
+                      "AccessCodeControlPoint",
+                      "AccessCodeSupportedConfiguration",
+                      "AccessControlLevel",
+                      "AccessoryFlags",
+                      "AccessoryIdentifier",
+                      "Active",
+                      "ActiveIdentifier",
+                      "ActivityInterval",
+                      "AdministratorOnlyAccess",
+                      "AirParticulateDensity",
+                      "AirParticulateSize",
+                      "AirPlayEnable",
+                      "AirQuality",
+                      "AppMatchingIdentifier",
+                      "AssetUpdateReadiness",
+                      "AudioFeedback",
+                      "BatteryLevel",
+                      "Brightness",
+                      "ButtonEvent",
+                      "CameraOperatingModeIndicator",
+                      "CarbonDioxideDetected",
+                      "CarbonDioxideLevel",
+                      "CarbonDioxidePeakLevel",
+                      "CarbonMonoxideDetected",
+                      "CarbonMonoxideLevel",
+                      "CarbonMonoxidePeakLevel",
+                      "Category",
+                      "CCAEnergyDetectThreshold",
+                      "CCASignalDetectThreshold",
+                      "CharacteristicValueActiveTransitionCount",
+                      "CharacteristicValueTransitionControl",
+                      "ChargingState",
+                      "ClosedCaptions",
+                      "ColorTemperature",
+                      "ConfigurationState",
+                      "ConfigureBridgedAccessory",
+                      "ConfigureBridgedAccessoryStatus",
+                      "ConfiguredName",
+                      "ConnectionHealthMonitor",
+                      "ContactSensorState",
+                      "CoolingThresholdTemperature",
+                      "CryptoHash",
+                      "CurrentAirPurifierState",
+                      "CurrentAmbientLightLevel",
+                      "CurrentDoorState",
+                      "CurrentFanState",
+                      "CurrentHeaterCoolerState",
+                      "CurrentHeatingCoolingState",
+                      "CurrentHorizontalTiltAngle",
+                      "CurrentHumidifierDehumidifierState",
+                      "CurrentMediaState",
+                      "CurrentPosition",
+                      "CurrentRelativeHumidity",
+                      "CurrentSlatState",
+                      "CurrentTemperature",
+                      "CurrentTiltAngle",
+                      "CurrentTime",
+                      "CurrentTransport",
+                      "CurrentVerticalTiltAngle",
+                      "CurrentVisibilityState",
+                      "DataStreamHAPTransport",
+                      "DataStreamHAPTransportInterrupt",
+                      "DayoftheWeek",
+                      "DiagonalFieldOfView",
+                      "DigitalZoom",
+                      "DiscoverBridgedAccessories",
+                      "DiscoveredBridgedAccessories",
+                      "DisplayOrder",
+                      "EventRetransmissionMaximum",
+                      "EventSnapshotsActive",
+                      "EventTransmissionCounters",
+                      "FilterChangeIndication",
+                      "FilterLifeLevel",
+                      "FirmwareRevision",
+                      "FirmwareUpdateProtocolList",
+                      "FirmwareUpdateReadiness",
+                      "FirmwareUpdateStatus",
+                      "HardwareFinish",
+                      "HardwareRevision",
+                      "HeartBeat",
+                      "HeatingThresholdTemperature",
+                      "HoldPosition",
+                      "HomeKitCameraActive",
+                      "Hue",
+                      "Identifier",
+                      "Identify",
+                      "ImageMirroring",
+                      "ImageRotation",
+                      "InputDeviceType",
+                      "InputSourceType",
+                      "InUse",
+                      "IsConfigured",
+                      "LeakDetected",
+                      "LinkQuality",
+                      "ListPairings",
+                      "LockControlPoint",
+                      "LockCurrentState",
+                      "LockLastKnownAction",
+                      "LockManagementAutoSecurityTimeout",
+                      "LockPhysicalControls",
+                      "LockTargetState",
+                      "Logs",
+                      "MACRetransmissionMaximum",
+                      "MACTransmissionCounters",
+                      "ManagedNetworkEnable",
+                      "ManuallyDisabled",
+                      "Manufacturer",
+                      "MatterFirmwareRevisionNumber",
+                      "MatterFirmwareUpdateStatus",
+                      "MaximumTransmitPower",
+                      "MediaAccessControlLevel",
+                      "MetricsBufferFullState",
+                      "Model",
+                      "MotionDetected",
+                      "MultifunctionButton",
+                      "Mute",
+                      "Name",
+                      "NetworkAccessViolationControl",
+                      "NetworkClientProfileControl",
+                      "NetworkClientStatusControl",
+                      "NFCAccessControlPoint",
+                      "NFCAccessSupportedConfiguration",
+                      "NightVision",
+                      "NitrogenDioxideDensity",
+                      "ObstructionDetected",
+                      "OccupancyDetected",
+                      "On",
+                      "OperatingStateResponse",
+                      "OpticalZoom",
+                      "OutletInUse",
+                      "OzoneDensity",
+                      "PairingFeatures",
+                      "PairSetup",
+                      "PairVerify",
+                      "PasswordSetting",
+                      "PeriodicSnapshotsActive",
+                      "PictureMode",
+                      "Ping",
+                      "PM10Density",
+                      "PM2.5Density",
+                      "PositionState",
+                      "PowerModeSelection",
+                      "PreferredWiFiList",
+                      "ProductData",
+                      "ProgrammableSwitchEvent",
+                      "ProgrammableSwitchOutputState",
+                      "ProgramMode",
+                      "Reachable",
+                      "ReceivedSignalStrengthIndication",
+                      "ReceiverSensitivity",
+                      "RecordingAudioActive",
+                      "RelativeHumidityDehumidifierThreshold",
+                      "RelativeHumidityHumidifierThreshold",
+                      "RelayControlPoint",
+                      "RelayEnabled",
+                      "RelayState",
+                      "RemainingDuration",
+                      "RemoteKey",
+                      "ResetFilterIndication",
+                      "RotationDirection",
+                      "RotationSpeed",
+                      "RouterStatus",
+                      "Saturation",
+                      "SecuritySystemAlarmType",
+                      "SecuritySystemCurrentState",
+                      "SecuritySystemTargetState",
+                      "SelectedAudioStreamConfiguration",
+                      "SelectedCameraRecordingConfiguration",
+                      "SelectedDiagnosticsModes",
+                      "SelectedRTPStreamConfiguration",
+                      "SelectedSessionKeepaliveConfigurationList",
+                      "SelectedSleepConfiguration",
+                      "SerialNumber",
+                      "ServiceLabelIndex",
+                      "ServiceLabelNamespace",
+                      "SetDuration",
+                      "SetupDataStreamTransport",
+                      "SetupEndpoints",
+                      "SetupTransferTransport",
+                      "SignalToNoiseRatio",
+                      "SiriEnable",
+                      "SiriEndpointSessionStatus",
+                      "SiriEngineVersion",
+                      "SiriInputType",
+                      "SiriLightOnUse",
+                      "SiriListening",
+                      "SiriTouchToUse",
+                      "SlatType",
+                      "SleepDiscoveryMode",
+                      "SleepInterval",
+                      "SmokeDetected",
+                      "SoftwareRevision",
+                      "StagedFirmwareVersion",
+                      "StatusActive",
+                      "StatusFault",
+                      "StatusJammed",
+                      "StatusLowBattery",
+                      "StatusTampered",
+                      "StreamingStatus",
+                      "SulphurDioxideDensity",
+                      "SupportedAssetTypes",
+                      "SupportedAudioRecordingConfiguration",
+                      "SupportedAudioStreamConfiguration",
+                      "SupportedCameraRecordingConfiguration",
+                      "SupportedCharacteristicValueTransitionConfiguration",
+                      "SupportedDataStreamTransportConfiguration",
+                      "SupportedDiagnosticsModes",
+                      "SupportedDiagnosticsSnapshot",
+                      "SupportedFirmwareUpdateConfiguration",
+                      "SupportedMetrics",
+                      "SupportedRouterConfiguration",
+                      "SupportedRTPConfiguration",
+                      "SupportedSessionKeepaliveConfigurationList",
+                      "SupportedSleepConfiguration",
+                      "SupportedTransferTransportConfiguration",
+                      "SupportedVideoRecordingConfiguration",
+                      "SupportedVideoStreamConfiguration",
+                      "SwingMode",
+                      "TapType",
+                      "TargetAirPurifierState",
+                      "TargetAirQuality",
+                      "TargetControlList",
+                      "TargetControlSupportedConfiguration",
+                      "TargetDoorState",
+                      "TargetFanState",
+                      "TargetHeaterCoolerState",
+                      "TargetHeatingCoolingState",
+                      "TargetHorizontalTiltAngle",
+                      "TargetHumidifierDehumidifierState",
+                      "TargetMediaState",
+                      "TargetPosition",
+                      "TargetRelativeHumidity",
+                      "TargetSlatState",
+                      "TargetTemperature",
+                      "TargetTiltAngle",
+                      "TargetVerticalTiltAngle",
+                      "TargetVisibilityState",
+                      "TemperatureDisplayUnits",
+                      "ThirdPartyCameraActive",
+                      "ThreadControlPoint",
+                      "ThreadNodeCapabilities",
+                      "ThreadOpenThreadVersion",
+                      "ThreadStatus",
+                      "TimeUpdate",
+                      "Token",
+                      "TransmitPower",
+                      "TunnelConnectionTimeout",
+                      "TunneledAccessoryAdvertising",
+                      "TunneledAccessoryConnected",
+                      "TunneledAccessoryStateNumber",
+                      "ValveType",
+                      "Version",
+                      "VideoAnalysisActive",
+                      "VOCDensity",
+                      "Volume",
+                      "VolumeControlType",
+                      "VolumeSelector",
+                      "WakeConfiguration",
+                      "WANConfigurationList",
+                      "WANStatusList",
+                      "WaterLevel",
+                      "WiFiCapabilities",
+                      "WiFiConfigurationControl",
+                      "WiFiSatelliteStatus"
+                    ],
+                    "description": "The characteristic to read or set, for example On or Brightness."
                   },
                   "get": {
                     "type": "object",
@@ -247,6 +588,9 @@
                           },
                           "additionalProperties": false,
                           "title": "Header"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "mappers": {
@@ -373,6 +717,9 @@
                               },
                               "condition": {
                                 "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "inputMin": {
@@ -447,6 +794,9 @@
                           },
                           "additionalProperties": false,
                           "title": "Mapper"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "inconclusive": {
@@ -515,6 +865,9 @@
                               },
                               "additionalProperties": false,
                               "title": "Header"
+                            },
+                            "x-schema-form": {
+                              "listItems": 0
                             }
                           },
                           "mappers": {
@@ -641,6 +994,9 @@
                                   },
                                   "condition": {
                                     "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.get?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                                  },
+                                  "x-schema-form": {
+                                    "listItems": 0
                                   }
                                 },
                                 "inputMin": {
@@ -715,6 +1071,9 @@
                               },
                               "additionalProperties": false,
                               "title": "Mapper"
+                            },
+                            "x-schema-form": {
+                              "listItems": 0
                             }
                           }
                         },
@@ -800,6 +1159,9 @@
                           },
                           "additionalProperties": false,
                           "title": "Header"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "mappers": {
@@ -926,6 +1288,9 @@
                               },
                               "condition": {
                                 "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "inputMin": {
@@ -1000,6 +1365,9 @@
                           },
                           "additionalProperties": false,
                           "title": "Mapper"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "inconclusive": {
@@ -1068,6 +1436,9 @@
                               },
                               "additionalProperties": false,
                               "title": "Header"
+                            },
+                            "x-schema-form": {
+                              "listItems": 0
                             }
                           },
                           "mappers": {
@@ -1194,6 +1565,9 @@
                                   },
                                   "condition": {
                                     "functionBody": "const m = model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]?.set?.inconclusive?.mappers?.[arrayIndices[2]]; return [\"static\"].includes(m?.type);"
+                                  },
+                                  "x-schema-form": {
+                                    "listItems": 0
                                   }
                                 },
                                 "inputMin": {
@@ -1268,6 +1642,9 @@
                               },
                               "additionalProperties": false,
                               "title": "Mapper"
+                            },
+                            "x-schema-form": {
+                              "listItems": 0
                             }
                           }
                         },
@@ -1403,6 +1780,9 @@
                         "items": {
                           "title": "Value",
                           "type": "number"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "validValueRanges": {
@@ -1411,6 +1791,9 @@
                         "items": {
                           "title": "Bound",
                           "type": "number"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "perms": {
@@ -1419,6 +1802,9 @@
                         "items": {
                           "title": "Permission",
                           "type": "string"
+                        },
+                        "x-schema-form": {
+                          "listItems": 0
                         }
                       },
                       "maxLen": {
@@ -1438,15 +1824,148 @@
                 },
                 "additionalProperties": false,
                 "title": "Characteristic"
+              },
+              "x-schema-form": {
+                "listItems": 0
               }
             },
             "optionCharacteristic": {
               "title": "Optional characteristics",
               "type": "array",
               "description": "Optional characteristics of the service to expose, for example Brightness.",
+              "uniqueItems": true,
+              "x-schema-form": {
+                "type": "array",
+                "listItems": 0
+              },
               "items": {
                 "title": "Characteristic",
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "Active",
+                  "ActiveIdentifier",
+                  "ActivityInterval",
+                  "AdministratorOnlyAccess",
+                  "AirPlayEnable",
+                  "AudioFeedback",
+                  "BatteryLevel",
+                  "Brightness",
+                  "CameraOperatingModeIndicator",
+                  "CarbonDioxideLevel",
+                  "CarbonDioxidePeakLevel",
+                  "CarbonMonoxideLevel",
+                  "CarbonMonoxidePeakLevel",
+                  "CCAEnergyDetectThreshold",
+                  "CCASignalDetectThreshold",
+                  "CharacteristicValueActiveTransitionCount",
+                  "CharacteristicValueTransitionControl",
+                  "ChargingState",
+                  "ClosedCaptions",
+                  "ColorTemperature",
+                  "ConfiguredName",
+                  "ConnectionHealthMonitor",
+                  "CoolingThresholdTemperature",
+                  "CurrentDoorState",
+                  "CurrentFanState",
+                  "CurrentHorizontalTiltAngle",
+                  "CurrentMediaState",
+                  "CurrentRelativeHumidity",
+                  "CurrentTiltAngle",
+                  "CurrentVerticalTiltAngle",
+                  "DiagonalFieldOfView",
+                  "DisplayOrder",
+                  "EventRetransmissionMaximum",
+                  "EventTransmissionCounters",
+                  "FilterLifeLevel",
+                  "FirmwareUpdateProtocolList",
+                  "HeartBeat",
+                  "HeatingThresholdTemperature",
+                  "HoldPosition",
+                  "Hue",
+                  "Identifier",
+                  "InputDeviceType",
+                  "IsConfigured",
+                  "LockCurrentState",
+                  "LockLastKnownAction",
+                  "LockManagementAutoSecurityTimeout",
+                  "LockPhysicalControls",
+                  "LockTargetState",
+                  "Logs",
+                  "MACRetransmissionMaximum",
+                  "MACTransmissionCounters",
+                  "ManuallyDisabled",
+                  "MatterFirmwareUpdateStatus",
+                  "MaximumTransmitPower",
+                  "MediaAccessControlLevel",
+                  "MotionDetected",
+                  "MultifunctionButton",
+                  "Mute",
+                  "NightVision",
+                  "NitrogenDioxideDensity",
+                  "ObstructionDetected",
+                  "OperatingStateResponse",
+                  "OutletInUse",
+                  "OzoneDensity",
+                  "PasswordSetting",
+                  "PeriodicSnapshotsActive",
+                  "PictureMode",
+                  "PM10Density",
+                  "PM2.5Density",
+                  "PowerModeSelection",
+                  "PreferredWiFiList",
+                  "ReceivedSignalStrengthIndication",
+                  "ReceiverSensitivity",
+                  "RecordingAudioActive",
+                  "RelativeHumidityDehumidifierThreshold",
+                  "RelativeHumidityHumidifierThreshold",
+                  "RemainingDuration",
+                  "ResetFilterIndication",
+                  "RotationDirection",
+                  "RotationSpeed",
+                  "Saturation",
+                  "SecuritySystemAlarmType",
+                  "SelectedDiagnosticsModes",
+                  "SelectedSessionKeepaliveConfigurationList",
+                  "SelectedSleepConfiguration",
+                  "ServiceLabelIndex",
+                  "SetDuration",
+                  "SignalToNoiseRatio",
+                  "SiriEnable",
+                  "SiriEngineVersion",
+                  "SiriLightOnUse",
+                  "SiriListening",
+                  "SiriTouchToUse",
+                  "SleepInterval",
+                  "StagedFirmwareVersion",
+                  "StatusActive",
+                  "StatusFault",
+                  "StatusLowBattery",
+                  "StatusTampered",
+                  "SulphurDioxideDensity",
+                  "SupportedCharacteristicValueTransitionConfiguration",
+                  "SupportedDiagnosticsModes",
+                  "SupportedFirmwareUpdateConfiguration",
+                  "SupportedSessionKeepaliveConfigurationList",
+                  "SupportedSleepConfiguration",
+                  "SwingMode",
+                  "TargetFanState",
+                  "TargetHorizontalTiltAngle",
+                  "TargetMediaState",
+                  "TargetRelativeHumidity",
+                  "TargetTiltAngle",
+                  "TargetVerticalTiltAngle",
+                  "TargetVisibilityState",
+                  "TemperatureDisplayUnits",
+                  "ThirdPartyCameraActive",
+                  "ThreadOpenThreadVersion",
+                  "TransmitPower",
+                  "VOCDensity",
+                  "Volume",
+                  "VolumeControlType",
+                  "VolumeSelector",
+                  "WaterLevel",
+                  "WiFiConfigurationControl"
+                ]
               }
             },
             "additionalServices": {
@@ -1469,8 +1988,80 @@
                   "service": {
                     "title": "Service",
                     "type": "string",
-                    "placeholder": "HumiditySensor",
-                    "description": "HomeKit service type, for example HumiditySensor or BatteryService."
+                    "enum": [
+                      "AccessCode",
+                      "AccessControl",
+                      "AccessoryMetrics",
+                      "AccessoryRuntimeInformation",
+                      "AirPurifier",
+                      "AirQualitySensor",
+                      "AssetUpdate",
+                      "Assistant",
+                      "AudioStreamManagement",
+                      "Battery",
+                      "CameraOperatingMode",
+                      "CameraRecordingManagement",
+                      "CameraRTPStreamManagement",
+                      "CarbonDioxideSensor",
+                      "CarbonMonoxideSensor",
+                      "CloudRelay",
+                      "ContactSensor",
+                      "DataStreamTransportManagement",
+                      "Diagnostics",
+                      "Door",
+                      "Doorbell",
+                      "Fan",
+                      "Fanv2",
+                      "Faucet",
+                      "FilterMaintenance",
+                      "FirmwareUpdate",
+                      "GarageDoorOpener",
+                      "HeaterCooler",
+                      "HumidifierDehumidifier",
+                      "HumiditySensor",
+                      "InputSource",
+                      "IrrigationSystem",
+                      "LeakSensor",
+                      "Lightbulb",
+                      "LightSensor",
+                      "LockManagement",
+                      "LockMechanism",
+                      "Microphone",
+                      "MotionSensor",
+                      "NFCAccess",
+                      "OccupancySensor",
+                      "Outlet",
+                      "Pairing",
+                      "PowerManagement",
+                      "ProtocolInformation",
+                      "SecuritySystem",
+                      "ServiceLabel",
+                      "Siri",
+                      "SiriEndpoint",
+                      "Slats",
+                      "SmartSpeaker",
+                      "SmokeSensor",
+                      "StatefulProgrammableSwitch",
+                      "StatelessProgrammableSwitch",
+                      "Switch",
+                      "TapManagement",
+                      "TargetControl",
+                      "TargetControlManagement",
+                      "Television",
+                      "TelevisionSpeaker",
+                      "TemperatureSensor",
+                      "Thermostat",
+                      "ThreadTransport",
+                      "TransferTransportManagement",
+                      "Tunnel",
+                      "Valve",
+                      "WiFiRouter",
+                      "WiFiSatellite",
+                      "WiFiTransport",
+                      "Window",
+                      "WindowCovering"
+                    ],
+                    "description": "HomeKit service type, for example HumiditySensor or Battery."
                   },
                   "characteristics": {
                     "title": "Characteristics",
@@ -1481,8 +2072,273 @@
                         "characteristic": {
                           "title": "Characteristic",
                           "type": "string",
-                          "placeholder": "On",
-                          "description": "Characteristic name, for example On or Brightness."
+                          "enum": [
+                            "AccessCodeControlPoint",
+                            "AccessCodeSupportedConfiguration",
+                            "AccessControlLevel",
+                            "AccessoryFlags",
+                            "AccessoryIdentifier",
+                            "Active",
+                            "ActiveIdentifier",
+                            "ActivityInterval",
+                            "AdministratorOnlyAccess",
+                            "AirParticulateDensity",
+                            "AirParticulateSize",
+                            "AirPlayEnable",
+                            "AirQuality",
+                            "AppMatchingIdentifier",
+                            "AssetUpdateReadiness",
+                            "AudioFeedback",
+                            "BatteryLevel",
+                            "Brightness",
+                            "ButtonEvent",
+                            "CameraOperatingModeIndicator",
+                            "CarbonDioxideDetected",
+                            "CarbonDioxideLevel",
+                            "CarbonDioxidePeakLevel",
+                            "CarbonMonoxideDetected",
+                            "CarbonMonoxideLevel",
+                            "CarbonMonoxidePeakLevel",
+                            "Category",
+                            "CCAEnergyDetectThreshold",
+                            "CCASignalDetectThreshold",
+                            "CharacteristicValueActiveTransitionCount",
+                            "CharacteristicValueTransitionControl",
+                            "ChargingState",
+                            "ClosedCaptions",
+                            "ColorTemperature",
+                            "ConfigurationState",
+                            "ConfigureBridgedAccessory",
+                            "ConfigureBridgedAccessoryStatus",
+                            "ConfiguredName",
+                            "ConnectionHealthMonitor",
+                            "ContactSensorState",
+                            "CoolingThresholdTemperature",
+                            "CryptoHash",
+                            "CurrentAirPurifierState",
+                            "CurrentAmbientLightLevel",
+                            "CurrentDoorState",
+                            "CurrentFanState",
+                            "CurrentHeaterCoolerState",
+                            "CurrentHeatingCoolingState",
+                            "CurrentHorizontalTiltAngle",
+                            "CurrentHumidifierDehumidifierState",
+                            "CurrentMediaState",
+                            "CurrentPosition",
+                            "CurrentRelativeHumidity",
+                            "CurrentSlatState",
+                            "CurrentTemperature",
+                            "CurrentTiltAngle",
+                            "CurrentTime",
+                            "CurrentTransport",
+                            "CurrentVerticalTiltAngle",
+                            "CurrentVisibilityState",
+                            "DataStreamHAPTransport",
+                            "DataStreamHAPTransportInterrupt",
+                            "DayoftheWeek",
+                            "DiagonalFieldOfView",
+                            "DigitalZoom",
+                            "DiscoverBridgedAccessories",
+                            "DiscoveredBridgedAccessories",
+                            "DisplayOrder",
+                            "EventRetransmissionMaximum",
+                            "EventSnapshotsActive",
+                            "EventTransmissionCounters",
+                            "FilterChangeIndication",
+                            "FilterLifeLevel",
+                            "FirmwareRevision",
+                            "FirmwareUpdateProtocolList",
+                            "FirmwareUpdateReadiness",
+                            "FirmwareUpdateStatus",
+                            "HardwareFinish",
+                            "HardwareRevision",
+                            "HeartBeat",
+                            "HeatingThresholdTemperature",
+                            "HoldPosition",
+                            "HomeKitCameraActive",
+                            "Hue",
+                            "Identifier",
+                            "Identify",
+                            "ImageMirroring",
+                            "ImageRotation",
+                            "InputDeviceType",
+                            "InputSourceType",
+                            "InUse",
+                            "IsConfigured",
+                            "LeakDetected",
+                            "LinkQuality",
+                            "ListPairings",
+                            "LockControlPoint",
+                            "LockCurrentState",
+                            "LockLastKnownAction",
+                            "LockManagementAutoSecurityTimeout",
+                            "LockPhysicalControls",
+                            "LockTargetState",
+                            "Logs",
+                            "MACRetransmissionMaximum",
+                            "MACTransmissionCounters",
+                            "ManagedNetworkEnable",
+                            "ManuallyDisabled",
+                            "Manufacturer",
+                            "MatterFirmwareRevisionNumber",
+                            "MatterFirmwareUpdateStatus",
+                            "MaximumTransmitPower",
+                            "MediaAccessControlLevel",
+                            "MetricsBufferFullState",
+                            "Model",
+                            "MotionDetected",
+                            "MultifunctionButton",
+                            "Mute",
+                            "Name",
+                            "NetworkAccessViolationControl",
+                            "NetworkClientProfileControl",
+                            "NetworkClientStatusControl",
+                            "NFCAccessControlPoint",
+                            "NFCAccessSupportedConfiguration",
+                            "NightVision",
+                            "NitrogenDioxideDensity",
+                            "ObstructionDetected",
+                            "OccupancyDetected",
+                            "On",
+                            "OperatingStateResponse",
+                            "OpticalZoom",
+                            "OutletInUse",
+                            "OzoneDensity",
+                            "PairingFeatures",
+                            "PairSetup",
+                            "PairVerify",
+                            "PasswordSetting",
+                            "PeriodicSnapshotsActive",
+                            "PictureMode",
+                            "Ping",
+                            "PM10Density",
+                            "PM2.5Density",
+                            "PositionState",
+                            "PowerModeSelection",
+                            "PreferredWiFiList",
+                            "ProductData",
+                            "ProgrammableSwitchEvent",
+                            "ProgrammableSwitchOutputState",
+                            "ProgramMode",
+                            "Reachable",
+                            "ReceivedSignalStrengthIndication",
+                            "ReceiverSensitivity",
+                            "RecordingAudioActive",
+                            "RelativeHumidityDehumidifierThreshold",
+                            "RelativeHumidityHumidifierThreshold",
+                            "RelayControlPoint",
+                            "RelayEnabled",
+                            "RelayState",
+                            "RemainingDuration",
+                            "RemoteKey",
+                            "ResetFilterIndication",
+                            "RotationDirection",
+                            "RotationSpeed",
+                            "RouterStatus",
+                            "Saturation",
+                            "SecuritySystemAlarmType",
+                            "SecuritySystemCurrentState",
+                            "SecuritySystemTargetState",
+                            "SelectedAudioStreamConfiguration",
+                            "SelectedCameraRecordingConfiguration",
+                            "SelectedDiagnosticsModes",
+                            "SelectedRTPStreamConfiguration",
+                            "SelectedSessionKeepaliveConfigurationList",
+                            "SelectedSleepConfiguration",
+                            "SerialNumber",
+                            "ServiceLabelIndex",
+                            "ServiceLabelNamespace",
+                            "SetDuration",
+                            "SetupDataStreamTransport",
+                            "SetupEndpoints",
+                            "SetupTransferTransport",
+                            "SignalToNoiseRatio",
+                            "SiriEnable",
+                            "SiriEndpointSessionStatus",
+                            "SiriEngineVersion",
+                            "SiriInputType",
+                            "SiriLightOnUse",
+                            "SiriListening",
+                            "SiriTouchToUse",
+                            "SlatType",
+                            "SleepDiscoveryMode",
+                            "SleepInterval",
+                            "SmokeDetected",
+                            "SoftwareRevision",
+                            "StagedFirmwareVersion",
+                            "StatusActive",
+                            "StatusFault",
+                            "StatusJammed",
+                            "StatusLowBattery",
+                            "StatusTampered",
+                            "StreamingStatus",
+                            "SulphurDioxideDensity",
+                            "SupportedAssetTypes",
+                            "SupportedAudioRecordingConfiguration",
+                            "SupportedAudioStreamConfiguration",
+                            "SupportedCameraRecordingConfiguration",
+                            "SupportedCharacteristicValueTransitionConfiguration",
+                            "SupportedDataStreamTransportConfiguration",
+                            "SupportedDiagnosticsModes",
+                            "SupportedDiagnosticsSnapshot",
+                            "SupportedFirmwareUpdateConfiguration",
+                            "SupportedMetrics",
+                            "SupportedRouterConfiguration",
+                            "SupportedRTPConfiguration",
+                            "SupportedSessionKeepaliveConfigurationList",
+                            "SupportedSleepConfiguration",
+                            "SupportedTransferTransportConfiguration",
+                            "SupportedVideoRecordingConfiguration",
+                            "SupportedVideoStreamConfiguration",
+                            "SwingMode",
+                            "TapType",
+                            "TargetAirPurifierState",
+                            "TargetAirQuality",
+                            "TargetControlList",
+                            "TargetControlSupportedConfiguration",
+                            "TargetDoorState",
+                            "TargetFanState",
+                            "TargetHeaterCoolerState",
+                            "TargetHeatingCoolingState",
+                            "TargetHorizontalTiltAngle",
+                            "TargetHumidifierDehumidifierState",
+                            "TargetMediaState",
+                            "TargetPosition",
+                            "TargetRelativeHumidity",
+                            "TargetSlatState",
+                            "TargetTemperature",
+                            "TargetTiltAngle",
+                            "TargetVerticalTiltAngle",
+                            "TargetVisibilityState",
+                            "TemperatureDisplayUnits",
+                            "ThirdPartyCameraActive",
+                            "ThreadControlPoint",
+                            "ThreadNodeCapabilities",
+                            "ThreadOpenThreadVersion",
+                            "ThreadStatus",
+                            "TimeUpdate",
+                            "Token",
+                            "TransmitPower",
+                            "TunnelConnectionTimeout",
+                            "TunneledAccessoryAdvertising",
+                            "TunneledAccessoryConnected",
+                            "TunneledAccessoryStateNumber",
+                            "ValveType",
+                            "Version",
+                            "VideoAnalysisActive",
+                            "VOCDensity",
+                            "Volume",
+                            "VolumeControlType",
+                            "VolumeSelector",
+                            "WakeConfiguration",
+                            "WANConfigurationList",
+                            "WANStatusList",
+                            "WaterLevel",
+                            "WiFiCapabilities",
+                            "WiFiConfigurationControl",
+                            "WiFiSatelliteStatus"
+                          ],
+                          "description": "The characteristic to read or set, for example On or Brightness."
                         },
                         "get": {
                           "type": "object",
@@ -1550,6 +2406,9 @@
                                 },
                                 "additionalProperties": false,
                                 "title": "Header"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "mappers": {
@@ -1676,6 +2535,9 @@
                                     },
                                     "condition": {
                                       "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                    },
+                                    "x-schema-form": {
+                                      "listItems": 0
                                     }
                                   },
                                   "inputMin": {
@@ -1750,6 +2612,9 @@
                                 },
                                 "additionalProperties": false,
                                 "title": "Mapper"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "inconclusive": {
@@ -1818,6 +2683,9 @@
                                     },
                                     "additionalProperties": false,
                                     "title": "Header"
+                                  },
+                                  "x-schema-form": {
+                                    "listItems": 0
                                   }
                                 },
                                 "mappers": {
@@ -1944,6 +2812,9 @@
                                         },
                                         "condition": {
                                           "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.get?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                        },
+                                        "x-schema-form": {
+                                          "listItems": 0
                                         }
                                       },
                                       "inputMin": {
@@ -2018,6 +2889,9 @@
                                     },
                                     "additionalProperties": false,
                                     "title": "Mapper"
+                                  },
+                                  "x-schema-form": {
+                                    "listItems": 0
                                   }
                                 }
                               },
@@ -2103,6 +2977,9 @@
                                 },
                                 "additionalProperties": false,
                                 "title": "Header"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "mappers": {
@@ -2229,6 +3106,9 @@
                                     },
                                     "condition": {
                                       "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                    },
+                                    "x-schema-form": {
+                                      "listItems": 0
                                     }
                                   },
                                   "inputMin": {
@@ -2303,6 +3183,9 @@
                                 },
                                 "additionalProperties": false,
                                 "title": "Mapper"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "inconclusive": {
@@ -2371,6 +3254,9 @@
                                     },
                                     "additionalProperties": false,
                                     "title": "Header"
+                                  },
+                                  "x-schema-form": {
+                                    "listItems": 0
                                   }
                                 },
                                 "mappers": {
@@ -2497,6 +3383,9 @@
                                         },
                                         "condition": {
                                           "functionBody": "const m = model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]?.set?.inconclusive?.mappers?.[arrayIndices[3]]; return [\"static\"].includes(m?.type);"
+                                        },
+                                        "x-schema-form": {
+                                          "listItems": 0
                                         }
                                       },
                                       "inputMin": {
@@ -2571,6 +3460,9 @@
                                     },
                                     "additionalProperties": false,
                                     "title": "Mapper"
+                                  },
+                                  "x-schema-form": {
+                                    "listItems": 0
                                   }
                                 }
                               },
@@ -2706,6 +3598,9 @@
                               "items": {
                                 "title": "Value",
                                 "type": "number"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "validValueRanges": {
@@ -2714,6 +3609,9 @@
                               "items": {
                                 "title": "Bound",
                                 "type": "number"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "perms": {
@@ -2722,6 +3620,9 @@
                               "items": {
                                 "title": "Permission",
                                 "type": "string"
+                              },
+                              "x-schema-form": {
+                                "listItems": 0
                               }
                             },
                             "maxLen": {
@@ -2741,20 +3642,156 @@
                       },
                       "additionalProperties": false,
                       "title": "Characteristic"
+                    },
+                    "x-schema-form": {
+                      "listItems": 0
                     }
                   },
                   "optionCharacteristic": {
                     "title": "Optional characteristics",
                     "type": "array",
                     "description": "Optional characteristics of the service to expose, for example BatteryLevel.",
+                    "uniqueItems": true,
+                    "x-schema-form": {
+                      "type": "array",
+                      "listItems": 0
+                    },
                     "items": {
                       "title": "Characteristic",
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "Active",
+                        "ActiveIdentifier",
+                        "ActivityInterval",
+                        "AdministratorOnlyAccess",
+                        "AirPlayEnable",
+                        "AudioFeedback",
+                        "BatteryLevel",
+                        "Brightness",
+                        "CameraOperatingModeIndicator",
+                        "CarbonDioxideLevel",
+                        "CarbonDioxidePeakLevel",
+                        "CarbonMonoxideLevel",
+                        "CarbonMonoxidePeakLevel",
+                        "CCAEnergyDetectThreshold",
+                        "CCASignalDetectThreshold",
+                        "CharacteristicValueActiveTransitionCount",
+                        "CharacteristicValueTransitionControl",
+                        "ChargingState",
+                        "ClosedCaptions",
+                        "ColorTemperature",
+                        "ConfiguredName",
+                        "ConnectionHealthMonitor",
+                        "CoolingThresholdTemperature",
+                        "CurrentDoorState",
+                        "CurrentFanState",
+                        "CurrentHorizontalTiltAngle",
+                        "CurrentMediaState",
+                        "CurrentRelativeHumidity",
+                        "CurrentTiltAngle",
+                        "CurrentVerticalTiltAngle",
+                        "DiagonalFieldOfView",
+                        "DisplayOrder",
+                        "EventRetransmissionMaximum",
+                        "EventTransmissionCounters",
+                        "FilterLifeLevel",
+                        "FirmwareUpdateProtocolList",
+                        "HeartBeat",
+                        "HeatingThresholdTemperature",
+                        "HoldPosition",
+                        "Hue",
+                        "Identifier",
+                        "InputDeviceType",
+                        "IsConfigured",
+                        "LockCurrentState",
+                        "LockLastKnownAction",
+                        "LockManagementAutoSecurityTimeout",
+                        "LockPhysicalControls",
+                        "LockTargetState",
+                        "Logs",
+                        "MACRetransmissionMaximum",
+                        "MACTransmissionCounters",
+                        "ManuallyDisabled",
+                        "MatterFirmwareUpdateStatus",
+                        "MaximumTransmitPower",
+                        "MediaAccessControlLevel",
+                        "MotionDetected",
+                        "MultifunctionButton",
+                        "Mute",
+                        "NightVision",
+                        "NitrogenDioxideDensity",
+                        "ObstructionDetected",
+                        "OperatingStateResponse",
+                        "OutletInUse",
+                        "OzoneDensity",
+                        "PasswordSetting",
+                        "PeriodicSnapshotsActive",
+                        "PictureMode",
+                        "PM10Density",
+                        "PM2.5Density",
+                        "PowerModeSelection",
+                        "PreferredWiFiList",
+                        "ReceivedSignalStrengthIndication",
+                        "ReceiverSensitivity",
+                        "RecordingAudioActive",
+                        "RelativeHumidityDehumidifierThreshold",
+                        "RelativeHumidityHumidifierThreshold",
+                        "RemainingDuration",
+                        "ResetFilterIndication",
+                        "RotationDirection",
+                        "RotationSpeed",
+                        "Saturation",
+                        "SecuritySystemAlarmType",
+                        "SelectedDiagnosticsModes",
+                        "SelectedSessionKeepaliveConfigurationList",
+                        "SelectedSleepConfiguration",
+                        "ServiceLabelIndex",
+                        "SetDuration",
+                        "SignalToNoiseRatio",
+                        "SiriEnable",
+                        "SiriEngineVersion",
+                        "SiriLightOnUse",
+                        "SiriListening",
+                        "SiriTouchToUse",
+                        "SleepInterval",
+                        "StagedFirmwareVersion",
+                        "StatusActive",
+                        "StatusFault",
+                        "StatusLowBattery",
+                        "StatusTampered",
+                        "SulphurDioxideDensity",
+                        "SupportedCharacteristicValueTransitionConfiguration",
+                        "SupportedDiagnosticsModes",
+                        "SupportedFirmwareUpdateConfiguration",
+                        "SupportedSessionKeepaliveConfigurationList",
+                        "SupportedSleepConfiguration",
+                        "SwingMode",
+                        "TargetFanState",
+                        "TargetHorizontalTiltAngle",
+                        "TargetMediaState",
+                        "TargetRelativeHumidity",
+                        "TargetTiltAngle",
+                        "TargetVerticalTiltAngle",
+                        "TargetVisibilityState",
+                        "TemperatureDisplayUnits",
+                        "ThirdPartyCameraActive",
+                        "ThreadOpenThreadVersion",
+                        "TransmitPower",
+                        "VOCDensity",
+                        "Volume",
+                        "VolumeControlType",
+                        "VolumeSelector",
+                        "WaterLevel",
+                        "WiFiConfigurationControl"
+                      ]
                     }
                   }
                 },
                 "additionalProperties": false,
                 "title": "Service"
+              },
+              "x-schema-form": {
+                "listItems": 0
               }
             },
             "headers": {
@@ -2782,6 +3819,9 @@
                 },
                 "additionalProperties": false,
                 "title": "Header"
+              },
+              "x-schema-form": {
+                "listItems": 0
               }
             },
             "manufacturer": {
@@ -2884,6 +3924,9 @@
           },
           "additionalProperties": false,
           "title": "Device"
+        },
+        "x-schema-form": {
+          "listItems": 0
         }
       }
     }

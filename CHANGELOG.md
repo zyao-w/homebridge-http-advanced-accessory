@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.4.0 - 2026-11-04
+
+### Added
+
+- A page of its own for the settings in the Homebridge UI (`customUi`): a **manager** and a **setup wizard**. **The standard form is not replaced.** It stays available: with devices it starts hidden behind _Show standard form_ (it is shown when the wizard is skipped before the first device), edits made in either place show in the other, and it is shown again whenever the page cannot start. Nothing is written to `config.json` before the Save button of the settings window is pressed.
+- The wizard opens when no device is configured, can be skipped, and is available from the manager later. The first version sets up the sensors that are only read (temperature, humidity, motion, contact, leak, smoke, occupancy) and a switch or a light that can also be controlled (a light can read and set its brightness). It sends the request, shows the response, lists the values found in it (JSONPath for JSON, XPath for XML), previews what HomeKit would get and checks the device with the validation that runs at startup.
+- The manager lists the devices as cards with the errors and warnings that the log would show at startup, and can add (wizard or blank), copy, delete after a confirmation, reorder and edit them, with all settings in a form of their own, and edit the platform `defaults`. A device can be tested (_Test read_ shows the HTTP status, the response and every mapper step, following the fallback action; _Preview set_ shows the URL and body without sending anything), exported as JSON with secrets masked, and the accessories of a 1.x `config.json` can be imported. The accessories that HomeKit has cached are shown, with those that are no longer configured.
+- English and Traditional Chinese, following the language of the Homebridge UI.
+- A list in the form (headers, additional services, characteristics, mappers, devices, ...) shows only its add button until an entry is added. The form adds one empty row to every list that has no entries, so an unused list used to take the room of a whole empty entry.
+- The page takes its text colors from the page around it, so that it can be read in the dark theme of the Homebridge UI: Bootstrap's muted text, table, card and list colors are those of its light theme and were dark on dark there.
+- `@homebridge/plugin-ui-utils` as a dependency, used by `homebridge-ui/server.js` only.
+- The characteristic names in the form (the characteristic of an entry, and the optional characteristics) and the service of a device are fixed lists of the names that HomeKit has, so they are chosen and not typed. The lists are made from the HAP-NodeJS of Homebridge 1.8.5 (hap-nodejs 0.12.3) and of Homebridge 2.4.0 (@homebridge/hap-nodejs 2.2.2): a service has to be in both, because an unknown service keeps the device from loading, while a characteristic that one of them lacks only logs a warning. `Accessory Information` is not offered, since the plugin adds it itself. The lists are only for the form: a name that they lack still validates and works when it is written in the JSON config. `scripts/build-hap-names.js` regenerates them.
+- The optional characteristics are rows with a dropdown each and a button that adds a row, so only the ones that were chosen take room, and the standard form offers only the characteristics that are optional on some service (123 of the 264). The form of the Homebridge UI would otherwise show the names as one checkbox each, and it has no dropdown for several choices.
+- In the editor of the settings page, the characteristics on offer are those of the service of the device (and, for the additional services, of their services), and the optional ones are only the optional characteristics of the service. When the service is changed the form is shown again with the characteristics of the new one, keeping what was entered. A name that the device already uses stays on offer, and the standard form of the Homebridge UI keeps offering every name, since its schema cannot depend on the service.
+
+### Fixed
+
+- A characteristic that HomeKit names with a hyphen (`Current Heater-Cooler State`, `Target Heater-Cooler State`, `Current Humidifier-Dehumidifier State`, `Target Humidifier-Dehumidifier State`, `Wi-Fi ...`) could not be bound under the name without the hyphen, which is the name that the README and the 1.x conversion use (`CurrentHeaterCoolerState`): the device logged that the service had no such characteristic. Names are now matched by their letters and digits, so both spellings work, and `state.<name>` uses the spelling of the configuration. Checked with the HAP-NodeJS of Homebridge 1.8.5 and of Homebridge 2.4.0, which both had the problem.
+- HAP-NodeJS renamed a few services (`BatteryService` is now `Battery`, `Relay` is `CloudRelay`, `Slat` is `Slats`, `CameraEventRecordingManagement` is `CameraRecordingManagement`, `TunneledBTLEAccessoryService` is `Tunnel`). Homebridge 2.x has only the new names, so a device with `"service": "BatteryService"`, as in the README example and in what the 1.x conversion writes, was reported as having an unknown service and did not load. The old names are now understood on every Homebridge version, and the README uses the new ones.
+- `_bridge`, which Homebridge adds to the platform block of a child bridge, was reported as an unknown setting.
+
+### Security
+
+- Test requests come from the Homebridge host with the authentication and headers of the device. Tokens and header values given as `env:` or `file:` are read on the server and never reach the browser. When the Homebridge UI is set to no login (`"auth": "none"`), test requests are switched off. Only `http` and `https` URLs are tested.
+
+### Changed
+
+- The code that validates and builds a device from the settings is shared between the platform and the settings page (`src/prepare-device.js`), so the page reports what the plugin does.
+
 ## 2.3.1 - 2026-10-12
 
 ### Changed

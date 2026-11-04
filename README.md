@@ -35,6 +35,7 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 - Optional Status Fault, so the Home app shows an accessory as faulty while its reads fail
 - One shared request for characteristics that read the same URL, a short response cache, request timeouts, read retries and a cap on concurrent requests
 - Accessories keep their identity in HomeKit when the configuration is edited
+- A manager page and a setup wizard in the Homebridge UI, next to the standard form
 
 ## Support
 
@@ -45,6 +46,42 @@ If you find this plugin useful, consider supporting its development.
   <br />
   <a href="https://paypal.me/zyaow"><img src="https://raw.githubusercontent.com/zyao-w/homebridge-http-advanced-accessory/master/branding/paypal-link.svg" width="185" height="25" alt="Support me via PayPal" /></a>
 </p>
+
+## Homebridge UI: manager and setup wizard
+
+The settings of the plugin in the Homebridge UI open on a page of their own, above the standard form. **The standard form stays**: it is one button away (_Show standard form_), every setting can still be edited there, and a change in one place shows in the other. Once there are devices it starts hidden, so the page stays short; while no device is set up it is shown when the wizard is skipped. English and Traditional Chinese are available; the page follows the language of the Homebridge UI.
+
+Nothing is written to `config.json` until you press **Save** in the settings window, as with the standard form. After saving, restart Homebridge for new or changed devices to take effect.
+
+### Setup wizard
+
+When no device is configured yet, the settings open the wizard. It can be skipped at any time (_Skip, use the standard form_) and it is available later from _Add device (wizard)_. The first version sets up:
+
+- sensors that are only read: temperature, humidity, motion, contact, leak, smoke and occupancy
+- a switch or a light, which can also be switched on and off, and a light can read and set its brightness
+
+The steps are: what the device is, the connection (name, URL, method, authentication), reading a value, understanding the value, controlling it (switch and light), options (polling, Status Fault, `id`) and a summary. In _Read a value_ the plugin sends the request, shows what the device answers and lists the values it found (JSON as JSONPath, XML as XPath); clicking one fills in the path and shows what HomeKit would get. For anything else, _Something else_ adds a blank device and opens it for editing.
+
+The wizard writes the same settings as the form, checked by the same validation that runs when Homebridge starts, so the summary tells you if the plugin would refuse the device.
+
+### Manager
+
+The page lists the devices as cards with their status (the errors and warnings that the log would show at startup) and can:
+
+- add a device with the wizard or as a blank device, copy, delete (after a confirmation) and reorder devices
+- edit one device with all its settings (characteristics, mappers, additional services, headers, authentication) or the platform _Defaults_ in a form of their own
+- _Test read_ a `get` action and show the HTTP status, the response and the result of every mapper, following the fallback action; and _Preview set_, which shows the URL and body that a value would produce without sending anything
+- export a device as JSON for an issue; passwords, tokens and header values are hidden, `env:` and `file:` references are kept
+- import the accessories of a 1.x `config.json` (the same conversion as `scripts/migrate-config.js`), with the points to review
+- show the accessories that HomeKit has cached for the plugin, and which of them are no longer configured
+
+A device can be renamed without becoming a new accessory only when it has an `id`; the page says so when you edit it.
+
+### Test requests and security
+
+_Test read_ and the wizard send the request from the Homebridge host, with the authentication and headers of the device, exactly as the plugin does. A `bearerToken` or a header given as `env:` or `file:` is read on the server and never sent to the browser. The response is shown to you as the device sent it (cut after 4000 characters), so it can contain whatever the device returns.
+
+When the Homebridge UI is set to **no login** (`"auth": "none"` for the `config` platform), anybody on the network can open its settings, so the plugin does not send test requests at all and the page says so. Everything else works. Only `http` and `https` URLs are tested.
 
 ## Configuration
 
@@ -137,7 +174,7 @@ Read requests with the same method, URL, body and credentials that are in flight
 }
 ```
 
-- `characteristic` is the name of the HomeKit characteristic. Names are matched without spaces, so `On`, `CurrentTemperature` and `Current Temperature` are the same. The full list is in [HAP-NodeJS](https://github.com/homebridge/HAP-NodeJS).
+- `characteristic` is the name of the HomeKit characteristic. Names are matched by their letters and digits only, so `On`, `CurrentTemperature` and `Current Temperature` are the same, and so are `CurrentHeaterCoolerState` and `CurrentHeater-CoolerState`. The form of the Homebridge UI offers the names of HAP-NodeJS as fixed lists; a name that is not in them can still be written in the JSON config. In the editor of the settings page, the characteristics on offer are those of the service of the device. The full list is in [HAP-NodeJS](https://github.com/homebridge/HAP-NodeJS).
 - `get` is the action that reads the value (see [Actions](#actions)). Without it the characteristic is not polled and answers with its last known value.
 - `set` is the action that writes the value. Without it a value set from HomeKit is accepted, but nothing is sent.
 - `props` overrides properties of the characteristic: `format`, `unit`, `minValue`, `maxValue`, `minStep`, `validValues`, `validValueRanges`, `perms` and `maxLen`.
@@ -149,7 +186,7 @@ One accessory can carry more than one HomeKit service, for example a CO2 sensor 
 | Setting                | Description                                                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `id`                   | Permanent identifier of the service on this accessory. Required and unique within the device.                            |
-| `service`              | The HomeKit service, for example `HumiditySensor` or `BatteryService`. Required.                                         |
+| `service`              | The HomeKit service, for example `HumiditySensor` or `Battery`. Required.                                         |
 | `name`                 | Name of the service in HomeKit. Defaults to the name of the device followed by the `id`.                                 |
 | `optionCharacteristic` | Optional characteristics of this service to expose, for example `["BatteryLevel"]`.                                      |
 | `characteristics`      | What to read and write in this service, with the same settings as [the characteristics of the device](#characteristics). |
@@ -383,47 +420,83 @@ Leading and trailing whitespace is always trimmed. If the environment variable o
 
 ## Supported services
 
-AccessoryInformation
+The form of the Homebridge UI offers these services, which Homebridge 1.8.5 and Homebridge 2.x both have:
+
+```text
+AccessCode
+AccessControl
+AccessoryMetrics
+AccessoryRuntimeInformation
+AirPurifier
 AirQualitySensor
-BatteryService
-BridgeConfiguration
-BridgingState
-CameraControl
+AssetUpdate
+Assistant
+AudioStreamManagement
+Battery
+CameraOperatingMode
+CameraRecordingManagement
 CameraRTPStreamManagement
 CarbonDioxideSensor
 CarbonMonoxideSensor
+CloudRelay
 ContactSensor
+DataStreamTransportManagement
+Diagnostics
 Door
 Doorbell
 Fan
+Fanv2
+Faucet
+FilterMaintenance
+FirmwareUpdate
 GarageDoorOpener
+HeaterCooler
+HumidifierDehumidifier
 HumiditySensor
+InputSource
+IrrigationSystem
 LeakSensor
-LightSensor
 Lightbulb
+LightSensor
 LockManagement
 LockMechanism
 Microphone
 MotionSensor
+NFCAccess
 OccupancySensor
 Outlet
 Pairing
+PowerManagement
 ProtocolInformation
-Relay
 SecuritySystem
+ServiceLabel
+Siri
+SiriEndpoint
+Slats
+SmartSpeaker
 SmokeSensor
-Speaker
 StatefulProgrammableSwitch
 StatelessProgrammableSwitch
 Switch
+TapManagement
+TargetControl
+TargetControlManagement
+Television
+TelevisionSpeaker
 TemperatureSensor
 Thermostat
-TimeInformation
-TunneledBTLEAccessoryService
+ThreadTransport
+TransferTransportManagement
+Tunnel
+Valve
+WiFiRouter
+WiFiSatellite
+WiFiTransport
 Window
 WindowCovering
+```
 
-Any service that HAP-NodeJS defines can be used by its name.
+Any other service that your HAP-NodeJS defines can be used by its name in the JSON config. HAP-NodeJS renamed a few services, and the old names keep working: `BatteryService` (now `Battery`), `CameraEventRecordingManagement` (now `CameraRecordingManagement`), `Relay` (now `CloudRelay`), `Slat` (now `Slats`), `TunneledBTLEAccessoryService` (now `Tunnel`).
 
 ## Configuration Examples
 
@@ -560,7 +633,7 @@ One accessory with four services. Every characteristic reads the same URL, so th
     {
       "id": "battery",
       "name": "Battery",
-      "service": "BatteryService",
+      "service": "Battery",
       "optionCharacteristic": ["BatteryLevel"],
       "characteristics": [
         {
@@ -1086,6 +1159,8 @@ homebridge --debug --user-storage-path .homebridge-dev --plugin-path ./
 
 The tests run with `npm test`; `npm run lint` and `npm run format:check` are checked in CI. `config.schema.json` is generated from `src/schema.js` by `npm run build:schema`.
 
+The Homebridge UI page is in `homebridge-ui/`: `public/` holds the page (plain JavaScript, no build step; the modules that are not about the DOM also run in Node, which is how the tests reach them), and `server.js` answers its requests with the functions of `src/ui-handlers.js`. The tests run the page in jsdom against a stand-in for the `homebridge` object of the Homebridge UI, and run `server.js` as a child process the way the Homebridge UI does.
+
 ## License and credits
 
 This plugin is licensed under the [Apache License 2.0](LICENSE).
@@ -1099,3 +1174,5 @@ Main changes in this fork, as required by section 4 of the license. [CHANGELOG.m
 
 - 1.1.x: refactoring into modules, an HTTP layer on the built-in `fetch` with request sharing, caching, timeouts and retries, Bearer Token authentication, and dependency updates.
 - 2.0.0: the `HttpAdvancedPlatform` Dynamic Platform and Homebridge UI form, validated configuration, the restricted expression language and `script` mapper, HTTP errors, and the removal of the 1.x accessory (see [MIGRATION.md](MIGRATION.md)).
+- 2.1.0 to 2.3.1: device information, the `scale` and `number` mappers, additional services, custom headers and Status Fault.
+- 2.4.0: a manager page and a setup wizard for the Homebridge UI, next to the standard form.

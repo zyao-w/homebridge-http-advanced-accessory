@@ -1,5 +1,6 @@
 const { PLATFORM_NAME } = require("./constants.js");
 const { HEADER_NAME } = require("./http/headers.js");
+const { CHARACTERISTICS, SERVICES } = require("./hap-names.js");
 
 // The Homebridge UI form generator cannot render objects with user-defined keys and drops what the schema
 // does not describe when the form is saved, so everything below is an object with fixed properties or an array.
@@ -10,6 +11,40 @@ const number = (title, extra = {}) => ({ title, type: "number", minimum: 0, ...e
 const integer = (title, extra = {}) => ({ title, type: "integer", minimum: 0, ...extra });
 const signed = (title, extra = {}) => ({ title, type: "number", ...extra });
 const bool = (title, extra = {}) => ({ title, type: "boolean", ...extra });
+// Fixed lists in the form. They are only for the form: the validation does not use them (see validate.js), so a name
+// that a list lacks still works when it is written in the JSON config. The form of the plugin offers every name; the
+// custom UI passes a shorter list of characteristics, for the service of the device that it edits.
+const SERVICE_NAMES = Object.keys(SERVICES).sort((a, b) => a.localeCompare(b, "en"));
+// What can be listed as an optional characteristic of some service; the others are always there or not offered at all
+const OPTIONAL_CHARACTERISTICS = [...new Set(Object.values(SERVICES).flatMap((service) => service.optional))].sort(
+	(a, b) => a.localeCompare(b, "en")
+);
+const characteristicName = (title, extra = {}, names = CHARACTERISTICS) => ({
+	title,
+	type: "string",
+	enum: names,
+	...extra,
+});
+const serviceName = (title, extra = {}) => ({ title, type: "string", enum: SERVICE_NAMES, ...extra });
+
+/**
+ * The list of the optional characteristics to expose, as rows with a dropdown each and a button that adds a row, so
+ * that only the ones that were chosen take room. The form would show an array of names from a list as a group of
+ * checkboxes, one for each name on offer, unless the array is said to be an array; it has no dropdown for several
+ * choices. A service that has no optional characteristics gets a list that cannot be added to, because a form cannot
+ * offer a choice among nothing.
+ */
+function optionCharacteristics(description, names = OPTIONAL_CHARACTERISTICS) {
+	const none = names.length === 0;
+	return {
+		title: "Optional characteristics",
+		type: "array",
+		description: none ? "This service has no optional characteristics." : description,
+		uniqueItems: true,
+		...(none ? { maxItems: 0 } : { "x-schema-form": { type: "array" } }),
+		items: none ? { title: "Characteristic", type: "string" } : characteristicName("Characteristic", {}, names),
+	};
+}
 const secret = (title, extra = {}) =>
 	text(title, { widget: "password", "x-schema-form": { type: "password" }, ...extra });
 const choice = (title, values, extra = {}) => ({
@@ -99,14 +134,27 @@ const MAPPER_TYPES = [
 // Fields are shown only where they apply. The form evaluates `condition` with the whole config (`model`) and
 // the indexes of the enclosing arrays, so each condition spells out where its field lives in the model.
 // A characteristic of the device and one of an additional service live at different places, so each gets a scope.
-const PRIMARY_SCOPE = {
-	characteristic: "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
-	mapperIndex: "arrayIndices[2]",
+// The form of a single device (the custom UI edits one at a time) has the device itself as its model.
+const PLATFORM_SCOPES = {
+	primary: {
+		characteristic: "model.devices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
+		mapperIndex: "arrayIndices[2]",
+	},
+	service: {
+		characteristic:
+			"model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]",
+		mapperIndex: "arrayIndices[3]",
+	},
 };
-const SERVICE_SCOPE = {
-	characteristic:
-		"model.devices?.[arrayIndices[0]]?.additionalServices?.[arrayIndices[1]]?.characteristics?.[arrayIndices[2]]",
-	mapperIndex: "arrayIndices[3]",
+const DEVICE_SCOPES = {
+	primary: {
+		characteristic: "model?.characteristics?.[arrayIndices[0]]",
+		mapperIndex: "arrayIndices[1]",
+	},
+	service: {
+		characteristic: "model?.additionalServices?.[arrayIndices[0]]?.characteristics?.[arrayIndices[1]]",
+		mapperIndex: "arrayIndices[2]",
+	},
 };
 const inModel = (path) =>
 	path
@@ -231,19 +279,21 @@ function props() {
 	});
 }
 
-function characteristic(scope) {
+function characteristic(scope, names) {
 	return object({
-		characteristic: text("Characteristic", {
-			placeholder: "On",
-			description: "Characteristic name, for example On or Brightness.",
-		}),
+		characteristic: characteristicName(
+			"Characteristic",
+			{ description: "The characteristic to read or set, for example On or Brightness." },
+			names
+		),
 		get: { ...action(scope, "get", true), title: "Get action" },
 		set: { ...action(scope, "set", true), title: "Set action", ...collapsed },
 		props: { ...props(), title: "Characteristic properties", ...collapsed },
 	});
 }
 
-function additionalService() {
+/** @param {{extraCharacteristic?: string[], extraOption?: string[]}} lists */
+function additionalService(scopes, lists) {
 	return object({
 		id: text("Identifier", {
 			description:
@@ -252,54 +302,85 @@ function additionalService() {
 		name: text("Name", {
 			description: "Name of the service in HomeKit. Defaults to the device name and the identifier.",
 		}),
-		service: text("Service", {
-			placeholder: "HumiditySensor",
-			description: "HomeKit service type, for example HumiditySensor or BatteryService.",
-		}),
+		service: serviceName("Service", { description: "HomeKit service type, for example HumiditySensor or Battery." }),
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(SERVICE_SCOPE), title: "Characteristic" },
+			items: { ...characteristic(scopes.service, lists.extraCharacteristic), title: "Characteristic" },
 		},
-		optionCharacteristic: {
-			title: "Optional characteristics",
-			type: "array",
-			description: "Optional characteristics of the service to expose, for example BatteryLevel.",
-			items: { title: "Characteristic", type: "string" },
-		},
+		optionCharacteristic: optionCharacteristics(
+			"Optional characteristics of the service to expose, for example BatteryLevel.",
+			lists.extraOption
+		),
 	});
 }
 
-function device() {
+/** @param {{characteristic?: string[], option?: string[], extraCharacteristic?: string[], extraOption?: string[]}} [lists] */
+function device(scopes, lists = {}) {
 	return object({
 		name: text("Name", { description: "Name shown in HomeKit." }),
 		id: text("Identifier", {
 			description: "Keeps the accessory in HomeKit when the device is renamed. Defaults to the name.",
 		}),
-		service: text("Service", {
-			placeholder: "Switch",
+		service: serviceName("Service", {
 			description: "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor.",
 		}),
 		characteristics: {
 			title: "Characteristics",
 			type: "array",
-			items: { ...characteristic(PRIMARY_SCOPE), title: "Characteristic" },
+			items: { ...characteristic(scopes.primary, lists.characteristic), title: "Characteristic" },
 		},
-		optionCharacteristic: {
-			title: "Optional characteristics",
-			type: "array",
-			description: "Optional characteristics of the service to expose, for example Brightness.",
-			items: { title: "Characteristic", type: "string" },
-		},
+		optionCharacteristic: optionCharacteristics(
+			"Optional characteristics of the service to expose, for example Brightness.",
+			lists.option
+		),
 		additionalServices: {
 			title: "Additional services",
 			type: "array",
 			description:
 				"More services on the same accessory, for example humidity next to a temperature sensor, or a battery.",
-			items: { ...additionalService(), title: "Service" },
+			items: { ...additionalService(scopes, lists), title: "Service" },
 		},
 		...settings(),
 	});
+}
+
+/**
+ * The form shows one empty row for every list that has no entries, because that is how many rows it adds to a list
+ * with no value (`listItems`, 1 by default). That is an empty header, an empty service and so on, for every list that
+ * was never used. With 0 a list shows only its add button.
+ */
+function withoutBlankRows(node) {
+	if (!node || typeof node !== "object") return node;
+	if (node.type === "array" && node.items && node.maxItems !== 0) {
+		node["x-schema-form"] = { ...node["x-schema-form"], listItems: 0 };
+	}
+	for (const value of Object.values(node)) withoutBlankRows(value);
+	return node;
+}
+
+/**
+ * The form of one device, for the custom UI to edit a device on its own. It describes the same settings as the
+ * `devices` of the platform form; only the paths in the conditions differ, since the device is the whole model.
+ *
+ * @param {{characteristic?: string[], option?: string[], extraCharacteristic?: string[], extraOption?: string[]}} [lists]
+ *   The names to offer for the characteristics and the optional characteristics, of the device and of its additional
+ *   services. Without them every name is offered.
+ */
+function buildDeviceFormSchema(lists) {
+	return {
+		schema: withoutBlankRows({ ...device(DEVICE_SCOPES, lists), title: "Device" }),
+		layout: null,
+		form: null,
+	};
+}
+
+/**
+ * The settings that every device inherits, as a form of their own for the custom UI. It is the same list as the
+ * `defaults` of the platform form, but open from the start.
+ */
+function buildDefaultsFormSchema() {
+	return { schema: withoutBlankRows({ ...object(settings()), title: "Defaults" }), layout: null, form: null };
 }
 
 /** The config.schema.json of the HttpAdvancedPlatform. */
@@ -308,17 +389,26 @@ function buildSchema() {
 		pluginAlias: PLATFORM_NAME,
 		pluginType: "platform",
 		singular: true,
+		// Opens homebridge-ui/, which keeps this form available underneath (see homebridge-ui/public/app.js)
+		customUi: true,
 		headerDisplay:
 			"Turns devices that expose an HTTP API into HomeKit accessories. Settings under *Defaults* apply to every device unless the device sets its own.",
-		schema: {
+		schema: withoutBlankRows({
 			type: "object",
 			properties: {
 				name: text("Name", { placeholder: "HTTP Advanced" }),
 				defaults: { ...object(settings()), title: "Defaults", ...collapsed },
-				devices: { title: "Devices", type: "array", items: { ...device(), title: "Device" } },
+				devices: { title: "Devices", type: "array", items: { ...device(PLATFORM_SCOPES), title: "Device" } },
 			},
-		},
+		}),
 	};
 }
 
-module.exports = { buildSchema, HTTP_METHODS };
+module.exports = {
+	buildSchema,
+	buildDeviceFormSchema,
+	buildDefaultsFormSchema,
+	HTTP_METHODS,
+	SERVICE_NAMES,
+	OPTIONAL_CHARACTERISTICS,
+};

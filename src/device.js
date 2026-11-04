@@ -3,6 +3,7 @@ const HttpClient = require("./http/client.js");
 const Poller = require("./poller.js");
 const { INCONCLUSIVE } = require("./mappers/index.js");
 const { renderTemplate } = require("./template.js");
+const { findService } = require("./service-aliases.js");
 
 const INTEGER_FORMATS = ["int", "uint16", "uint8", "uint32", "uint64"];
 
@@ -16,6 +17,13 @@ function formatDuration(ms) {
 }
 
 const compactName = (characteristic) => characteristic.displayName.replace(/\s/g, "");
+
+/**
+ * Identifies a characteristic by letters and digits only. HomeKit names a few of them with punctuation ("Current
+ * Heater-Cooler State", "PM2.5 Density"), and both CurrentHeaterCoolerState and CurrentHeater-CoolerState have been
+ * written in configurations, so the two spellings name the same characteristic.
+ */
+const matchKey = (name) => String(name).replace(/[^A-Za-z0-9]/g, "");
 
 /** Binds one normalized device to a HomeKit accessory. */
 class DeviceController {
@@ -56,15 +64,16 @@ class DeviceController {
 		const { device, accessory } = this;
 
 		// Every service type is checked first, so a mistake leaves the cached accessory as it was
-		const ServiceType = Service[device.service];
+		const ServiceType = findService(Service, device.service);
 		if (!ServiceType) {
 			throw new Error(`Device "${device.name}" has an unknown service "${device.service}"`);
 		}
 		const extraTypes = device.additionalServices.map((extra) => {
-			if (!Service[extra.service]) {
+			const type = findService(Service, extra.service);
+			if (!type) {
 				throw new Error(`Device "${device.name}" service "${extra.id}" has an unknown service "${extra.service}"`);
 			}
-			return Service[extra.service];
+			return type;
 		});
 
 		if (this.runner.authError) {
@@ -111,20 +120,21 @@ class DeviceController {
 	 *   `state` is where the values of this service are kept; `id` is set for an additional service
 	 */
 	_bindService(service, bucket) {
-		const entries = new Map(bucket.characteristics.map((entry) => [entry.name, entry]));
+		const entries = new Map(bucket.characteristics.map((entry) => [matchKey(entry.name), entry]));
 		const bound = new Set();
 		// The slots of this service, to tell whether any of its reads is failing
 		bucket.keys = new Set();
 		const bind = (characteristic) => {
-			bound.add(compactName(characteristic));
-			this._bind(characteristic, entries.get(compactName(characteristic)), bucket);
+			bound.add(matchKey(compactName(characteristic)));
+			this._bind(characteristic, entries.get(matchKey(compactName(characteristic))), bucket);
 		};
 
 		for (const characteristic of [...service.characteristics]) {
 			bind(characteristic);
 		}
+		const optional = new Set(bucket.optionCharacteristic.map(matchKey));
 		for (const characteristic of [...service.optionalCharacteristics]) {
-			if (bucket.optionCharacteristic.includes(compactName(characteristic))) {
+			if (optional.has(matchKey(compactName(characteristic)))) {
 				bind(characteristic);
 				service.addCharacteristic(characteristic);
 			}
@@ -133,20 +143,21 @@ class DeviceController {
 			this._attachFault(service, bucket, bound);
 		}
 
-		for (const name of entries.keys()) {
-			if (!bound.has(name)) {
+		for (const [key, entry] of entries) {
+			if (!bound.has(key)) {
 				const where = bucket.id
 					? `service "${bucket.id}" (${bucket.serviceType})`
 					: `the service ${bucket.serviceType}`;
 				this.log(
-					`WARNING: ${where} has no characteristic "${name}" to bind, or it is not listed in optionCharacteristic`
+					`WARNING: ${where} has no characteristic "${entry.name}" to bind, or it is not listed in optionCharacteristic`
 				);
 			}
 		}
 	}
 
 	_bind(characteristic, entry, bucket) {
-		const name = compactName(characteristic);
+		// The values are kept under the name the configuration uses, so `state.CurrentHeaterCoolerState` finds them
+		const name = entry ? entry.name : compactName(characteristic);
 		// `key` tells apart characteristics with the same name in different services
 		const slot = {
 			name,

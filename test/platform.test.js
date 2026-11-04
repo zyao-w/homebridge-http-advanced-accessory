@@ -86,6 +86,19 @@ class BatteryService extends FakeService {
 	}
 }
 
+class HeaterCoolerService extends FakeService {
+	static UUID = "heater";
+	constructor(name) {
+		super(name);
+		// HomeKit names these with a hyphen, which is how HAP-NodeJS has them
+		this.characteristics = [
+			new FakeCharacteristic("Current Heater-Cooler State", "int"),
+			new FakeCharacteristic("Target Heater-Cooler State", "int"),
+		];
+		this.optionalCharacteristics = [new FakeCharacteristic("PM2.5 Density", "float")];
+	}
+}
+
 class FakeAccessory {
 	constructor(displayName, UUID) {
 		this.displayName = displayName;
@@ -121,6 +134,7 @@ function makeApi() {
 				AccessoryInformation: InformationService,
 				Switch: SwitchService,
 				Lightbulb: LightService,
+				HeaterCooler: HeaterCoolerService,
 				HumiditySensor: HumidityService,
 				BatteryService,
 			},
@@ -1235,5 +1249,75 @@ describe("platform settings", () => {
 		// Only the device that inherits the default interval polls
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(serviceOf(polled).characteristics[0].updateValue).toHaveBeenCalledWith("1");
+	});
+});
+
+describe("characteristic names with punctuation", () => {
+	const heater = (characteristics, extra = {}) => ({
+		name: "Aircon",
+		service: "HeaterCooler",
+		characteristics,
+		...extra,
+	});
+	const get = (characteristic) => ({ characteristic, get: { url: `http://h/${characteristic}` } });
+	const named = (accessory, displayName) =>
+		serviceOf(accessory, "heater").characteristics.find((c) => c.displayName === displayName);
+	const warnings = (log) => log.mock.calls.map((call) => String(call[0])).filter((line) => line.includes("WARNING"));
+
+	test("a name with the hyphen of HomeKit and one without it name the same characteristic", async () => {
+		responses["http://h/CurrentHeaterCoolerState"] = "2";
+		responses["http://h/TargetHeater-CoolerState"] = "3";
+		const { api, log } = launch({
+			devices: [heater([get("CurrentHeaterCoolerState"), get("TargetHeater-CoolerState")])],
+		});
+		const [accessory] = registered(api);
+
+		expect(warnings(log)).toEqual([]);
+		expect(await named(accessory, "Current Heater-Cooler State").getHandler()).toBe(2);
+		expect(await named(accessory, "Target Heater-Cooler State").getHandler()).toBe(3);
+	});
+
+	test("an optional characteristic is listed with or without the punctuation", () => {
+		for (const listed of ["PM2.5Density", "PM25Density"]) {
+			const { api, log } = launch({ devices: [heater([get("PM2.5Density")], { optionCharacteristic: [listed] })] });
+			const [accessory] = registered(api);
+			expect({ listed, bound: Boolean(named(accessory, "PM2.5 Density").getHandler), warnings: warnings(log) }).toEqual(
+				{
+					listed,
+					bound: true,
+					warnings: [],
+				}
+			);
+		}
+	});
+
+	test("the values are kept under the name the configuration uses, so that a template finds them", async () => {
+		responses["http://h/CurrentHeaterCoolerState"] = "1";
+		const { api } = launch({
+			devices: [
+				heater([
+					get("CurrentHeaterCoolerState"),
+					{
+						characteristic: "TargetHeaterCoolerState",
+						set: { url: "http://h/set?now=${state.CurrentHeaterCoolerState}&to={value}" },
+					},
+				]),
+			],
+		});
+		const [accessory] = registered(api);
+		await named(accessory, "Current Heater-Cooler State").getHandler();
+		await named(accessory, "Target Heater-Cooler State").setHandler(2);
+
+		expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+			"http://h/CurrentHeaterCoolerState",
+			"http://h/set?now=1&to=2",
+		]);
+	});
+
+	test("a characteristic the service does not have is still reported by the name that was written", () => {
+		const { log } = launch({ devices: [heater([get("CurrentHeaterCoolerStatus")])] });
+		expect(warnings(log)).toEqual([
+			'[Aircon] WARNING: the service HeaterCooler has no characteristic "CurrentHeaterCoolerStatus" to bind, or it is not listed in optionCharacteristic',
+		]);
 	});
 });
