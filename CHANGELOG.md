@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.4.0 - Unreleased
+## 2.4.0 - 2026-11-04
 
 ### Added
 
@@ -28,7 +28,6 @@
 ### Changed
 
 - The code that validates and builds a device from the settings is shared between the platform and the settings page (`src/prepare-device.js`), so the page reports what the plugin does.
-
 
 ## 2.3.1 - 2026-10-12
 
