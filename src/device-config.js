@@ -224,6 +224,7 @@ function normalizeDevice(device, defaults = {}, options = {}) {
 	return {
 		id: typeof device.id === "string" && device.id ? device.id : device.name,
 		name: device.name,
+		enabled: device.enabled !== false,
 		service: device.service,
 		optionCharacteristic: device.optionCharacteristic || [],
 		information: {

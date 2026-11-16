@@ -17,6 +17,9 @@
 		info: { testsDisabled: false },
 		validation: { platform: [], devices: [] },
 		cached: null,
+		status: null,
+		statusKeys: [],
+		exportedAll: "",
 		view: "home", // home, wizard, edit, import
 		open: new Set(),
 		results: {},
@@ -70,11 +73,48 @@
 	}
 
 	async function runChecks() {
-		const [validation, cached] = await Promise.all([call("/validate", { config: state.blocks }), loadCached()]);
+		const [validation, cached] = await Promise.all([
+			call("/validate", { config: state.blocks }),
+			loadCached(),
+			loadStatus(),
+		]);
 		if (!validation.failed) state.validation = validation;
 		state.cached = cached;
 		// The other views show nothing of this, and drawing them again would take the focus from what is being typed
 		if (state.view === "home") render();
+	}
+
+	const STATUS_REFRESH_MS = 10000;
+	const deviceKey = (device) => (device && ((typeof device.id === "string" && device.id) || device.name)) || "";
+
+	/** The state that the running plugin wrote down. A failed request keeps what is shown. */
+	async function loadStatus() {
+		// The answer follows the list as it was when asked, which may have changed since
+		const keys = devices().map(deviceKey);
+		const result = await call("/status", { config: state.blocks });
+		if (result.failed) return;
+		state.status = result;
+		state.statusKeys = keys;
+	}
+
+	/** The state of the device at `index`, or undefined when the list changed since it was asked for. */
+	function liveEntry(index) {
+		const status = state.status;
+		if (!status || !status.available) return undefined;
+		if (state.statusKeys[index] !== deviceKey(devices()[index])) return undefined;
+		return status.devices[index] || null;
+	}
+
+	/** Only the parts that show the live state are drawn again, so that what is being typed elsewhere is kept. */
+	function refreshLive() {
+		const parts = [
+			["[data-live-banner]", () => renderLiveBanner()],
+			["[data-live-badge]", (element) => renderLiveBadge(Number(element.dataset.liveBadge))],
+			["[data-live-details]", (element) => renderLiveDetails(Number(element.dataset.liveDetails))],
+		];
+		for (const [selector, draw] of parts) {
+			root.querySelectorAll(selector).forEach((element) => (element.innerHTML = draw(element)));
+		}
 	}
 
 	async function loadCached() {
@@ -163,9 +203,11 @@
 			${button("wizard", esc(t("addWizard")), { cls: "btn-primary" })}
 			${button("add-blank", esc(t("addBlank")))}
 			${button("edit-defaults", esc(t("editDefaults")))}
+			${button("refresh-status", esc(t("statusRefresh")))}
 		</div>`;
 
 		if (state.info.testsDisabled) html += notice("warning", esc(t("testsDisabled")));
+		html += `<div data-live-banner>${renderLiveBanner()}</div>`;
 		if (state.validation.platform.length) {
 			html += notice("danger", `<strong>${esc(t("platformProblems"))}</strong>${list(state.validation.platform)}`);
 		}
@@ -173,6 +215,11 @@
 		if (items.length === 0) {
 			html += notice("info", `<strong>${esc(t("noDevices"))}</strong><br>${esc(t("noDevicesHelp"))}`);
 		} else {
+			if (state.exportedAll) {
+				html += `<div class="mb-3"><label class="form-label" for="export-all">${esc(t("exportAllHelp"))}</label>
+					<textarea id="export-all" class="form-control font-monospace" rows="12" readonly>${esc(state.exportedAll)}</textarea>
+					<div class="mt-1">${button("export-all-close", esc(t("close")), { small: true })}</div></div>`;
+			}
 			html += `<h2 class="visually-hidden">${esc(t("devices"))}</h2><div class="device-grid">`;
 			items.forEach((device, index) => {
 				html += renderDeviceCard(device, index, checks[index]);
@@ -193,9 +240,93 @@
 			<small>${help}</small>
 			<div class="d-flex flex-wrap gap-3">
 				${link("import", t("importLegacy"))}
+				${devices().length ? link("export-all", t("exportAll")) : ""}
 				${link("toggle-schema", state.schemaVisible ? t("hideStandard") : t("showStandard"))}
 			</div>
 		</div>`;
+	}
+
+	// ---- live status --------------------------------------------------------------------------------------------
+
+	/** A length of time in the largest unit that fits. */
+	function duration(ms) {
+		const seconds = Math.max(0, Math.round(ms / 1000));
+		if (seconds < 60) return t("durationSeconds", { n: seconds });
+		const minutes = Math.round(seconds / 60);
+		if (minutes < 60) return t("durationMinutes", { n: minutes });
+		const hours = Math.round(minutes / 60);
+		if (hours < 48) return t("durationHours", { n: hours });
+		return t("durationDays", { n: Math.round(hours / 24) });
+	}
+
+	// The times come from the plugin and are compared with the clock of the server, not with that of the browser
+	const ago = (time) => t("ago", { time: duration(state.status.now - time) });
+	const liveBadge = (kind, text) => `<span class="badge bg-${kind} text-bg-${kind}">${esc(text)}</span>`;
+
+	function renderLiveBadge(index) {
+		const entry = liveEntry(index);
+		if (entry === undefined) return "";
+		const live = Config.summarizeLive(entry, state.status);
+		const failing = () => t("liveFailing", { time: duration(live.since ? state.status.now - live.since : 0) });
+		switch (live.kind) {
+			case "working":
+				return liveBadge("success", t("liveWorking"));
+			case "failing":
+				return liveBadge("danger", failing());
+			case "waiting":
+				return liveBadge("secondary", t("liveWaiting"));
+			case "idle":
+				return liveBadge("secondary", t("liveIdle"));
+			case "unknown":
+				return liveBadge("secondary", t("liveUnknown"));
+			case "notLoaded":
+				return liveBadge("danger", t("liveNotLoaded"));
+			case "pending":
+				return liveBadge("secondary", t("livePending"));
+			default:
+				return "";
+		}
+	}
+
+	function renderLiveBanner() {
+		const status = state.status;
+		if (!status) return "";
+		if (!status.available) {
+			let text = t("statusMissing");
+			if (status.reason === "unreadable") text = t("statusUnreadable");
+			if (status.reason === "unsupported") text = t("statusUnsupported");
+			return `<p class="muted small mb-3">${esc(text)}</p>`;
+		}
+		if (status.running === false && Number.isFinite(status.updatedAt)) {
+			return notice("warning", esc(t("statusStopped", { time: duration(status.now - status.updatedAt) })));
+		}
+		return "";
+	}
+
+	/** The state of every read of the device, in the details of its card. */
+	function renderLiveDetails(index) {
+		const entry = liveEntry(index);
+		if (!entry) return "";
+		if (entry.loaded === false) return notice("danger", esc(t("liveNotLoadedHelp", { error: entry.error || "" })));
+		if (!entry.enabled) return "";
+		if (entry.characteristics.length === 0) return `<p class="muted">${esc(t("liveNoReads"))}</p>`;
+
+		const stateText = (read) => {
+			if (read.state === "ok") return t("liveWorking");
+			if (read.state === "failing") {
+				return t("liveFailing", { time: duration(read.failingSince ? state.status.now - read.failingSince : 0) });
+			}
+			return entry.polling ? t("liveWaiting") : t("liveIdle");
+		};
+		const rows = entry.characteristics
+			.map((read) => {
+				const value = read.lastValue === undefined ? "—" : esc(read.lastValue);
+				const when = read.lastValueAt ? ` <span class="muted small">${esc(ago(read.lastValueAt))}</span>` : "";
+				const worked = read.state === "failing" ? (read.lastSuccessAt ? ago(read.lastSuccessAt) : t("liveNever")) : "—";
+				return `<tr><td>${esc(read.key)}</td><td>${esc(stateText(read))}</td><td>${value}${read.state === "ok" ? when : ""}</td><td>${esc(worked)}</td><td>${esc(read.lastError || "")}</td></tr>`;
+			})
+			.join("");
+		return `<h4 class="h6">${esc(t("statusTitle"))}</h4><div class="table-responsive"><table class="table table-sm"><thead><tr><th scope="col">${esc(t("characteristic"))}</th><th scope="col">${esc(t("liveColumnState"))}</th><th scope="col">${esc(t("liveColumnValue"))}</th><th scope="col">${esc(t("liveColumnWorked"))}</th><th scope="col">${esc(t("liveColumnError"))}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 	}
 
 	function renderStatus(check) {
@@ -232,7 +363,7 @@
 							<div class="muted small">${facts}</div>
 							${summary.id ? `<div class="muted small">id: ${esc(summary.id)}</div>` : ""}
 						</div>
-						<div>${renderStatus(check)}</div>
+						<div class="d-flex flex-wrap justify-content-end gap-1">${summary.enabled ? "" : `<span class="badge bg-secondary text-bg-secondary">${esc(t("disabled"))}</span>`}<span data-live-badge="${index}" style="display: contents">${renderLiveBadge(index)}</span>${renderStatus(check)}</div>
 					</div>
 					${wide ? `<div class="mt-3">${renderDetails(device, index, check)}</div>` : ""}
 				</div>
@@ -240,6 +371,7 @@
 					<div class="d-flex flex-wrap gap-1">
 						${button("edit", esc(t("edit")), { small: true, cls: "btn-primary", data })}
 						${button("toggle", esc(open ? t("hideDetails") : t("details")), { small: true, data })}
+						${button("toggle-enabled", esc(summary.enabled ? t("disable") : t("enable")), { small: true, data })}
 					</div>
 					<div class="d-flex flex-wrap gap-1">
 						${button("copy", esc(t("copy")), { small: true, data })}
@@ -260,6 +392,7 @@
 
 	function renderDetails(device, index, check) {
 		let html = "";
+		if (!Config.isEnabled(device)) html += notice("secondary", esc(t("disabledHint")));
 		if (check && check.errors.length) html += notice("danger", list(check.errors));
 		if (check && check.warnings.length) html += notice("warning", list(check.warnings));
 		if (state.open.has(index) && !(typeof device.id === "string" && device.id)) {
@@ -276,6 +409,7 @@
 		}
 		if (!state.open.has(index)) return html;
 
+		html += `<div data-live-details="${index}">${renderLiveDetails(index)}</div>`;
 		const actions = Config.actionsOf(device);
 		if (actions.length === 0) return html + `<p class="muted">${esc(t("noActions"))}</p>`;
 
@@ -379,17 +513,36 @@
 		let html = `<p>${esc(t("importHelp"))}</p>
 			<label class="form-label" for="import-text">${esc(t("importLabel"))}</label>
 			<textarea id="import-text" class="form-control font-monospace mb-2" rows="10">${esc(imported.text)}</textarea>
+			<label class="form-label" for="import-file">${esc(t("importFile"))}</label>
+			<input type="file" id="import-file" class="form-control mb-2" accept=".json,application/json">
 			<div class="d-flex gap-2 mb-3">${button("import-convert", esc(t("convert")), { cls: "btn-primary" })}${button("import-cancel", esc(t("cancel")))}</div>`;
 
 		const result = imported.result;
 		if (result && !result.ok) html += notice("danger", esc(result.error));
 		if (result && result.ok) {
-			html += notice("success", esc(t("importFound", { count: result.devices.length })));
+			html += notice("success", esc(t("importFound", { count: result.items.length })));
+			if (result.kind === "1x") html += `<p class="muted">${esc(t("importFrom1x"))}</p>`;
+			if (result.defaultsIgnored) html += `<p class="muted">${esc(t("importDefaultsIgnored"))}</p>`;
 			if (result.warnings.length)
 				html += notice("warning", `<strong>${esc(t("importReview"))}</strong>${list(result.warnings)}`);
-			html += button("import-add", esc(t("importAdd", { count: result.devices.length })), { cls: "btn-primary" });
+			if (result.items.some((item) => item.errors.length)) html += `<p class="muted">${esc(t("importErrorsHint"))}</p>`;
+			html += result.items.map((item, index) => renderImportItem(item, index)).join("");
+			html += button("import-add", esc(t("importAdd", { count: imported.picked.size })), {
+				cls: "btn-primary",
+				disabled: imported.picked.size === 0,
+			});
 		}
 		return html;
+	}
+
+	/** One device that can be imported: a checkbox, what it is, and what is wrong with it. */
+	function renderImportItem(item, index) {
+		const id = `import-pick-${index}`;
+		let html = `<div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="${id}" data-import-pick="${index}"${state.importing.picked.has(index) ? " checked" : ""}>
+			<label class="form-check-label" for="${id}"><strong>${esc(item.name || t("unnamed"))}</strong> <span class="muted">${esc(item.service)}</span></label>`;
+		if (item.errors.length) html += notice("danger", list(item.errors));
+		if (item.warnings.length) html += notice("warning", list(item.warnings));
+		return html + "</div>";
 	}
 
 	// ---- editing with the form of a single device ---------------------------------------------------------------
@@ -430,6 +583,8 @@
 
 	async function openEditor(kind, index) {
 		const data = clone(kind === "defaults" ? Config.defaultsOf(state.blocks) : devices()[index]);
+		// The form shows a setting that is missing as unticked; a device without `enabled` is enabled
+		if (kind === "device" && data.enabled === undefined) data.enabled = true;
 		const schema = await fetchSchema(kind, data);
 		if (schema.failed) {
 			hb.toast.error(t("editorFailed"));
@@ -482,6 +637,8 @@
 		form.onSubmit(async (payload) => {
 			if (!current()) return;
 			const result = formData(payload) || latest;
+			// Only a device that is stopped carries the setting
+			if (kind === "device" && result.enabled !== false) delete result.enabled;
 			form.end();
 			const next =
 				kind === "defaults"
@@ -891,7 +1048,7 @@
 		},
 		"edit-defaults": () => openEditor("defaults"),
 		import: () => {
-			state.importing = { text: "", result: null };
+			state.importing = { text: "", result: null, picked: new Set() };
 			state.view = "import";
 			hb.hideSchemaForm();
 			render();
@@ -910,6 +1067,12 @@
 		edit: ({ index }) => openEditor("device", index),
 		copy: ({ index }) => commit(Config.duplicateDevice(state.blocks, index)),
 		"pin-id": ({ index }) => commit(Config.pinId(state.blocks, index)),
+		"toggle-enabled": ({ index }) =>
+			commit(Config.setEnabled(state.blocks, index, !Config.isEnabled(devices()[index]))),
+		"refresh-status": async () => {
+			await loadStatus();
+			refreshLive();
+		},
 		up: ({ index }) => commit(Config.moveDevice(state.blocks, index, -1)),
 		down: ({ index }) => commit(Config.moveDevice(state.blocks, index, 1)),
 		export: ({ index }) => {
@@ -976,16 +1139,33 @@
 		"import-convert": async () => {
 			const input = root.querySelector("#import-text");
 			state.importing.text = input ? input.value : state.importing.text;
-			state.importing.result = await call("/import-1x", { config: state.importing.text });
+			const result = await call("/import", {
+				config: state.importing.text,
+				defaults: Config.defaultsOf(state.blocks),
+			});
+			state.importing.result = result;
+			// What the plugin would refuse is not chosen at first, but it can be added and then fixed
+			state.importing.picked = new Set(
+				result.ok ? result.items.flatMap((item, index) => (item.errors.length ? [] : [index])) : []
+			);
 			render();
 		},
 		"import-add": async () => {
-			const result = state.importing.result;
+			const { result, picked } = state.importing;
+			const chosen = result.items.filter((item, index) => picked.has(index) && item.device).map((item) => item.device);
 			state.importing = null;
 			state.view = "home";
-			await commit(Config.addDevices(state.blocks, result.devices));
-			hb.toast.success(t("importAdded", { count: result.devices.length }));
+			await commit(Config.addDevices(state.blocks, chosen));
+			hb.toast.success(t("importAdded", { count: chosen.length }));
 			if (state.schemaVisible) hb.showSchemaForm();
+		},
+		"export-all": () => {
+			state.exportedAll = Config.exportDevices(devices());
+			render();
+		},
+		"export-all-close": () => {
+			state.exportedAll = "";
+			render();
 		},
 		"wizard-kind": ({ kind }) => {
 			const wizard = state.wizard;
@@ -1033,6 +1213,30 @@
 		if (event.target.id === "import-text" && state.importing) {
 			state.importing.text = event.target.value;
 			return;
+		}
+		if (state.importing && event.type === "change") {
+			const pick = event.target.closest("[data-import-pick]");
+			if (pick) {
+				const index = Number(pick.dataset.importPick);
+				if (pick.checked) state.importing.picked.add(index);
+				else state.importing.picked.delete(index);
+				render();
+				return;
+			}
+			if (event.target.id === "import-file") {
+				const file = event.target.files && event.target.files[0];
+				if (!file) return;
+				const reader = new FileReader();
+				reader.onload = () => {
+					if (!state.importing) return;
+					state.importing.text = String(reader.result);
+					state.importing.result = null;
+					render();
+				};
+				reader.onerror = () => hb.toast.error(t("importFileFailed"));
+				reader.readAsText(file);
+				return;
+			}
 		}
 		const target = event.target.closest("[data-bind]");
 		if (!target || !state.wizard) return;
@@ -1086,6 +1290,13 @@
 			render();
 		}
 		scheduleChecks();
+
+		// The state of the devices changes while the page is open, so it is read again from time to time
+		setInterval(async () => {
+			if (state.view !== "home" || document.hidden) return;
+			await loadStatus();
+			if (state.view === "home") refreshLive();
+		}, STATUS_REFRESH_MS);
 	}
 
 	init().catch((error) => {

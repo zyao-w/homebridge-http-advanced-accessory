@@ -24,7 +24,11 @@ async function main() {
 			this.onRequest("/test-get", (payload) => testGet(payload));
 			this.onRequest("/preview-set", (payload) => handlers.previewSet(payload));
 			this.onRequest("/import-1x", (payload) => handlers.importLegacy(payload));
+			this.onRequest("/import", (payload) => handlers.importConfig(payload));
 			this.onRequest("/cached", (payload) => handlers.cachedStatus(payload));
+			this.onRequest("/status", (payload) =>
+				handlers.readStatus({ ...payload, storagePath: this.homebridgeStoragePath })
+			);
 			this.onRequest("/device-schema", (payload) => handlers.deviceSchema(payload));
 			this.onRequest("/defaults-schema", () => handlers.defaultsSchema());
 

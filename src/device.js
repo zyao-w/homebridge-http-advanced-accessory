@@ -4,6 +4,7 @@ const Poller = require("./poller.js");
 const { INCONCLUSIVE } = require("./mappers/index.js");
 const { renderTemplate } = require("./template.js");
 const { findService } = require("./service-aliases.js");
+const { NO_STATUS } = require("./status.js");
 
 const INTEGER_FORMATS = ["int", "uint16", "uint8", "uint32", "uint64"];
 
@@ -30,11 +31,12 @@ class DeviceController {
 	/**
 	 * @param {{device: Object, accessory: Object, api: Object, log: Function}} options
 	 */
-	constructor({ device, accessory, api, log }) {
+	constructor({ device, accessory, api, log, status }) {
 		this.device = device;
 		this.accessory = accessory;
 		this.api = api;
 		this.log = log;
+		this.status = status || NO_STATUS;
 
 		this.client = new HttpClient({ auth: device.auth, ...device.http });
 		this.poller = new Poller({ log: (message) => this.debugLog(message) });
@@ -78,6 +80,9 @@ class DeviceController {
 
 		if (this.runner.authError) {
 			this.log("ERROR: " + this.runner.authError.message);
+		}
+		if (!device.enabled) {
+			this.log("Device is disabled: no requests are sent and HomeKit shows it as not responding");
 		}
 
 		const information =
@@ -171,9 +176,25 @@ class DeviceController {
 		if (entry && Object.keys(entry.props).length > 0) {
 			characteristic.setProps(entry.props);
 		}
+
+		// A disabled device keeps its services, and with them its place in HomeKit, but answers nothing
+		if (!this.device.enabled) {
+			characteristic.onGet(async () => {
+				if (name === "Name") return bucket.displayName;
+				throw this._communicationError();
+			});
+			characteristic.onSet(async () => {
+				throw this._communicationError();
+			});
+			return;
+		}
+
 		characteristic.onGet(() => this._get(slot, entry, characteristic));
 		characteristic.onSet((value) => this._set(slot, entry, characteristic, value));
 
+		if (entry && entry.get) {
+			this.status.track(slot.key);
+		}
 		if (entry && entry.get && this.device.forceRefreshDelay > 0) {
 			this._startPolling(slot, entry.get, characteristic);
 		}
@@ -214,6 +235,7 @@ class DeviceController {
 
 		slot.state[slot.name] = value;
 		this.pollFailures.delete(slot.key);
+		this.status.ok(slot.key, value);
 		characteristic.updateValue(value);
 		this._updateFault(slot.bucket);
 		return value;
@@ -239,6 +261,7 @@ class DeviceController {
 		} catch (error) {
 			this.log("GetState function failed: %s", error.message);
 			this.pollFailures.add(slot.key);
+			this.status.fail(slot.key, error.message);
 			this._updateFault(slot.bucket);
 			throw this._communicationError();
 		}
@@ -259,6 +282,7 @@ class DeviceController {
 		};
 		const failed = (error) => {
 			this.pollFailures.add(key);
+			this.status.fail(key, error && error.message);
 			this._updateFault(slot.bucket);
 			const message = error && error.message;
 			const now = Date.now();

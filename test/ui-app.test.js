@@ -54,7 +54,9 @@ async function open({
 	body = '{"co2": "812.4", "t": 21}',
 	formAuth = true,
 	cached = [],
+	status = { available: false, reason: "missing" },
 } = {}) {
+	let statusAnswer = status;
 	const dom = new JSDOM('<div id="app"></div>', { runScripts: "outside-only", pretendToBeVisual: true });
 	const { window } = dom;
 	const log = { updates: [], schema: [], toasts: [], forms: [], requests: [] };
@@ -71,7 +73,9 @@ async function open({
 		"/test-get": (payload) => testGet({ ...payload, uiAuth: formAuth ? undefined : "none" }),
 		"/preview-set": handlers.previewSet,
 		"/import-1x": handlers.importLegacy,
+		"/import": handlers.importConfig,
 		"/cached": handlers.cachedStatus,
+		"/status": () => statusAnswer,
 		"/device-schema": handlers.deviceSchema,
 		"/defaults-schema": handlers.defaultsSchema,
 	};
@@ -121,6 +125,9 @@ async function open({
 		log,
 		fetchCalls,
 		config: () => current,
+		setStatus: (next) => {
+			statusAnswer = next;
+		},
 		text: () => root.textContent.replace(/\s+/g, " "),
 		$: (selector) => root.querySelector(selector),
 		click: async (selector) => {
@@ -397,6 +404,141 @@ describe("the wizard", () => {
 	});
 });
 
+describe("the live status", () => {
+	const NOW = 10_000_000;
+	const read = (extra = {}) => ({
+		key: "CarbonDioxideLevel",
+		state: "ok",
+		lastValue: "812",
+		lastValueAt: NOW - 180_000,
+		...extra,
+	});
+	const entry = (extra = {}) => ({
+		name: "Air",
+		enabled: true,
+		loaded: true,
+		polling: true,
+		characteristics: [read()],
+		...extra,
+	});
+	const answer = (devices, extra = {}) => ({ available: true, running: true, now: NOW, devices, ...extra });
+	const badgeOf = (ui, index = 0) => ui.$(`[data-live-badge="${index}"]`).textContent.trim();
+
+	test("shows nothing about the devices, and says why, while there is no status", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await ui.waitForText("No status yet");
+		expect(badgeOf(ui)).toBe("");
+	});
+
+	test("says that a device works", async () => {
+		const ui = await start({ config: [platform([sensor()])], status: answer([entry()]) });
+		await ui.waitForText("Working");
+		expect(ui.text()).not.toContain("No status yet");
+	});
+
+	test("says since when a device fails, and lists every read in the details", async () => {
+		const failing = entry({
+			characteristics: [
+				read({
+					state: "failing",
+					lastError: "ECONNREFUSED",
+					failingSince: NOW - 125_000,
+					lastSuccessAt: NOW - 600_000,
+				}),
+			],
+		});
+		const ui = await start({ config: [platform([sensor()])], status: answer([failing]) });
+		await ui.waitForText("Failing for 2 min");
+
+		await ui.click('[data-action="toggle"][data-index="0"]');
+		const details = ui.$('[data-live-details="0"]').textContent;
+		expect(details).toContain("CarbonDioxideLevel");
+		expect(details).toContain("ECONNREFUSED");
+		expect(details).toContain("10 min ago");
+	});
+
+	test("shows the value of a read that works, and about when it was read", async () => {
+		const ui = await start({ config: [platform([sensor()])], status: answer([entry()]) });
+		await ui.waitForText("Working");
+		await ui.click('[data-action="toggle"][data-index="0"]');
+		const details = ui.$('[data-live-details="0"]').textContent;
+		expect(details).toContain("812");
+		expect(details).toContain("3 min ago");
+	});
+
+	test("tells a device that did not load, one that starts after a restart, and one that was not read yet", async () => {
+		const ui = await start({
+			config: [platform([sensor("A"), sensor("B"), sensor("C")])],
+			status: answer([
+				entry({ loaded: false, error: "has no service" }),
+				null,
+				entry({ characteristics: [{ key: "CarbonDioxideLevel", state: "idle" }], polling: false }),
+			]),
+		});
+		await ui.waitForText("Not loaded");
+		expect(badgeOf(ui, 1)).toBe("Starts after a restart");
+		expect(badgeOf(ui, 2)).toBe("Not read yet");
+
+		await ui.click('[data-action="toggle"][data-index="0"]');
+		expect(ui.$('[data-live-details="0"]').textContent).toContain("This device did not start: has no service");
+	});
+
+	test("a disabled device has the disabled badge and no live one", async () => {
+		const ui = await start({
+			config: [platform([sensor("A", { enabled: false })])],
+			status: answer([entry({ enabled: false, characteristics: [] })]),
+		});
+		await ui.waitForText("Disabled");
+		expect(badgeOf(ui)).toBe("");
+	});
+
+	test("warns that the plugin does not seem to run, and does not claim that devices work", async () => {
+		const ui = await start({
+			config: [platform([sensor()])],
+			status: answer([entry()], { running: false, updatedAt: NOW - 3_600_000 }),
+		});
+		await ui.waitForText("does not seem to be running");
+		expect(ui.text()).toContain("1 h ago");
+		expect(badgeOf(ui)).toBe("Unknown");
+	});
+
+	test("is read again on request, and only the live parts are drawn again", async () => {
+		const ui = await start({ config: [platform([sensor()])], status: answer([entry()]) });
+		await ui.waitForText("Working");
+		const card = ui.$('[data-device="0"]');
+
+		ui.setStatus(answer([entry({ characteristics: [read({ state: "failing", failingSince: NOW - 30_000 })] })]));
+		await ui.click('[data-action="refresh-status"]');
+		expect(badgeOf(ui)).toBe("Failing for 30 s");
+		expect(ui.$('[data-device="0"]')).toBe(card);
+	});
+
+	test("follows the devices when they are reordered", async () => {
+		const ui = await start({ config: [platform([sensor("A"), sensor("B")])], status: answer([entry(), null]) });
+		await ui.waitForText("Working");
+		expect(badgeOf(ui, 1)).toBe("Starts after a restart");
+
+		await ui.click('[data-action="down"][data-index="0"]');
+		expect(ui.config()[0].devices.map((device) => device.name)).toEqual(["B", "A"]);
+		// The server answers by the identifier of each device, so the order of its answer follows the list
+		ui.setStatus(answer([null, entry()]));
+		await ui.click('[data-action="refresh-status"]');
+		expect(badgeOf(ui, 0)).toBe("Starts after a restart");
+		expect(badgeOf(ui, 1)).toBe("Working");
+	});
+
+	test("keeps what it shows when the status cannot be read", async () => {
+		const ui = await start({ config: [platform([sensor()])], status: answer([entry()]) });
+		await ui.waitForText("Working");
+		ui.setStatus(undefined);
+		ui.homebridge.request = async () => {
+			throw new Error("gone");
+		};
+		await ui.click('[data-action="refresh-status"]');
+		expect(badgeOf(ui)).toBe("Working");
+	});
+});
+
 describe("the manager", () => {
 	const names = (ui) => ui.config()[0].devices.map((device) => device.name);
 
@@ -453,6 +595,39 @@ describe("the manager", () => {
 		await ui.click('[data-action="pin-id"]');
 		expect(ui.config()[0].devices.map((device) => device.id)).toEqual(["A", "b-1"]);
 		expect(ui.text()).not.toContain("no identifier");
+	});
+
+	test("stops and resumes a device, which shows as disabled", async () => {
+		const ui = await start({ config: [platform([sensor("A"), sensor("B")])] });
+		expect(ui.$('[data-device="0"]').textContent).not.toContain("Disabled");
+
+		await ui.click('[data-action="toggle-enabled"][data-index="0"]');
+		expect(ui.config()[0].devices[0].enabled).toBe(false);
+		expect(ui.config()[0].devices[1]).not.toHaveProperty("enabled");
+		expect(ui.$('[data-device="0"]').textContent).toContain("Disabled");
+		expect(ui.$('[data-action="toggle-enabled"][data-index="0"]').textContent).toBe("Enable");
+
+		await ui.click('[data-action="toggle"][data-index="0"]');
+		expect(ui.text()).toContain("This device is disabled");
+
+		await ui.click('[data-action="toggle-enabled"][data-index="0"]');
+		expect(ui.config()[0].devices[0]).not.toHaveProperty("enabled");
+		expect(ui.$('[data-device="0"]').textContent).not.toContain("Disabled");
+	});
+
+	test("the editor shows a device without the setting as enabled and writes the setting only when it is off", async () => {
+		const ui = await start({ config: [platform([sensor("A"), sensor("B", { enabled: false })])] });
+		await ui.click('[data-action="edit"][data-index="0"]');
+		await waitFor(() => ui.log.forms.length === 1, "the editor");
+		expect(ui.log.forms[0].data.enabled).toBe(true);
+
+		await ui.log.forms[0].submitted({ ...ui.log.forms[0].data });
+		await waitFor(() => ui.log.updates.length === 1, "the update");
+		expect(ui.config()[0].devices[0]).not.toHaveProperty("enabled");
+
+		await ui.click('[data-action="edit"][data-index="1"]');
+		await waitFor(() => ui.log.forms.length === 2, "the second editor");
+		expect(ui.log.forms[1].data.enabled).toBe(false);
 	});
 
 	test("hides and shows the standard form on request", async () => {
@@ -847,6 +1022,131 @@ describe("editing", () => {
 		expect(ui.log.toasts.at(-1)[0]).toBe("error");
 		expect(ui.text()).toContain("Air");
 		expect(ui.log.schema).not.toContain("show");
+	});
+});
+
+describe("importing devices as JSON", () => {
+	const lamp = (extra = {}) => ({
+		name: "Lamp",
+		service: "Switch",
+		characteristics: [{ characteristic: "On", get: { url: "http://lamp.local/state" } }],
+		...extra,
+	});
+	const check = async (ui, text) => {
+		await ui.click('[data-action="import"]');
+		await ui.type("#import-text", typeof text === "string" ? text : JSON.stringify(text));
+		await ui.click('[data-action="import-convert"]');
+	};
+
+	test("adds the devices that are chosen, and not the ones with errors unless they are chosen", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await check(ui, [lamp(), lamp({ name: "Broken", forceRefreshDelays: 5 }), lamp({ name: "Fan" })]);
+		expect(ui.text()).toContain("3 device(s) found.");
+		expect(ui.text()).toContain("Devices with errors are not selected");
+		expect([...ui.root.querySelectorAll("[data-import-pick]")].map((box) => box.checked)).toEqual([true, false, true]);
+		expect(ui.$('[data-action="import-add"]').textContent).toBe("Add 2 device(s)");
+
+		await ui.click('[data-import-pick="1"]');
+		expect(ui.$('[data-action="import-add"]').textContent).toBe("Add 3 device(s)");
+		await ui.click('[data-import-pick="0"]');
+		expect(ui.$('[data-action="import-add"]').textContent).toBe("Add 2 device(s)");
+		// What was typed is still there after the list was drawn again
+		expect(ui.$("#import-text").value).toContain("Broken");
+
+		await ui.click('[data-action="import-add"]');
+		await waitFor(() => ui.log.updates.length === 1, "the update");
+		expect(ui.config()[0].devices.map((device) => device.name)).toEqual(["Air", "Broken", "Fan"]);
+		expect(ui.log.toasts.at(-1)).toEqual(["success", "2 device(s) added. Press Save to keep them."]);
+	});
+
+	test("cannot add when nothing is chosen", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await check(ui, [lamp({ forceRefreshDelays: 5 })]);
+		expect(ui.$('[data-action="import-add"]').disabled).toBe(true);
+	});
+
+	test("renames a device whose name is taken instead of replacing it", async () => {
+		const ui = await start({ config: [platform([lamp()])] });
+		await check(ui, lamp());
+		await ui.click('[data-action="import-add"]');
+		await waitFor(() => ui.log.updates.length === 1, "the update");
+		expect(ui.config()[0].devices.map((device) => device.name)).toEqual(["Lamp", "Lamp 2"]);
+	});
+
+	test("asks again for a secret that an export hides", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await check(ui, lamp({ bearerToken: "***" }));
+		expect(ui.text()).toContain("bearerToken was hidden in the export");
+		await ui.click('[data-action="import-add"]');
+		await waitFor(() => ui.log.updates.length === 1, "the update");
+		expect(ui.config()[0].devices[1]).not.toHaveProperty("bearerToken");
+	});
+
+	test("says that the defaults of a platform block are left out", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await check(ui, { platform: "HttpAdvancedPlatform", defaults: { timeout: 5000 }, devices: [lamp()] });
+		expect(ui.text()).toContain("The defaults in it are not imported.");
+	});
+
+	test("says that 1.x settings were converted", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await check(ui, {
+			accessories: [
+				{
+					accessory: "HttpAdvancedAccessory",
+					name: "Old",
+					service: "Switch",
+					urls: { getOn: { url: "http://old/s" } },
+				},
+			],
+		});
+		expect(ui.text()).toContain("converted from 1.x settings");
+	});
+
+	test("reads a file", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await ui.click('[data-action="import"]');
+		const input = ui.$("#import-file");
+		const file = new ui.window.File([JSON.stringify(lamp())], "lamp.json", { type: "application/json" });
+		Object.defineProperty(input, "files", { value: [file] });
+		input.dispatchEvent(new ui.window.Event("change", { bubbles: true }));
+		await waitFor(() => ui.$("#import-text").value.includes("Lamp"), "the file");
+
+		await ui.click('[data-action="import-convert"]');
+		expect(ui.text()).toContain("1 device(s) found.");
+	});
+
+	test("exports every device, and the import takes it back", async () => {
+		const ui = await start({
+			config: [platform([lamp({ bearerToken: "secret-1" }), lamp({ name: "Fan", bearerToken: "env:FAN" })])],
+		});
+		await ui.click('[data-action="export-all"]');
+		const text = ui.$("#export-all").value;
+		expect(text).not.toContain("secret-1");
+		expect(text).toContain("env:FAN");
+		expect(JSON.parse(text).map((device) => device.name)).toEqual(["Lamp", "Fan"]);
+
+		await ui.click('[data-action="export-all-close"]');
+		expect(ui.$("#export-all")).toBeNull();
+
+		await ui.click('[data-action="export-all"]');
+		await ui.click('[data-action="import"]');
+		await ui.type("#import-text", text);
+		await ui.click('[data-action="import-convert"]');
+		expect(ui.text()).toContain("2 device(s) found.");
+	});
+
+	test("offers no export when there is no device", async () => {
+		const ui = await start({ config: [platform([])] });
+		await ui.click('[data-action="wizard-cancel"]');
+		expect(ui.$('[data-action="export-all"]')).toBeNull();
+	});
+
+	test("explains what it cannot use", async () => {
+		const ui = await start({ config: [platform([sensor()])] });
+		await check(ui, "[]");
+		expect(ui.text()).toContain("There is no device in it to import");
+		expect(ui.$('[data-action="import-add"]')).toBeNull();
 	});
 });
 

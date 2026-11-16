@@ -2,6 +2,16 @@ const DeviceController = require("./device.js");
 const { prepareDevice } = require("./prepare-device.js");
 const { PLUGIN_NAME, PLATFORM_NAME } = require("./constants.js");
 const { validatePlatform } = require("./validate.js");
+const { StatusReporter } = require("./status.js");
+
+/** The storage directory of Homebridge, or undefined where the API does not offer it. */
+function storagePathOf(api) {
+	try {
+		return api.user && typeof api.user.storagePath === "function" ? api.user.storagePath() : undefined;
+	} catch (error) {
+		return undefined;
+	}
+}
 
 /** Dynamic platform: one accessory per entry of `devices`, restored from the Homebridge cache. */
 class HttpAdvancedPlatform {
@@ -16,9 +26,13 @@ class HttpAdvancedPlatform {
 		this.api = api;
 		this.cached = new Map();
 		this.controllers = [];
+		this.status = new StatusReporter({ storagePath: storagePathOf(api), log });
 
 		api.on("didFinishLaunching", () => this.discover());
-		api.on("shutdown", () => this.controllers.forEach((controller) => controller.stop()));
+		api.on("shutdown", () => {
+			this.controllers.forEach((controller) => controller.stop());
+			this.status.stop();
+		});
 	}
 
 	/** Called by Homebridge for every accessory it restores from its cache. */
@@ -65,7 +79,7 @@ class HttpAdvancedPlatform {
 			const count =
 				device.characteristics.length + device.additionalServices.reduce((sum, e) => sum + e.characteristics.length, 0);
 			this.log(
-				`Configured ${label}${isNew ? "" : " (restored from cache)"} with ${count} characteristic(s)${extras ? ` and ${extras} additional service(s)` : ""}`
+				`Configured ${label}${isNew ? "" : " (restored from cache)"}${device.enabled ? "" : " (disabled)"} with ${count} characteristic(s)${extras ? ` and ${extras} additional service(s)` : ""}`
 			);
 		}
 
@@ -75,6 +89,14 @@ class HttpAdvancedPlatform {
 		if (stale.length) {
 			for (const accessory of stale) this.log(`Removing "${accessory.displayName}", it is no longer configured`);
 			this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, stale);
+		}
+		this.status.flush();
+	}
+
+	/** Records why a device does not run, for the settings page. Devices without a name have nothing to show it under. */
+	_unloaded(raw, message) {
+		if (raw && typeof raw.name === "string" && raw.name) {
+			this.status.unloaded({ id: this._uuid(raw), name: raw.name, error: message });
 		}
 	}
 
@@ -87,10 +109,12 @@ class HttpAdvancedPlatform {
 		const prepared = prepareDevice(raw, defaults, { warn: (message) => this.log("WARNING: " + message) });
 		if (prepared.validationErrors.length) {
 			for (const error of prepared.validationErrors) this.log.error(`${label}: ${error}`);
+			this._unloaded(raw, prepared.validationErrors.join("; "));
 			return null;
 		}
 		if (prepared.error) {
 			this.log.error(prepared.error.message);
+			this._unloaded(raw, prepared.error.message);
 			return null;
 		}
 		const device = prepared.device;
@@ -105,13 +129,20 @@ class HttpAdvancedPlatform {
 		const cachedAccessory = this.cached.get(uuid);
 		const accessory = cachedAccessory || new this.api.platformAccessory(device.name, uuid);
 		const deviceLog = (message, ...args) => this.log(`[${device.name}] ${message}`, ...args);
-		const controller = new DeviceController({ device, accessory, api: this.api, log: deviceLog });
+		const status = this.status.device({
+			id: uuid,
+			name: device.name,
+			enabled: device.enabled,
+			polling: device.forceRefreshDelay > 0,
+		});
+		const controller = new DeviceController({ device, accessory, api: this.api, log: deviceLog, status });
 
 		try {
 			controller.start();
 		} catch (error) {
 			controller.stop();
 			this.log.error(error.message);
+			this._unloaded(raw, error.message);
 			return null;
 		}
 

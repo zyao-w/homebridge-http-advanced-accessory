@@ -163,10 +163,89 @@ describe("describing a device", () => {
 			name: "Air",
 			id: "air",
 			service: "CarbonDioxideSensor",
+			enabled: true,
 			characteristics: 4,
 			additionalServices: 1,
 		});
-		expect(Config.summarize({})).toEqual({ name: "", id: "", service: "", characteristics: 0, additionalServices: 0 });
+		expect(Config.summarize({})).toEqual({
+			name: "",
+			id: "",
+			service: "",
+			enabled: true,
+			characteristics: 0,
+			additionalServices: 0,
+		});
+	});
+
+	test("a device is enabled unless it says enabled: false", () => {
+		expect(Config.isEnabled({})).toBe(true);
+		expect(Config.isEnabled({ enabled: true })).toBe(true);
+		expect(Config.isEnabled({ enabled: false })).toBe(false);
+		expect(Config.summarize({ name: "A", enabled: false }).enabled).toBe(false);
+	});
+
+	test("stops a device by writing enabled: false and resumes it by removing the setting", () => {
+		const blocks = [{ platform: Config.PLATFORM, devices: [{ name: "A" }, { name: "B", enabled: false }] }];
+		const stopped = Config.setEnabled(blocks, 0, false);
+		expect(Config.devicesOf(stopped)).toEqual([
+			{ name: "A", enabled: false },
+			{ name: "B", enabled: false },
+		]);
+
+		const resumed = Config.setEnabled(stopped, 1, true);
+		expect(Config.devicesOf(resumed)).toEqual([{ name: "A", enabled: false }, { name: "B" }]);
+		// The input is not modified, and an index that is not there changes nothing
+		expect(Config.devicesOf(blocks)[0]).toEqual({ name: "A" });
+		expect(Config.devicesOf(Config.setEnabled(blocks, 5, false))).toEqual(Config.devicesOf(blocks));
+	});
+
+	describe("summarizeLive", () => {
+		const status = { available: true, running: true };
+		const read = (state, extra = {}) => ({ key: "On", state, ...extra });
+		const entry = (characteristics, extra = {}) => ({
+			enabled: true,
+			loaded: true,
+			polling: true,
+			characteristics,
+			...extra,
+		});
+
+		test("has nothing to say without a status or for a device that is disabled", () => {
+			expect(Config.summarizeLive(entry([read("ok")]), null)).toEqual({ kind: "none" });
+			expect(Config.summarizeLive(entry([read("ok")]), { available: false })).toEqual({ kind: "none" });
+			expect(Config.summarizeLive(entry([read("ok")], { enabled: false }), status)).toEqual({ kind: "none" });
+			expect(Config.summarizeLive(entry([]), status)).toEqual({ kind: "none" });
+		});
+
+		test("tells a device that the plugin has no state for", () => {
+			expect(Config.summarizeLive(null, status)).toEqual({ kind: "pending" });
+		});
+
+		test("tells a device that did not load", () => {
+			expect(Config.summarizeLive(entry([], { loaded: false }), status)).toEqual({ kind: "notLoaded" });
+		});
+
+		test("does not claim anything while the plugin does not run", () => {
+			expect(Config.summarizeLive(entry([read("ok")]), { available: true, running: false })).toEqual({
+				kind: "unknown",
+			});
+		});
+
+		test("a read that fails makes the device fail, since the earliest failure", () => {
+			const reads = [read("ok"), read("failing", { failingSince: 500 }), read("failing", { failingSince: 300 })];
+			expect(Config.summarizeLive(entry(reads), status)).toEqual({ kind: "failing", count: 2, since: 300 });
+			expect(Config.summarizeLive(entry([read("failing")]), status)).toEqual({
+				kind: "failing",
+				count: 1,
+				since: undefined,
+			});
+		});
+
+		test("works when something was read, and waits or idles when nothing was", () => {
+			expect(Config.summarizeLive(entry([read("ok"), read("idle")]), status)).toEqual({ kind: "working" });
+			expect(Config.summarizeLive(entry([read("idle")]), status)).toEqual({ kind: "waiting" });
+			expect(Config.summarizeLive(entry([read("idle")], { polling: false }), status)).toEqual({ kind: "idle" });
+		});
 	});
 
 	test("lists what can be tested, including additional services", () => {

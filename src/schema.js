@@ -322,6 +322,12 @@ function device(scopes, lists = {}) {
 		id: text("Identifier", {
 			description: "Keeps the accessory in HomeKit when the device is renamed. Defaults to the name.",
 		}),
+		// The standard form shows a setting that is not written as unticked, so an enabled device looks off there;
+		// the settings page shows the real state.
+		enabled: bool("Enabled", {
+			description:
+				"Untick to stop the device without deleting it: no requests are sent and HomeKit shows it as not responding, but it keeps its room and automations. A device without this setting is enabled.",
+		}),
 		service: serviceName("Service", {
 			description: "HomeKit service type, for example Switch, Lightbulb or TemperatureSensor.",
 		}),

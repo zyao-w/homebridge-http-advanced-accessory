@@ -417,6 +417,270 @@ describe("cachedStatus", () => {
 	});
 });
 
+describe("readStatus", () => {
+	const { StatusReporter, statusFilePath } = require("../src/status.js");
+	let storagePath;
+	beforeEach(() => {
+		storagePath = fs.mkdtempSync(path.join(os.tmpdir(), "ui-status-"));
+	});
+	afterEach(() => fs.rmSync(storagePath, { recursive: true, force: true }));
+
+	const uuidOf = (device) => handlers.hapUuid(`HttpAdvancedPlatform:${device.id || device.name}`);
+	const write = (content) => {
+		fs.mkdirSync(path.dirname(statusFilePath(storagePath)), { recursive: true });
+		fs.writeFileSync(statusFilePath(storagePath), typeof content === "string" ? content : JSON.stringify(content));
+	};
+	const read = (devices, options = {}) =>
+		handlers.readStatus(
+			{ config: platform(devices), storagePath },
+			{ isAlive: () => true, now: () => 5000, ...options }
+		);
+
+	test("matches the state in the file to the configured devices", () => {
+		const status = new StatusReporter({ storagePath });
+		const handle = status.device({ id: uuidOf({ name: "Air" }), name: "Air", enabled: true, polling: true });
+		handle.ok("CarbonDioxideLevel", "812");
+		status.device({ id: uuidOf({ name: "Lamp" }), name: "Lamp", enabled: false, polling: false });
+		status.flush();
+
+		const result = read([sensor(), { name: "New", service: "Switch" }, sensor({ name: "Lamp" })]);
+		expect(result).toMatchObject({ available: true, running: true, now: 5000 });
+		expect(result.devices[0]).toMatchObject({
+			name: "Air",
+			enabled: true,
+			loaded: true,
+			polling: true,
+			characteristics: [{ key: "CarbonDioxideLevel", state: "ok", lastValue: "812" }],
+		});
+		// a device that was added after Homebridge started has no state yet
+		expect(result.devices[1]).toBeNull();
+		expect(result.devices[2]).toMatchObject({ name: "Lamp", enabled: false });
+	});
+
+	test("follows the identifier of a device, not its name", () => {
+		const status = new StatusReporter({ storagePath });
+		status.device({ id: uuidOf({ id: "air-1", name: "Air" }), name: "Air", enabled: true, polling: false });
+		status.flush();
+		expect(read([sensor({ id: "air-1", name: "Renamed" })]).devices[0]).toMatchObject({ name: "Air" });
+	});
+
+	test("says there is no state without a file, with an unreadable file and with another version", () => {
+		expect(read([sensor()])).toEqual({ available: false, reason: "missing" });
+		expect(handlers.readStatus({ config: platform([sensor()]) })).toEqual({ available: false, reason: "missing" });
+
+		write("{not json");
+		expect(read([sensor()])).toEqual({ available: false, reason: "unreadable" });
+
+		write({ version: 99, devices: [] });
+		expect(read([sensor()])).toEqual({ available: false, reason: "unsupported" });
+		write({ version: 1 });
+		expect(read([sensor()])).toEqual({ available: false, reason: "unsupported" });
+	});
+
+	test("tells whether the plugin still runs: by its process, and by a stop that it announced", () => {
+		write({ version: 1, pid: 4242, startedAt: 1, updatedAt: 2, stopped: false, devices: [] });
+		expect(read([], { isAlive: (pid) => pid === 4242 }).running).toBe(true);
+		expect(read([], { isAlive: () => false }).running).toBe(false);
+
+		write({ version: 1, pid: 4242, startedAt: 1, updatedAt: 2, stopped: true, devices: [] });
+		expect(read([], { isAlive: () => true }).running).toBe(false);
+	});
+
+	test("checks a process by its number", () => {
+		write({ version: 1, pid: process.pid, devices: [] });
+		expect(handlers.readStatus({ config: [], storagePath }).running).toBe(true);
+		write({ version: 1, pid: 2 ** 22 + 12345, devices: [] });
+		expect(handlers.readStatus({ config: [], storagePath }).running).toBe(false);
+		write({ version: 1, pid: "x", devices: [] });
+		expect(handlers.readStatus({ config: [], storagePath }).running).toBe(false);
+	});
+
+	test("hands the page only what it shows, with the types it expects", () => {
+		write({
+			version: 1,
+			pid: 1,
+			devices: [
+				{
+					id: uuidOf({ name: "Air" }),
+					name: "Air",
+					secret: "leaks",
+					characteristics: [
+						{ key: "A", state: "weird", lastValue: 5, lastError: { nested: true }, extra: "x", lastSuccessAt: "soon" },
+						{ state: "ok" },
+						null,
+					],
+				},
+			],
+		});
+		const [air] = read([sensor()]).devices;
+		expect(air).toEqual({
+			name: "Air",
+			enabled: true,
+			loaded: true,
+			polling: false,
+			error: undefined,
+			characteristics: [
+				{
+					key: "A",
+					state: "idle",
+					lastValue: undefined,
+					lastValueAt: undefined,
+					lastSuccessAt: undefined,
+					failingSince: undefined,
+					lastError: undefined,
+				},
+			],
+		});
+	});
+});
+
+describe("importConfig", () => {
+	const lamp = () => ({
+		name: "Lamp",
+		service: "Switch",
+		characteristics: [{ characteristic: "On", get: { url: "http://lamp.local/state" } }],
+	});
+	const items = (result) => result.items.map((item) => [item.name, item.errors.length]);
+
+	test("takes a single device, a list, a platform block and a whole config.json", () => {
+		const block = { platform: "HttpAdvancedPlatform", name: "HTTP Advanced", devices: [lamp(), sensor()] };
+		for (const input of [
+			[lamp(), sensor()],
+			{ devices: [lamp(), sensor()] },
+			block,
+			{ bridge: {}, accessories: [], platforms: [{ platform: "config" }, block] },
+			JSON.stringify(block),
+		]) {
+			const result = handlers.importConfig({ config: input });
+			expect(result).toMatchObject({ ok: true, kind: "json", warnings: [] });
+			expect(items(result)).toEqual([
+				["Lamp", 0],
+				["Air", 0],
+			]);
+		}
+		expect(items(handlers.importConfig({ config: lamp() }))).toEqual([["Lamp", 0]]);
+	});
+
+	test("checks every device the way the plugin does at startup", () => {
+		const broken = { name: "Broken", service: "Switch", forceRefreshDelays: 5 };
+		const result = handlers.importConfig({ config: [lamp(), broken, "text", null] });
+		expect(items(result)).toEqual([
+			["Lamp", 0],
+			["Broken", 1],
+			["", 1],
+			["", 1],
+		]);
+		expect(result.items[1].errors[0]).toContain("forceRefreshDelays");
+		expect(result.items[2].device).toBeNull();
+	});
+
+	test("uses the defaults of the platform it is added to when it checks a device", () => {
+		const scripted = {
+			name: "Scripted",
+			service: "Switch",
+			characteristics: [
+				{ characteristic: "On", get: { url: "http://x", mappers: [{ type: "script", script: "value" }] } },
+			],
+		};
+		expect(handlers.importConfig({ config: scripted }).items[0].errors).toHaveLength(1);
+		expect(handlers.importConfig({ config: scripted, defaults: { allowUnsafeEval: true } }).items[0].errors).toEqual(
+			[]
+		);
+	});
+
+	test("takes out the secrets that an export hides, and says where", () => {
+		const hidden = {
+			...lamp(),
+			bearerToken: "***",
+			password: "***",
+			headers: [
+				{ name: "X-Api-Key", value: "***" },
+				{ name: "X-Env", value: "env:KEY" },
+			],
+		};
+		hidden.characteristics[0].get.bearerToken = "***";
+		const result = handlers.importConfig({ config: hidden });
+		const [item] = result.items;
+		expect(item.device).not.toHaveProperty("bearerToken");
+		expect(item.device).not.toHaveProperty("password");
+		expect(item.device.characteristics[0].get).not.toHaveProperty("bearerToken");
+		expect(item.device.headers).toEqual([{ name: "X-Api-Key" }, { name: "X-Env", value: "env:KEY" }]);
+		expect(item.warnings).toEqual(
+			expect.arrayContaining([
+				"bearerToken was hidden in the export and has to be entered again",
+				"password was hidden in the export and has to be entered again",
+				"headers[0].value was hidden in the export and has to be entered again",
+				"characteristics[0].get.bearerToken was hidden in the export and has to be entered again",
+			])
+		);
+		expect(JSON.stringify(item.device)).not.toContain("***");
+	});
+
+	test("leaves a real value alone", () => {
+		const result = handlers.importConfig({ config: { ...lamp(), bearerToken: "env:TOKEN", password: "hunter2" } });
+		expect(result.items[0].device).toMatchObject({ bearerToken: "env:TOKEN", password: "hunter2" });
+		expect(result.items[0].warnings).toEqual([]);
+	});
+
+	test("does not change what it was given", () => {
+		const input = { ...lamp(), bearerToken: "***" };
+		handlers.importConfig({ config: input });
+		expect(input.bearerToken).toBe("***");
+	});
+
+	test("says that the defaults of a platform block are not imported", () => {
+		const block = { platform: "HttpAdvancedPlatform", defaults: { timeout: 5000 }, devices: [lamp()] };
+		expect(handlers.importConfig({ config: block }).defaultsIgnored).toBe(true);
+		expect(handlers.importConfig({ config: { ...block, defaults: {} } }).defaultsIgnored).toBe(false);
+		expect(handlers.importConfig({ config: [lamp()] }).defaultsIgnored).toBe(false);
+	});
+
+	test("still converts 1.x settings, with the checks of a device", () => {
+		const result = handlers.importConfig({ config: legacy });
+		expect(result).toMatchObject({ ok: true, kind: "1x" });
+		expect(result.items.length).toBeGreaterThan(0);
+		expect(result.items.map((item) => item.errors)).toEqual(result.items.map(() => []));
+		expect(Array.isArray(result.warnings)).toBe(true);
+	});
+
+	test("takes the accessories of a config.json that has platforms of other plugins and an empty accessories list", () => {
+		const result = handlers.importConfig({
+			config: { accessories: [], platforms: [{ platform: "HttpAdvancedPlatform", devices: [lamp()] }] },
+		});
+		expect(result).toMatchObject({ ok: true, kind: "json" });
+		expect(items(result)).toEqual([["Lamp", 0]]);
+	});
+
+	test("explains what it cannot use", () => {
+		expect(handlers.importConfig({ config: "{oops" })).toMatchObject({
+			ok: false,
+			error: expect.stringContaining("not valid JSON"),
+		});
+		for (const input of ["[]", "{}", "5", "null", { platforms: [{ platform: "config" }] }, { devices: [] }]) {
+			expect(handlers.importConfig({ config: input })).toEqual({
+				ok: false,
+				error: "There is no device in it to import",
+			});
+		}
+		expect(handlers.importConfig()).toEqual({ ok: false, error: "There is no device in it to import" });
+		expect(handlers.importConfig({ config: { accessories: [{ accessory: "Other" }] } })).toMatchObject({ ok: false });
+	});
+
+	test("takes back what the manager exports", () => {
+		const { exportDevices } = require("../homebridge-ui/public/config-model.js");
+		const original = [
+			{ ...lamp(), bearerToken: "secret-1" },
+			{ ...sensor(), bearerToken: "env:KEY" },
+		];
+		const result = handlers.importConfig({ config: exportDevices(original) });
+		expect(result.items.map((item) => item.errors)).toEqual([[], []]);
+		// everything but the hidden secret comes back as it was
+		expect(result.items[0].device).toEqual({ ...original[0], bearerToken: undefined });
+		expect(result.items[0].device).not.toHaveProperty("bearerToken");
+		expect(result.items[1].device).toEqual(original[1]);
+	});
+});
+
 describe("hapUuid", () => {
 	test("is the identifier that HAP-NodeJS makes for the same text", () => {
 		// Values produced by uuid.generate() of hap-nodejs

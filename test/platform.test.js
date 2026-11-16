@@ -126,9 +126,10 @@ class HapStatusError extends Error {
 	}
 }
 
-function makeApi() {
+function makeApi(storagePath) {
 	const listeners = {};
 	return {
+		...(storagePath ? { user: { storagePath: () => storagePath } } : {}),
 		hap: {
 			Service: {
 				AccessoryInformation: InformationService,
@@ -182,8 +183,8 @@ afterEach(() => {
 	jest.useRealTimers();
 });
 
-function launch(config, { cached = [] } = {}) {
-	const api = makeApi();
+function launch(config, { cached = [], storagePath } = {}) {
+	const api = makeApi(storagePath);
 	const log = Object.assign(jest.fn(), { error: jest.fn() });
 	const platform = new HttpAdvancedPlatform(log, { platform: "HttpAdvancedPlatform", ...config }, api);
 	cached.forEach((accessory) => platform.configureAccessory(accessory));
@@ -312,6 +313,172 @@ describe("registering accessories", () => {
 
 		const fromDefaults = launch({ defaults: { allowUnsafeEval: true }, devices: [device] });
 		expect(registered(fromDefaults.api)).toHaveLength(1);
+	});
+});
+
+describe("disabled devices", () => {
+	const disabled = (extra = {}) => switchDevice({ enabled: false, forceRefreshDelay: 1, ...extra });
+
+	test("a device is enabled unless it says otherwise", () => {
+		const { log } = launch({ devices: [switchDevice()] });
+		expect(log).not.toHaveBeenCalledWith(expect.stringContaining("disabled"));
+	});
+
+	test("keeps the accessory registered with its services and logs that it is disabled", () => {
+		const { api, log } = launch({ devices: [disabled()] });
+		expect(registered(api).map((a) => a.displayName)).toEqual(["Pump"]);
+		expect(serviceOf(registered(api)[0])).toBeDefined();
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('Configured Device "Pump" (disabled)'));
+		expect(log).toHaveBeenCalledWith(
+			"[Pump] Device is disabled: no requests are sent and HomeKit shows it as not responding"
+		);
+	});
+
+	test("keeps the cached accessory", () => {
+		const cached = new FakeAccessory("Pump", "uuid:HttpAdvancedPlatform:Pump");
+		const { api } = launch({ devices: [disabled()] }, { cached: [cached] });
+		expect(api.updatePlatformAccessories).toHaveBeenCalledWith([cached]);
+		expect(api.unregisterPlatformAccessories).not.toHaveBeenCalled();
+	});
+
+	test("sends no request, not even for the polling", async () => {
+		jest.useFakeTimers();
+		launch({ devices: [disabled()] });
+		await jest.advanceTimersByTimeAsync(5000);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	test("answers reads and writes with a communication error and still answers Name", async () => {
+		const { api } = launch({ devices: [disabled()] });
+		const [on, name] = serviceOf(registered(api)[0]).characteristics;
+		await expect(on.getHandler()).rejects.toMatchObject({ status: -70402 });
+		await expect(on.setHandler(1)).rejects.toMatchObject({ status: -70402 });
+		expect(await name.getHandler()).toBe("Pump");
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	test("still reports a configuration that is wrong", () => {
+		const { api, log } = launch({ devices: [disabled({ service: "Nonsense" })] });
+		expect(registered(api)).toEqual([]);
+		expect(log.error).toHaveBeenCalled();
+	});
+
+	test("enabled: true works like no setting, and the setting is not allowed in the defaults", () => {
+		const on = launch({ devices: [switchDevice({ enabled: true })] });
+		expect(registered(on.api)).toHaveLength(1);
+
+		const inDefaults = launch({ defaults: { enabled: false }, devices: [switchDevice()] });
+		expect(inDefaults.log.error).toHaveBeenCalledWith(expect.stringContaining('unknown setting "enabled"'));
+	});
+});
+
+describe("status of the devices", () => {
+	const fs = require("fs");
+	const os = require("os");
+	const path = require("path");
+	let storagePath;
+	const statusFile = () => path.join(storagePath, "homebridge-http-advanced-accessory", "status.json");
+	const status = () => JSON.parse(fs.readFileSync(statusFile(), "utf8"));
+
+	beforeEach(() => {
+		storagePath = fs.mkdtempSync(path.join(os.tmpdir(), "platform-status-"));
+	});
+	afterEach(() => {
+		fs.rmSync(storagePath, { recursive: true, force: true });
+	});
+
+	test("is written when the devices are set up, with the ones that cannot load", () => {
+		launch(
+			{
+				devices: [
+					switchDevice(),
+					{ name: "Off", service: "Switch", enabled: false },
+					{ name: "Broken", service: "Nonsense" },
+				],
+			},
+			{ storagePath }
+		);
+		const devices = status().devices;
+		expect(devices.map((d) => [d.name, d.enabled, d.loaded])).toEqual([
+			["Pump", true, true],
+			["Off", false, true],
+			["Broken", true, false],
+		]);
+		expect(devices[2].error).toContain("Nonsense");
+		expect(devices[0].characteristics).toEqual([{ key: "On", state: "idle" }]);
+		expect(devices[0].polling).toBe(false);
+	});
+
+	test("follows the reads: a value, then a failure with its reason, then the recovery", async () => {
+		const { api, platform } = launch({ devices: [switchDevice()] }, { storagePath });
+		const on = serviceOf(registered(api)[0]).characteristics[0];
+
+		responses["http://h/status"] = "RUN";
+		await on.getHandler();
+		platform.status.flush();
+		expect(status().devices[0].characteristics[0]).toMatchObject({ key: "On", state: "ok", lastValue: "1" });
+
+		responses["http://h/status"] = new Error("ECONNREFUSED");
+		await expect(on.getHandler()).rejects.toBeDefined();
+		platform.status.flush();
+		expect(status().devices[0].characteristics[0]).toMatchObject({ state: "failing", lastError: "ECONNREFUSED" });
+
+		responses["http://h/status"] = "RUN";
+		await on.getHandler();
+		platform.status.flush();
+		expect(status().devices[0].characteristics[0].state).toBe("ok");
+	});
+
+	test("follows the polling of a device", async () => {
+		jest.useFakeTimers();
+		responses["http://h/status"] = new Error("down");
+		const { platform } = launch({ devices: [switchDevice({ forceRefreshDelay: 5 })] }, { storagePath });
+		await jest.advanceTimersByTimeAsync(10);
+		platform.status.flush();
+		expect(status().devices[0].polling).toBe(true);
+		expect(status().devices[0].characteristics[0]).toMatchObject({ state: "failing", lastError: "down" });
+	});
+
+	test("a disabled device records nothing about reads", async () => {
+		const { api } = launch({ devices: [switchDevice({ enabled: false })] }, { storagePath });
+		await expect(serviceOf(registered(api)[0]).characteristics[0].getHandler()).rejects.toBeDefined();
+		expect(status().devices[0].characteristics).toEqual([]);
+	});
+
+	test("marks the plugin as stopped when Homebridge shuts down", () => {
+		const { api } = launch({ devices: [switchDevice()] }, { storagePath });
+		expect(status().stopped).toBe(false);
+		api.emit("shutdown");
+		expect(status().stopped).toBe(true);
+	});
+
+	test("contains no token, header value or URL", async () => {
+		responses["http://h/status"] = new Error("HTTP 500");
+		const { api, platform } = launch(
+			{
+				devices: [
+					switchDevice({
+						bearerToken: "secret-token-123",
+						headers: [{ name: "X-Api-Key", value: "secret-header-456" }],
+					}),
+				],
+			},
+			{ storagePath }
+		);
+		await expect(serviceOf(registered(api)[0]).characteristics[0].getHandler()).rejects.toBeDefined();
+		platform.status.flush();
+		const text = fs.readFileSync(statusFile(), "utf8");
+		for (const secret of ["secret-token-123", "secret-header-456", "http://h", "X-Api-Key"]) {
+			expect(text).not.toContain(secret);
+		}
+	});
+
+	test("does not stop the devices when the file cannot be written", () => {
+		const blocker = path.join(storagePath, "blocked");
+		fs.writeFileSync(blocker, "a file where the directory should be");
+		const { api, log } = launch({ devices: [switchDevice()] }, { storagePath: blocker });
+		expect(registered(api)).toHaveLength(1);
+		expect(log).toHaveBeenCalledWith(expect.stringContaining("cannot be written"));
 	});
 });
 

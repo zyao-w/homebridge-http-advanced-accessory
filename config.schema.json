@@ -167,6 +167,11 @@
               "type": "string",
               "description": "Keeps the accessory in HomeKit when the device is renamed. Defaults to the name."
             },
+            "enabled": {
+              "title": "Enabled",
+              "type": "boolean",
+              "description": "Untick to stop the device without deleting it: no requests are sent and HomeKit shows it as not responding, but it keeps its room and automations. A device without this setting is enabled."
+            },
             "service": {
               "title": "Service",
               "type": "string",

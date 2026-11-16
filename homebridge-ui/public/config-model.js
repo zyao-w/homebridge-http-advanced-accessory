@@ -160,6 +160,43 @@
 		});
 	}
 
+	/** A device is enabled unless it says `enabled: false`. */
+	const isEnabled = (device) => !(device && device.enabled === false);
+
+	/** Stops or resumes a device. The setting is written only for a device that is stopped, so an enabled one stays as it was. */
+	function setEnabled(blocks, index, enabled) {
+		return update(blocks, (platform) => {
+			const device = platform.devices[index];
+			if (!device) return;
+			if (enabled) delete device.enabled;
+			else device.enabled = false;
+		});
+	}
+
+	/**
+	 * What the card of a device says about it while Homebridge runs it. `entry` is the state that the plugin wrote for
+	 * the device (null when it has none) and `status` the whole answer of the server; see src/status.js.
+	 * @returns {{kind: string, count?: number, since?: number}} kind is none, pending, notLoaded, unknown, failing,
+	 *   working, waiting or idle
+	 */
+	function summarizeLive(entry, status) {
+		if (!status || !status.available) return { kind: "none" };
+		if (!entry) return { kind: "pending" };
+		if (entry.enabled === false) return { kind: "none" };
+		if (entry.loaded === false) return { kind: "notLoaded" };
+		if (status.running === false) return { kind: "unknown" };
+
+		const reads = Array.isArray(entry.characteristics) ? entry.characteristics : [];
+		const failing = reads.filter((read) => read.state === "failing");
+		if (failing.length > 0) {
+			const times = failing.map((read) => read.failingSince).filter((time) => Number.isFinite(time));
+			return { kind: "failing", count: failing.length, since: times.length ? Math.min(...times) : undefined };
+		}
+		if (reads.length === 0) return { kind: "none" };
+		if (reads.some((read) => read.state === "ok")) return { kind: "working" };
+		return { kind: entry.polling ? "waiting" : "idle" };
+	}
+
 	function summarize(device) {
 		const own = Array.isArray(device && device.characteristics) ? device.characteristics.length : 0;
 		const extras = Array.isArray(device && device.additionalServices) ? device.additionalServices : [];
@@ -167,6 +204,7 @@
 			name: nameOf(device),
 			id: device && typeof device.id === "string" ? device.id : "",
 			service: device && typeof device.service === "string" ? device.service : "",
+			enabled: isEnabled(device),
 			characteristics: own + extras.reduce((sum, extra) => sum + ((extra && extra.characteristics) || []).length, 0),
 			additionalServices: extras.length,
 		};
@@ -213,7 +251,13 @@
 		return JSON.stringify(mask(clone(device)), null, 2);
 	}
 
+	/** Every device as one list, masked like exportDevice, which the import accepts back. */
+	function exportDevices(devices) {
+		return JSON.stringify(mask(clone(devices)), null, 2);
+	}
+
 	return {
+		MASK,
 		PLATFORM,
 		findPlatform,
 		blocksFrom,
@@ -227,9 +271,13 @@
 		duplicateDevice,
 		setDefaults,
 		pinId,
+		isEnabled,
+		setEnabled,
+		summarizeLive,
 		summarize,
 		actionsOf,
 		exportDevice,
+		exportDevices,
 		uniqueName,
 		freeName,
 	};

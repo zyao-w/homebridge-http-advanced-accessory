@@ -12,6 +12,12 @@ const { buildDeviceFormSchema, buildDefaultsFormSchema } = require("./schema.js"
 const { SERVICES } = require("./hap-names.js");
 const { currentServiceName } = require("./service-aliases.js");
 const { PLATFORM_NAME } = require("./constants.js");
+const { statusFilePath, STATUS_VERSION } = require("./status.js");
+// The page hides secrets with this value when it exports a device, so it knows what to take out when one comes back
+const { MASK: HIDDEN_VALUE } = require("../homebridge-ui/public/config-model.js");
+
+// The settings that can hold a secret; only the headers have a "value" among them
+const HIDDEN_KEYS = new Set(["bearerToken", "password", "value"]);
 
 // The custom UI of the Homebridge settings page calls these through homebridge-ui/server.js. They are plain functions
 // so that they can be tested without the Homebridge UI.
@@ -304,6 +310,113 @@ function importLegacy({ config } = {}) {
 }
 
 /**
+ * Accepts devices as the manager exports them and in the other shapes that people have at hand: one device, a list of
+ * devices, a platform block of this plugin, or a whole config.json. The accessories of a 1.x config.json are converted
+ * as importLegacy does. Every device is checked as the plugin checks it at startup, and none is added here: the page
+ * lets the user choose.
+ * @param {{config: *, defaults?: Object}} payload `defaults` are those of the platform block the devices are added to
+ * @returns {{ok: true, kind: string, items: Array, warnings: string[], defaultsIgnored: boolean}|{ok: false, error: string}}
+ */
+function importConfig({ config, defaults } = {}) {
+	let input = config;
+	if (typeof input === "string") {
+		try {
+			input = JSON.parse(input);
+		} catch (error) {
+			return { ok: false, error: `This is not valid JSON: ${error.message}` };
+		}
+	}
+	const inherited = defaults && typeof defaults === "object" && !Array.isArray(defaults) ? defaults : {};
+
+	if (isLegacyConfig(input)) {
+		const converted = importLegacy({ config: input });
+		if (!converted.ok) return converted;
+		const items = converted.devices.map((device) => checkImported(device, inherited));
+		return { ok: true, kind: "1x", items, warnings: converted.warnings, defaultsIgnored: false };
+	}
+
+	const found = findDevices(input);
+	if (!found || found.devices.length === 0) return { ok: false, error: "There is no device in it to import" };
+	return {
+		ok: true,
+		kind: "json",
+		items: found.devices.map((device) => checkImported(device, inherited)),
+		warnings: [],
+		defaultsIgnored: found.defaultsIgnored,
+	};
+}
+
+const isLegacyEntry = (entry) => Boolean(entry) && typeof entry === "object" && entry.accessory !== undefined;
+
+function isLegacyConfig(input) {
+	if (Array.isArray(input)) return input.some(isLegacyEntry);
+	if (!input || typeof input !== "object") return false;
+	// A config.json of Homebridge has an `accessories` list of other plugins, empty or not, next to its platforms
+	return isLegacyEntry(input) || (Array.isArray(input.accessories) && input.accessories.some(isLegacyEntry));
+}
+
+const hasSettings = (block) =>
+	Boolean(block && block.defaults && typeof block.defaults === "object" && Object.keys(block.defaults).length);
+
+/** The devices in what was pasted, or null when it holds none. */
+function findDevices(input) {
+	if (Array.isArray(input)) return { devices: input, defaultsIgnored: false };
+	if (!input || typeof input !== "object") return null;
+
+	if (Array.isArray(input.platforms)) {
+		const blocks = input.platforms.filter((block) => block && block.platform === PLATFORM_NAME);
+		return blocks.length
+			? {
+					devices: blocks.flatMap((block) => (Array.isArray(block.devices) ? block.devices : [])),
+					defaultsIgnored: blocks.some(hasSettings),
+				}
+			: null;
+	}
+	if (Array.isArray(input.devices)) return { devices: input.devices, defaultsIgnored: hasSettings(input) };
+	if (typeof input.name === "string" || typeof input.service === "string" || Array.isArray(input.characteristics)) {
+		return { devices: [input], defaultsIgnored: false };
+	}
+	return null;
+}
+
+/** Takes out the values that an export hides: "***" is not the secret, and must not become the token. */
+function clearHidden(node, where = "", cleared = []) {
+	if (Array.isArray(node)) {
+		node.forEach((item, index) => clearHidden(item, `${where}[${index}]`, cleared));
+	} else if (node && typeof node === "object") {
+		for (const [key, value] of Object.entries(node)) {
+			const at = where ? `${where}.${key}` : key;
+			if (HIDDEN_KEYS.has(key) && value === HIDDEN_VALUE) {
+				delete node[key];
+				cleared.push(at);
+			} else {
+				clearHidden(value, at, cleared);
+			}
+		}
+	}
+	return cleared;
+}
+
+/** One device that is offered for import, with what the plugin would say about it. */
+function checkImported(raw, defaults) {
+	if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+		return { name: "", service: "", device: null, errors: ["is not an object"], warnings: [] };
+	}
+	const device = JSON.parse(JSON.stringify(raw));
+	const warnings = clearHidden(device).map((where) => `${where} was hidden in the export and has to be entered again`);
+	const prepared = prepareDevice(device, defaults, { warn: (message) => warnings.push(message) });
+	const errors = [...prepared.validationErrors];
+	if (prepared.error) errors.push(prepared.error.message);
+	return {
+		name: typeof device.name === "string" ? device.name : "",
+		service: typeof device.service === "string" ? device.service : "",
+		device,
+		errors,
+		warnings,
+	};
+}
+
+/**
  * Compares the accessories that Homebridge has cached for the plugin with the configured devices.
  * @param {{config: *, cached: Array<{UUID: string, displayName: string}>}} payload
  */
@@ -389,12 +502,91 @@ function namesForDevice(device) {
 const deviceSchema = (payload) => buildDeviceFormSchema(namesForDevice(payload && payload.device));
 const defaultsSchema = () => buildDefaultsFormSchema();
 
+/** Whether the process that wrote the status file is still there. A process of another user still counts. */
+function processIsAlive(pid) {
+	if (!Number.isInteger(pid) || pid <= 0) return false;
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch (error) {
+		return error.code === "EPERM";
+	}
+}
+
+const textOf = (value) => (typeof value === "string" ? value : undefined);
+const timeOf = (value) => (Number.isFinite(value) ? value : undefined);
+
+/** Keeps only what the page shows, with the types it expects: the file is read from disk and is not trusted. */
+function cleanStatus(entry) {
+	const characteristics = (Array.isArray(entry.characteristics) ? entry.characteristics : [])
+		.filter((item) => item && typeof item.key === "string")
+		.map((item) => ({
+			key: item.key,
+			state: ["ok", "failing", "idle"].includes(item.state) ? item.state : "idle",
+			lastValue: textOf(item.lastValue),
+			lastValueAt: timeOf(item.lastValueAt),
+			lastSuccessAt: timeOf(item.lastSuccessAt),
+			failingSince: timeOf(item.failingSince),
+			lastError: textOf(item.lastError),
+		}));
+	return {
+		name: textOf(entry.name) || "",
+		enabled: entry.enabled !== false,
+		loaded: entry.loaded !== false,
+		polling: entry.polling === true,
+		error: textOf(entry.error),
+		characteristics,
+	};
+}
+
+/**
+ * The state of the devices as the running plugin wrote it to its status file (src/status.js), matched to the
+ * configured devices: `devices[i]` is the state of the i-th configured device, or null when the plugin has none
+ * for it (a device that was added after Homebridge started).
+ * @param {{config: *, storagePath?: string}} payload
+ * @param {{isAlive?: Function, now?: Function}} [environment]
+ */
+function readStatus({ config, storagePath } = {}, { isAlive = processIsAlive, now = Date.now } = {}) {
+	let written;
+	try {
+		if (!storagePath) return { available: false, reason: "missing" };
+		written = JSON.parse(fs.readFileSync(statusFilePath(storagePath), "utf8"));
+	} catch (error) {
+		return { available: false, reason: error && error.code === "ENOENT" ? "missing" : "unreadable" };
+	}
+	if (!written || written.version !== STATUS_VERSION || !Array.isArray(written.devices)) {
+		return { available: false, reason: "unsupported" };
+	}
+
+	const block = platformBlock(config);
+	const configured = block && Array.isArray(block.devices) ? block.devices : [];
+	const byId = new Map(
+		written.devices.filter((entry) => entry && typeof entry.id === "string").map((entry) => [entry.id, entry])
+	);
+
+	return {
+		available: true,
+		// A graceful stop says so; a process that is gone without it was killed or crashed
+		running: written.stopped === true ? false : isAlive(written.pid),
+		startedAt: timeOf(written.startedAt),
+		updatedAt: timeOf(written.updatedAt),
+		now: now(),
+		devices: configured.map((device) => {
+			const entry =
+				device && typeof device.name === "string" && device.name ? byId.get(accessoryUuid(device)) : undefined;
+			return entry ? cleanStatus(entry) : null;
+		}),
+	};
+}
+
 module.exports = {
 	validate,
 	createTestGet,
 	previewSet,
 	importLegacy,
+	importConfig,
 	cachedStatus,
+	readStatus,
 	deviceSchema,
 	defaultsSchema,
 	isUiAuthDisabled,

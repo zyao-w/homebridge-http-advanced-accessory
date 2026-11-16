@@ -9,6 +9,9 @@ const path = require("path");
 
 const serverPath = path.join(__dirname, "..", "homebridge-ui", "server.js");
 
+// A child process starts slowly when the other test files are running at the same time
+jest.setTimeout(20000);
+
 const children = [];
 const directories = [];
 const servers = [];
@@ -28,8 +31,10 @@ function configFile(config) {
 }
 
 async function startServer(config = { platforms: [] }) {
+	const storagePath = fs.mkdtempSync(path.join(os.tmpdir(), "ui-server-storage-"));
+	directories.push(storagePath);
 	const child = fork(serverPath, [], {
-		env: { ...process.env, HOMEBRIDGE_CONFIG_PATH: configFile(config) },
+		env: { ...process.env, HOMEBRIDGE_CONFIG_PATH: configFile(config), HOMEBRIDGE_STORAGE_PATH: storagePath },
 		silent: true,
 	});
 	children.push(child);
@@ -53,7 +58,7 @@ async function startServer(config = { platforms: [] }) {
 
 	const first = await Promise.race([isReady, exited.then((code) => `exited with ${code}`)]);
 	expect(first).toMatchObject({ action: "ready", payload: { server: true } });
-	return { request, child };
+	return { request, child, storagePath };
 }
 
 async function device(handler) {
@@ -129,6 +134,7 @@ describe("homebridge-ui/server.js", () => {
 			["/preview-set", { device, characteristic: "CarbonDioxideLevel", value: "5" }, { ok: true }],
 			["/import-1x", { config: "{oops" }, { ok: false }],
 			["/cached", { config: [], cached: [] }, { accessories: [], pending: [] }],
+			["/status", { config: [] }, { available: false, reason: "missing" }],
 			["/device-schema", undefined, { layout: null, form: null }],
 			["/defaults-schema", undefined, { layout: null, form: null }],
 		]) {
@@ -136,6 +142,24 @@ describe("homebridge-ui/server.js", () => {
 			expect({ route, success: response.success }).toEqual({ route, success: true });
 			expect(response.data).toMatchObject(expected);
 		}
+	});
+
+	test("reads the status file that the plugin writes in the storage of Homebridge", async () => {
+		const { request, storagePath } = await startServer();
+		const { StatusReporter } = require("../src/status.js");
+		const { hapUuid } = require("../src/ui-handlers.js");
+		const status = new StatusReporter({ storagePath });
+		status
+			.device({ id: hapUuid("HttpAdvancedPlatform:Air"), name: "Air", enabled: true, polling: true })
+			.ok("CarbonDioxideLevel", "812");
+		status.flush();
+
+		const response = await request("/status", {
+			config: [{ platform: "HttpAdvancedPlatform", devices: [sensor("http://127.0.0.1:1/")] }],
+		});
+		expect(response.success).toBe(true);
+		expect(response.data).toMatchObject({ available: true, running: true });
+		expect(response.data.devices[0].characteristics[0]).toMatchObject({ state: "ok", lastValue: "812" });
 	});
 
 	test("refuses a route it does not have", async () => {

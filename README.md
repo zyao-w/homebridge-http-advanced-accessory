@@ -35,7 +35,8 @@ This is a modified fork of the original [homebridge-http-advanced-accessory](htt
 - Optional Status Fault, so the Home app shows an accessory as faulty while its reads fail
 - One shared request for characteristics that read the same URL, a short response cache, request timeouts, read retries and a cap on concurrent requests
 - Accessories keep their identity in HomeKit when the configuration is edited
-- A manager page and a setup wizard in the Homebridge UI, next to the standard form
+- A manager page and a setup wizard in the Homebridge UI, next to the standard form, with the live state of every device
+- A device can be disabled without deleting it, and devices can be exported and imported as JSON
 
 ## Support
 
@@ -69,13 +70,26 @@ The wizard writes the same settings as the form, checked by the same validation 
 The page lists the devices as cards with their status (the errors and warnings that the log would show at startup) and can:
 
 - add a device with the wizard or as a blank device, copy, delete (after a confirmation) and reorder devices
+- _Disable_ a device and _Enable_ it again without deleting it, see `enabled` in [Device settings](#device-settings)
 - edit one device with all its settings (characteristics, mappers, additional services, headers, authentication) or the platform _Defaults_ in a form of their own
 - _Test read_ a `get` action and show the HTTP status, the response and the result of every mapper, following the fallback action; and _Preview set_, which shows the URL and body that a value would produce without sending anything
-- export a device as JSON for an issue; passwords, tokens and header values are hidden, `env:` and `file:` references are kept
-- import the accessories of a 1.x `config.json` (the same conversion as `scripts/migrate-config.js`), with the points to review
+- export a device, or all of them, as JSON for an issue or another installation; passwords, tokens and header values are hidden, `env:` and `file:` references are kept
+- import devices from JSON: one device, a list, a platform block or a whole `config.json` (as exported above), or the accessories of a 1.x `config.json` (the same conversion as `scripts/migrate-config.js`). Every device is checked as the plugin checks it at startup and you choose which to add; devices with errors are not selected at first. Nothing is replaced: a device whose name or `id` is taken is added under another name. The `defaults` of a platform block are not imported, and a password or token that an export hid has to be entered again
+- show the live state of every device, see [Live status](#live-status)
 - show the accessories that HomeKit has cached for the plugin, and which of them are no longer configured
 
 A device can be renamed without becoming a new accessory only when it has an `id`; the page says so when you edit it.
+
+### Live status
+
+The settings page cannot ask the running plugin, so the plugin writes the state of its devices to `homebridge-http-advanced-accessory/status.json` in the storage directory of Homebridge (next to `config.json`), and the page reads it. Each card shows a badge: _Working_, _Failing for 3 min_, _Waiting for the first read_, _Not read yet_ (a device without polling is read when HomeKit asks), _Not loaded_ (the settings are wrong, the details say how), _Starts after a restart_ (a device added after Homebridge started) or _Unknown_ (the plugin does not seem to be running). The details of a card list every read with its last value, the last error and when it last worked. The page asks again every 10 seconds, and _Refresh status_ asks at once.
+
+- Only values and error messages are kept, cut to 100 and 200 characters. Tokens, passwords, header values, URLs and responses are never written.
+- Writes are kept few so that an SD card is spared: a change of state (working to failing and back) is written within 5 seconds, a new value at most every 5 minutes. A value shown for a working read is therefore the one of up to 5 minutes ago, and the page says how long ago.
+- The plugin is taken for stopped when it said so while Homebridge shut down, or when the process that wrote the file is gone. If Homebridge and its UI run in different containers, the second check can be wrong, and the page then shows the state as unknown.
+- A device that is disabled shows only the _Disabled_ badge.
+
+A device with `"enabled": false` is not read at all, see [Device settings](#device-settings).
 
 ### Test requests and security
 
@@ -140,6 +154,7 @@ The `platform` block belongs in the top-level `platforms` list of `config.json`.
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`                                  | Name of the accessory in HomeKit. Required.                                                                                                                                                                                                                                     |
 | `id`                                    | Optional stable identifier. By default the accessory is identified by its `name`, so renaming it creates a new accessory in HomeKit; with an `id` it can be renamed freely. Must be unique.                                                                                     |
+| `enabled`                               | With `false`, the device is stopped without deleting it: no request is sent, and HomeKit shows the accessory as not responding while it keeps its room and automations. Defaults to `true`. Not available in `defaults`.                                                         |
 | `service`                               | The HomeKit service, for example `Switch`, `Lightbulb` or `TemperatureSensor`. See [Supported services](#supported-services). Required.                                                                                                                                         |
 | `optionCharacteristic`                  | List of optional characteristics of the service that you want to expose, for example `["Brightness"]`.                                                                                                                                                                          |
 | `manufacturer`, `model`, `serialNumber` | Shown in the accessory information of HomeKit. They default to `Custom Manufacturer`, `HTTP Accessory Model` and `HTTP Accessory Serial Number`; an empty value is ignored. The serial number does not change the identity of the accessory. They can be set in `defaults` too. |
@@ -1176,3 +1191,4 @@ Main changes in this fork, as required by section 4 of the license. [CHANGELOG.m
 - 2.0.0: the `HttpAdvancedPlatform` Dynamic Platform and Homebridge UI form, validated configuration, the restricted expression language and `script` mapper, HTTP errors, and the removal of the 1.x accessory (see [MIGRATION.md](MIGRATION.md)).
 - 2.1.0 to 2.3.1: device information, the `scale` and `number` mappers, additional services, custom headers and Status Fault.
 - 2.4.0: a manager page and a setup wizard for the Homebridge UI, next to the standard form.
+- 2.5.0: disabling a device (`enabled`), the live state of the devices on the manager page, and importing devices from JSON.

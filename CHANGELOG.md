@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.5.0 - Unreleased
+
+### Added
+
+- `enabled`: a device with `"enabled": false` is stopped without being deleted. No request is sent, not even for polling, and HomeKit reads and writes fail, so the Home app shows the accessory as not responding. The accessory stays registered with its services, so its room, scenes and automations are kept, and setting it back to `true` (or removing the setting) resumes it. The configuration of a disabled device is still checked. The setting is for a device and is not allowed in `defaults`. The manager page has a _Disable_ / _Enable_ button and a _Disabled_ badge on the card of a device. The standard form shows a device without the setting as unticked, since a form cannot show a default; the editor of the manager page shows it as enabled.
+- Live status on the manager page. The settings page cannot ask the running plugin, so the plugin writes the state of its devices to `homebridge-http-advanced-accessory/status.json` in the storage directory of Homebridge, and the page reads it. A card shows a badge (_Working_, _Failing for ..._, _Waiting for the first read_, _Not read yet_, _Not loaded_, _Starts after a restart_ or _Unknown_), and its details list every read with its last value, last error and when it last worked. The page asks again every 10 seconds, and has a _Refresh status_ button.
+  - The file holds only values and error messages, cut to 100 and 200 characters. It never holds a token, password, header value, URL or response.
+  - It is written seldom, to spare an SD card: a change of state within 5 seconds, a new value at most every 5 minutes, and once when Homebridge shuts down. The file is replaced in one step, so it is never read half written. A failure to write it is logged once and does not affect the devices.
+  - The plugin is taken to be stopped when it said so at shutdown, or when the process that wrote the file is gone; the state is then shown as unknown.
+- Import of devices from JSON on the manager page, which also takes the 1.x settings it took before: one device, a list of devices, a platform block of this plugin or a whole `config.json`, pasted or chosen as a file. Every device is checked as the plugin checks it at startup, with the `defaults` of the platform it is added to, and the devices to add are chosen; those with errors are not selected at first. Nothing is replaced: a device whose name or `id` is taken is added under another name. The `defaults` of a platform block are not imported. A password, token or header value that an export hid (`***`) is taken out and has to be entered again, so the placeholder never becomes a secret.
+- _Export all devices_ on the manager page: every device as one JSON list, with secrets hidden like the export of a single device, which the import takes back.
+
+### Changed
+
+- The import of 1.x settings and the import of JSON are one page, _Import devices_. Its check step lists the devices with a checkbox each, where 1.x settings were added all at once.
+
 ## 2.4.0 - 2026-11-04
 
 ### Added
